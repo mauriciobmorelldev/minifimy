@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { getFeaturedProducts } from "@/lib/products";
+import { getHomeContent } from "@/lib/wordpress";
 
 export const metadata: Metadata = {
   title: "Inicio",
@@ -32,24 +33,39 @@ const categoryCards = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
   const featured = getFeaturedProducts();
+  const acf = await getHomeContent();
+
+  const heroImage =
+    typeof acf?.hero_banner === "string"
+      ? acf.hero_banner
+      : acf?.hero_banner?.url ?? "/brand/banners/banner-foto.jpg";
+  const heroTitle = acf?.hero_title;
+  const heroSubtitle =
+    acf?.hero_subtitle ??
+    "Acabamos de abrir nuestra tienda de ropa para bebés: prendas orgánicas y suaves.";
+  const announcements =
+    acf?.announcements?.map((item) => item.text).filter(Boolean) ?? [
+      "Envíos sin cargo en compras superiores a AR$ 25.000",
+      "10% off en primera compra con el código MINIFIMY10",
+      "Cambios y devoluciones fáciles hasta 30 días",
+      "Pagos seguros y cuotas sin interés",
+    ];
 
   return (
     <main className="pt-20">
       <section className="announcement-marquee mx-6 mt-4 rounded-lg bg-primary py-3 text-xs font-semibold uppercase tracking-widest text-on-primary shadow-lg shadow-primary/20">
         <div className="announcement-track">
           <div className="announcement-row">
-            <span>Envíos sin cargo en compras superiores a AR$ 25.000</span>
-            <span>10% off en primera compra con el código MINIFIMY10</span>
-            <span>Cambios y devoluciones fáciles hasta 30 días</span>
-            <span>Pagos seguros y cuotas sin interés</span>
+            {announcements.map((item, index) => (
+              <span key={`announce-${index}`}>{item}</span>
+            ))}
           </div>
           <div className="announcement-row" aria-hidden="true">
-            <span>Envíos sin cargo en compras superiores a AR$ 25.000</span>
-            <span>10% off en primera compra con el código MINIFIMY10</span>
-            <span>Cambios y devoluciones fáciles hasta 30 días</span>
-            <span>Pagos seguros y cuotas sin interés</span>
+            {announcements.map((item, index) => (
+              <span key={`announce-dup-${index}`}>{item}</span>
+            ))}
           </div>
         </div>
       </section>
@@ -57,7 +73,7 @@ export default function HomePage() {
         <ScrollReveal>
           <div className="relative h-[240px] overflow-hidden rounded-xl bg-surface-container-low shadow-2xl sm:h-[280px] md:h-[380px] lg:h-[420px]">
             <Image
-              src="/brand/banners/banner-foto.jpg"
+              src={heroImage}
               alt="Bebé con prenda orgánica MINIFIMY"
               fill
               sizes="(min-width: 1280px) 1200px, (min-width: 1024px) 90vw, 100vw"
@@ -73,11 +89,16 @@ export default function HomePage() {
             Nuevo lanzamiento
           </span>
           <h1 className="max-w-3xl font-headline text-4xl font-bold leading-[1.1] text-on-surface md:text-6xl">
-            Bienvenidos a <span className="text-primary italic">MINIFIMY</span>
+            {heroTitle ? (
+              heroTitle
+            ) : (
+              <>
+                Bienvenidos a <span className="text-primary italic">MINIFIMY</span>
+              </>
+            )}
           </h1>
           <p className="max-w-2xl text-lg leading-relaxed text-on-surface-variant">
-            Acabamos de abrir nuestra tienda de ropa para bebés: prendas orgánicas,
-            suaves y pensadas para acompañar cada primer momento.
+            {heroSubtitle}
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
