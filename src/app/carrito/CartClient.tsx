@@ -212,7 +212,7 @@ export default function CartClient() {
         </div>
       )}
 
-      <div className="adventure-path mt-20 h-24 opacity-5" />
+      <div className="adventure-path mt-20 h-10 rounded-lg hidden" />
     </main>
   );
 }

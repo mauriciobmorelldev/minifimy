@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { FiltersPanel } from "@/components/FiltersPanel";
 import { ProductCard } from "@/components/ProductCard";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { products } from "@/lib/products";
@@ -36,7 +37,7 @@ export default function CatalogPage() {
 
       <div className="relative z-10 flex flex-col gap-12 md:flex-row">
         <ScrollReveal>
-          <aside className="w-full space-y-10 md:w-64">
+          <FiltersPanel title="Filtros">
             <div>
               <h3 className="mb-6 flex items-center gap-2 font-headline font-bold text-on-surface">
                 <span className="h-6 w-1.5 rounded-full bg-primary" />
@@ -107,8 +108,8 @@ export default function CatalogPage() {
               </div>
             </div>
 
-            <div className="adventure-path mt-8 h-1 rounded-full opacity-20" />
-          </aside>
+            <div className="adventure-path mt-8 h-10 rounded-lg hidden" />
+          </FiltersPanel>
         </ScrollReveal>
 
         <section className="flex-1">

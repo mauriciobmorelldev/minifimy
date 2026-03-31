@@ -16,7 +16,7 @@ export function AddToCartButton({ product, className, children }: AddToCartButto
   const [bump, setBump] = useState(false);
   const resetTimer = useRef<number | null>(null);
   const classes = [
-    "inline-flex items-center justify-center rounded-md font-bold transition-all",
+    "inline-flex items-center justify-center rounded-md font-bold transition-all touch-manipulation select-none",
     bump ? "cart-bump" : "",
     className,
   ]

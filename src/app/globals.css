@@ -203,11 +203,62 @@
     transform: translateY(0) scale(1);
   }
 
+  .pattern-surface {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pattern-surface::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("/brand/patterns/pattern-01.png");
+    background-size: 320px;
+    background-repeat: repeat;
+    opacity: 0.18;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .pattern-surface > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  @keyframes marquee-scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .announcement-marquee {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .announcement-track {
+    display: flex;
+    width: max-content;
+    animation: marquee-scroll 22s linear infinite;
+  }
+
+  .announcement-row {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    white-space: nowrap;
+    padding-inline: 1rem;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .cart-bump,
     .toast,
     .reveal,
-    .reveal-in {
+    .reveal-in,
+    .announcement-track {
       animation: none !important;
       transition: none !important;
       transform: none !important;
@@ -254,7 +305,16 @@
   }
 
   .adventure-path {
-    background-image: radial-gradient(rgb(var(--color-primary)) 1px, transparent 1px);
-    background-size: 24px 24px;
+    background-image: none;
+    animation: none;
+  }
+
+  @keyframes divider-drift {
+    0% {
+      background-position: 0 center;
+    }
+    100% {
+      background-position: 600px center;
+    }
   }
 }

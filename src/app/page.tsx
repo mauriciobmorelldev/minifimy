@@ -37,15 +37,31 @@ export default function HomePage() {
 
   return (
     <main className="pt-20">
-      <section className="relative mx-auto max-w-7xl px-6 py-12 md:py-20">
+      <section className="announcement-marquee mx-6 mt-4 rounded-lg bg-primary py-3 text-xs font-semibold uppercase tracking-widest text-on-primary shadow-lg shadow-primary/20">
+        <div className="announcement-track">
+          <div className="announcement-row">
+            <span>Envíos sin cargo en compras superiores a AR$ 25.000</span>
+            <span>10% off en primera compra con el código MINIFIMY10</span>
+            <span>Cambios y devoluciones fáciles hasta 30 días</span>
+            <span>Pagos seguros y cuotas sin interés</span>
+          </div>
+          <div className="announcement-row" aria-hidden="true">
+            <span>Envíos sin cargo en compras superiores a AR$ 25.000</span>
+            <span>10% off en primera compra con el código MINIFIMY10</span>
+            <span>Cambios y devoluciones fáciles hasta 30 días</span>
+            <span>Pagos seguros y cuotas sin interés</span>
+          </div>
+        </div>
+      </section>
+      <section className="relative mx-auto max-w-7xl px-6 pb-12 pt-6 md:pb-20 md:pt-10">
         <ScrollReveal>
-          <div className="relative h-[280px] overflow-hidden rounded-xl shadow-2xl sm:h-[320px] md:h-[380px] lg:h-[420px]">
+          <div className="relative h-[240px] overflow-hidden rounded-xl bg-surface-container-low shadow-2xl sm:h-[280px] md:h-[380px] lg:h-[420px]">
             <Image
               src="/brand/banners/banner-foto.jpg"
               alt="Bebé con prenda orgánica MINIFIMY"
               fill
               sizes="(min-width: 1280px) 1200px, (min-width: 1024px) 90vw, 100vw"
-              className="object-cover"
+              className="object-contain sm:object-cover sm:object-[center_35%]"
               quality={90}
               priority
             />
@@ -80,7 +96,7 @@ export default function HomePage() {
         </ScrollReveal>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-20">
+      <section className="pattern-surface mx-auto max-w-7xl px-6 py-20">
         <ScrollReveal className="mb-12 flex items-end justify-between">
           <div>
             <h2 className="font-headline text-3xl font-bold text-on-surface md:text-4xl">
@@ -124,7 +140,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-24">
+      <section className="pattern-surface mx-auto max-w-7xl px-6 py-24">
         <ScrollReveal className="mb-16 text-center">
           <h2 className="font-headline text-4xl font-bold text-on-surface">Nuestros favoritos</h2>
           <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-secondary" />
@@ -168,7 +184,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="relative mx-6 overflow-hidden rounded-lg bg-surface-container py-24">
+      <section className="pattern-surface relative mx-6 overflow-hidden rounded-lg bg-surface-container py-24">
         <div className="pointer-events-none absolute inset-0 opacity-5">
           <Image
             src="/brand/illustrations/jirafa.svg"
