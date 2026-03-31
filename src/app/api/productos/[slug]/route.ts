@@ -1,11 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getProductBySlug } from "@/lib/products";
 
-interface Params {
-  params: { slug: string };
-}
-
-export async function GET(_: Request, { params }: Params) {
+export async function GET(_: NextRequest, { params }: { params: { slug: string } }) {
   const product = getProductBySlug(params.slug);
   if (!product) {
     return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });

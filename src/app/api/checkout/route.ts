@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 
 interface CheckoutItem {
@@ -11,7 +11,7 @@ interface CheckoutPayload {
   customer?: { email?: string };
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const { items, customer } = (await request.json()) as CheckoutPayload;
 
   if (!stripe) {
