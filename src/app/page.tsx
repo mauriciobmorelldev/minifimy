@@ -45,13 +45,14 @@ export default async function HomePage() {
   const heroSubtitle =
     acf?.hero_subtitle ??
     "Acabamos de abrir nuestra tienda de ropa para bebés: prendas orgánicas y suaves.";
-  const announcements =
-    acf?.announcements?.map((item) => item.text).filter(Boolean) ?? [
-      "Envíos sin cargo en compras superiores a AR$ 25.000",
-      "10% off en primera compra con el código MINIFIMY10",
-      "Cambios y devoluciones fáciles hasta 30 días",
-      "Pagos seguros y cuotas sin interés",
-    ];
+  const announcements = Array.isArray(acf?.announcements)
+    ? acf.announcements.map((item) => item?.text).filter(Boolean)
+    : [
+        "Envíos sin cargo en compras superiores a AR$ 25.000",
+        "10% off en primera compra con el código MINIFIMY10",
+        "Cambios y devoluciones fáciles hasta 30 días",
+        "Pagos seguros y cuotas sin interés",
+      ];
 
   return (
     <main className="pt-20">
