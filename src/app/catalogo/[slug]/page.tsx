@@ -4,36 +4,39 @@ import Link from "next/link";
 import { FiltersPanel } from "@/components/FiltersPanel";
 import { ProductCard } from "@/components/ProductCard";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { categories, getProductsByCategory } from "@/lib/products";
+import { getStoreCategories, getStoreProductsByCategory } from "@/lib/woocommerce";
 
 interface CategoryPageProps {
   params: { slug: string };
 }
 
-export const revalidate = 120;
+export const revalidate = 300;
 
 export async function generateStaticParams() {
+  const categories = await getStoreCategories();
   return categories.map((category) => ({ slug: category.slug }));
 }
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const categories = await getStoreCategories();
   const category = categories.find((item) => item.slug === params.slug);
   return {
-    title: category ? category.name : "Categoría",
-    description: category?.description ?? "Productos para cada etapa del bebé.",
+    title: category ? category.name : "Categoria",
+    description: category?.description ?? "Productos para cada etapa del bebe.",
   };
 }
 
-export default function CategoryPage({ params }: CategoryPageProps) {
+export default async function CategoryPage({ params }: CategoryPageProps) {
+  const categories = await getStoreCategories();
   const category = categories.find((item) => item.slug === params.slug);
-  const items = getProductsByCategory(params.slug);
+  const items = await getStoreProductsByCategory(params.slug);
 
   if (!category) {
     return (
       <main className="mx-auto w-full max-w-6xl px-6 py-24">
-        <p className="text-sm text-on-surface-variant">Categoría no encontrada.</p>
+        <p className="text-sm text-on-surface-variant">Categoria no encontrada.</p>
         <Link href="/catalogo" className="btn-ghost mt-6 inline-flex">
-          Volver al catálogo
+          Volver al catalogo
         </Link>
       </main>
     );
@@ -44,7 +47,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       <div className="pointer-events-none absolute -right-20 top-40 rotate-12 opacity-5">
         <Image
           src="/brand/illustrations/jirafa.svg"
-          alt="Ilustración jirafa"
+          alt="Ilustracion jirafa"
           width={380}
           height={380}
           className="h-auto w-96"
@@ -54,7 +57,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       <ScrollReveal className="relative z-10 mb-12">
         <header>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-on-surface-variant">
-            Categoría
+            Categoria
           </p>
           <h1 className="mb-4 font-headline text-4xl font-extrabold tracking-tight text-primary md:text-5xl">
             {category.name}
@@ -71,10 +74,10 @@ export default function CategoryPage({ params }: CategoryPageProps) {
             <div>
               <h3 className="mb-6 flex items-center gap-2 font-headline font-bold text-on-surface">
                 <span className="h-6 w-1.5 rounded-full bg-primary" />
-                Filtros rápidos
+                Filtros rapidos
               </h3>
               <ul className="space-y-3 text-sm">
-                {["Orgánico", "Hipoalergénico", "Edición limitada"].map((label) => (
+                {["Organico", "Hipoalergenico", "Edicion limitada"].map((label) => (
                   <li key={label}>
                     <label className="group flex cursor-pointer items-center gap-3">
                       <input
@@ -89,26 +92,6 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 ))}
               </ul>
             </div>
-
-            <div>
-              <h3 className="mb-6 flex items-center gap-2 font-headline font-bold text-on-surface">
-                <span className="h-6 w-1.5 rounded-full bg-secondary" />
-                Talle
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {["0-3m", "3-6m", "6-12m", "12-24m"].map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    className="rounded-lg border border-outline-variant/20 bg-surface-container-low px-3 py-2 text-sm font-medium transition-colors hover:bg-primary-container"
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="adventure-path mt-8 h-10 rounded-lg hidden" />
           </FiltersPanel>
         </ScrollReveal>
 

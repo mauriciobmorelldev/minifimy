@@ -3,6 +3,7 @@ import { Be_Vietnam_Pro, Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@/components/Analytics";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { MinifimyIntroLoader } from "@/components/MinifimyIntroLoader";
 import { WhatsAppFimy } from "@/components/WhatsAppFimy";
 import { CartProvider } from "@/context/cart-context";
 import { FeedbackProvider } from "@/context/feedback-context";
@@ -55,6 +56,7 @@ export default function RootLayout({
             >
               Saltar al contenido
             </a>
+            <MinifimyIntroLoader />
             <Header />
             <div id="main-content">{children}</div>
             <Footer />

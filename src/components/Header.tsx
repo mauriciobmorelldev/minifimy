@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useCart } from "@/context/cart-context";
 
 const navLinks = [
@@ -18,10 +18,12 @@ export function Header() {
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const hiddenRoutes = ["/cargando-70", "/cargando-99"];
+  const closeMobileMenu = () => setMobileOpen(false);
 
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
+  if (hiddenRoutes.includes(pathname)) {
+    return null;
+  }
 
   return (
     <nav
@@ -45,6 +47,7 @@ export function Header() {
 
         <Link
           href="/"
+          onClick={closeMobileMenu}
           className="absolute left-1/2 flex -translate-x-1/2 items-center gap-3 md:static md:translate-x-0"
         >
           <Image
@@ -148,6 +151,7 @@ export function Header() {
               </button>
               <Link
                 href="/cuenta"
+                onClick={closeMobileMenu}
                 className="flex h-10 w-10 items-center justify-center rounded-md bg-surface-container-highest"
                 aria-label="Cuenta"
               >
@@ -159,6 +163,7 @@ export function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={closeMobileMenu}
                   className={`pb-2 transition-colors ${
                     index === 0 ? "text-secondary" : "text-primary"
                   }`}

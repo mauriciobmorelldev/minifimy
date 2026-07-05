@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-const messages = ["Hola! Soy Fimy!", "¿Necesitas ayuda? Escribime!"];
+const messages = ["Hola, soy Fimi.", "Te ayudo a elegir?"];
 const WHATSAPP_URL = "https://wa.me/5490000000000";
 
 export function WhatsAppFimy() {
@@ -17,8 +17,8 @@ export function WhatsAppFimy() {
   }, []);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-      <div className="relative max-w-[180px] rounded-lg bg-surface-container-highest px-3 py-2 text-xs font-semibold text-on-surface shadow-lg">
+    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
+      <div className="relative max-w-[170px] rounded-full bg-surface-container-highest/90 px-4 py-2 text-xs font-semibold text-on-surface shadow-soft">
         <span className="block" aria-live="polite">
           {messages[index]}
         </span>
@@ -28,7 +28,7 @@ export function WhatsAppFimy() {
         href={WHATSAPP_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="group fimy-float relative flex h-16 w-16 items-center justify-center rounded-full bg-surface-container-low shadow-xl shadow-on-surface/10 transition-transform duration-300 hover:-translate-y-1"
+        className="group fimy-float relative flex h-14 w-14 items-center justify-center rounded-full bg-surface-container-low shadow-lg shadow-on-surface/10 transition-transform duration-300 hover:-translate-y-1"
         aria-label="Abrir WhatsApp"
       >
         <Image
@@ -36,7 +36,7 @@ export function WhatsAppFimy() {
           alt="Fimy, la jirafita de Minifimy"
           width={64}
           height={64}
-          className="h-14 w-14 rounded-full object-cover"
+          className="h-12 w-12 rounded-full object-cover"
         />
         <span className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-primary/20 ring-offset-2 ring-offset-surface-container-low opacity-0 transition-opacity group-hover:opacity-100" />
       </a>

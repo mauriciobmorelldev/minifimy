@@ -3,20 +3,21 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { categories, getProductBySlug, products } from "@/lib/products";
+import { getStoreCategories, getStoreProductBySlug, getStoreProducts } from "@/lib/woocommerce";
 
 interface ProductPageProps {
   params: { slug: string };
 }
 
-export const revalidate = 90;
+export const revalidate = 300;
 
 export async function generateStaticParams() {
+  const products = await getStoreProducts({ perPage: 100 });
   return products.map((product) => ({ slug: product.slug }));
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  const product = getProductBySlug(params.slug);
+  const product = await getStoreProductBySlug(params.slug);
   return {
     title: product ? product.name : "Producto",
     description: product?.description ?? "Detalle de producto MINIFIMY.",
@@ -30,15 +31,19 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   };
 }
 
-export default function ProductPage({ params }: ProductPageProps) {
-  const product = getProductBySlug(params.slug);
+export default async function ProductPage({ params }: ProductPageProps) {
+  const [product, categories, allProducts] = await Promise.all([
+    getStoreProductBySlug(params.slug),
+    getStoreCategories(),
+    getStoreProducts({ perPage: 100 }),
+  ]);
 
   if (!product) {
     return (
       <main className="mx-auto w-full max-w-6xl px-6 py-24">
         <p className="text-sm text-on-surface-variant">Producto no encontrado.</p>
         <Link href="/catalogo" className="btn-ghost mt-6 inline-flex">
-          Volver al catálogo
+          Volver al catalogo
         </Link>
       </main>
     );
@@ -48,7 +53,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const gallery = product.images.length >= 3
     ? product.images
     : [product.images[0], product.images[0], product.images[0]];
-  const recommendations = products.filter((item) => item.id !== product.id).slice(0, 4);
+  const recommendations = allProducts.filter((item) => item.id !== product.id).slice(0, 4);
 
   return (
     <main className="mx-auto max-w-7xl px-6 pb-12 pt-24">
@@ -61,7 +66,7 @@ export default function ProductPage({ params }: ProductPageProps) {
           href={`/catalogo/${product.category}`}
           className="transition-colors hover:text-primary"
         >
-          {category?.name ?? "Categoría"}
+          {category?.name ?? "Categoria"}
         </Link>
         <span className="material-symbols-outlined text-[12px]">chevron_right</span>
         <span className="text-on-surface">{product.name}</span>
@@ -79,13 +84,8 @@ export default function ProductPage({ params }: ProductPageProps) {
             />
             <div className="absolute left-6 top-6 rounded-full bg-surface/90 px-4 py-2 shadow-sm backdrop-blur">
               <span className="flex items-center gap-2 text-xs font-bold text-primary">
-                <span
-                  className="material-symbols-outlined text-sm"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  eco
-                </span>
-                100% ORGÁNICO
+                <span className="material-symbols-outlined text-sm">eco</span>
+                MINIFIMY
               </span>
             </div>
           </div>
@@ -109,27 +109,16 @@ export default function ProductPage({ params }: ProductPageProps) {
 
         <ScrollReveal delayMs={120} className="space-y-8 lg:col-span-5">
           <header>
-            <h1 className="text-4xl font-bold leading-tight text-on-surface font-headline">
+            <h1 className="font-headline text-4xl font-bold leading-tight text-on-surface">
               {product.name}
             </h1>
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-3xl font-semibold text-secondary font-headline">
+            <div className="mt-4 flex items-center justify-between gap-4">
+              <span className="font-headline text-3xl font-semibold text-secondary">
                 AR$ {product.price.toLocaleString("es-AR")}
               </span>
-              <div className="flex items-center gap-1">
-                <div className="flex text-secondary">
-                  {Array.from({ length: 5 }).map((_, index) => (
-                    <span
-                      key={index}
-                      className="material-symbols-outlined text-sm"
-                      style={{ fontVariationSettings: "'FILL' 1" }}
-                    >
-                      star
-                    </span>
-                  ))}
-                </div>
-                <span className="text-xs font-medium text-on-surface-variant">(128 reseñas)</span>
-              </div>
+              <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-bold text-on-primary-container">
+                Stock {product.stock > 0 ? "disponible" : "a consultar"}
+              </span>
             </div>
           </header>
 
@@ -145,7 +134,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                     type="button"
                     className={`rounded-md border-2 px-6 py-3 font-medium transition-all ${
                       index === 0
-                        ? "border-primary bg-primary-container text-on-primary-container font-bold"
+                        ? "border-primary bg-primary-container font-bold text-on-primary-container"
                         : "border-outline-variant/30 text-on-surface hover:border-primary hover:text-primary"
                     }`}
                   >
@@ -159,124 +148,56 @@ export default function ProductPage({ params }: ProductPageProps) {
           <div className="space-y-4">
             <AddToCartButton
               product={product}
-              className="w-full gap-3 rounded-md bg-primary py-5 text-lg font-headline text-on-primary shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95"
+              className="w-full gap-3 rounded-md bg-primary py-5 font-headline text-lg text-on-primary shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95"
             >
               <span className="material-symbols-outlined">shopping_bag</span>
               Agregar al bolso
             </AddToCartButton>
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-3 rounded-md bg-secondary-container py-4 font-bold text-on-secondary-container transition-all hover:brightness-105"
-            >
-              <span className="material-symbols-outlined">favorite</span>
-              Guardar en favoritos
-            </button>
           </div>
 
           <div className="space-y-4 rounded-xl bg-surface-container-low p-6">
             <div className="flex items-start gap-4">
               <span className="material-symbols-outlined text-primary">local_shipping</span>
               <div>
-                <h4 className="text-sm font-bold">Envío suave sin cargo</h4>
+                <h4 className="text-sm font-bold">Envio cuidado</h4>
                 <p className="text-sm text-on-surface-variant">
-                  Llega en packaging reciclado dentro de 3-5 días.
+                  Preparado en packaging Minifimy y despachado con seguimiento.
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-4 border-t border-outline-variant/10 pt-4">
               <span className="material-symbols-outlined text-primary">verified_user</span>
               <div>
-                <h4 className="text-sm font-bold">Garantía MINIFIMY</h4>
+                <h4 className="text-sm font-bold">Cambios simples</h4>
                 <p className="text-sm text-on-surface-variant">
-                  30 días para cambios con tranquilidad.
+                  Acompanamiento para elegir talle o cambiar con tranquilidad.
                 </p>
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-xl font-bold font-headline">La historia detrás</h3>
+            <h3 className="font-headline text-xl font-bold">La historia detras</h3>
             <p className="leading-relaxed text-on-surface-variant">
-              {product.description} Cada prenda está pensada para abrazar la piel del bebé
-              con fibras suaves, costuras planas y terminaciones seguras que acompañan el
-              movimiento.
+              {product.description}
             </p>
-            <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm font-medium">
-              {[
-                "100% Algodón orgánico",
-                "Broches sin níquel",
-                "Puños suaves",
-                "Sin etiquetas internas",
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-sm">
-                    check_circle
-                  </span>
-                  {item}
-                </li>
-              ))}
-            </ul>
           </div>
         </ScrollReveal>
       </div>
 
-      <section className="mt-24 overflow-hidden rounded-xl bg-tertiary-container/30 p-12">
-        <div className="grid items-center gap-12 md:grid-cols-2">
-          <ScrollReveal className="space-y-6">
-            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-tertiary">
-              <span className="material-symbols-outlined text-sm">wash</span>
-              Guía de cuidado
-            </div>
-            <h2 className="text-3xl font-headline font-bold text-on-surface">
-              Mantén la suavidad intacta
-            </h2>
-            <p className="max-w-md text-on-surface-variant">
-              Nuestros tejidos orgánicos son fibras vivas. Para conservar su tacto gentil
-              en cada aventura, seguí estos pasos.
-            </p>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <h4 className="font-bold text-primary">Lavado frío</h4>
-                <p className="text-xs text-on-surface-variant">
-                  Usá detergente suave a 30°C para preservar las fibras.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <h4 className="font-bold text-primary">Secado al aire</h4>
-                <p className="text-xs text-on-surface-variant">
-                  Evitá el secarropas y colgá a la sombra para mejores resultados.
-                </p>
-              </div>
-            </div>
-          </ScrollReveal>
-          <ScrollReveal delayMs={120} className="relative">
-            <Image
-              src={product.images[1] ?? product.images[0]}
-              alt="Cuidado de prendas para bebé"
-              width={640}
-              height={420}
-              className="aspect-video rounded-lg object-cover shadow-xl"
-            />
-            <div className="absolute -bottom-6 -right-6 flex h-32 w-32 items-center justify-center rounded-full bg-primary p-4 text-center text-[10px] font-bold uppercase tracking-tighter text-on-primary shadow-lg">
-              Amado por la naturaleza
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
       <section className="mt-24 space-y-12">
         <ScrollReveal className="flex flex-wrap items-end justify-between gap-6">
           <div>
-            <h2 className="text-3xl font-headline font-bold">Completa el look</h2>
+            <h2 className="font-headline text-3xl font-bold">Completa el look</h2>
             <p className="mt-2 text-on-surface-variant">
-              Combos suaves y orgánicos para cada momento.
+              Combos suaves para cada momento.
             </p>
           </div>
           <Link
             href="/catalogo"
             className="flex items-center gap-2 font-bold text-primary transition-all hover:gap-4"
           >
-            Ver colección completa
+            Ver coleccion completa
             <span className="material-symbols-outlined">arrow_forward</span>
           </Link>
         </ScrollReveal>
@@ -292,18 +213,6 @@ export default function ProductPage({ params }: ProductPageProps) {
                     sizes="(min-width: 1024px) 20vw, (min-width: 640px) 40vw, 80vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                  <div className="pointer-events-none absolute inset-0 opacity-20">
-                    <Image
-                      src="/brand/frames/marco-dots.png"
-                      alt=""
-                      fill
-                      sizes="(min-width: 1024px) 20vw, (min-width: 640px) 40vw, 80vw"
-                      className="object-cover"
-                    />
-                  </div>
-                  <span className="absolute bottom-4 right-4 rounded-md bg-surface px-2 py-1 text-primary shadow-md opacity-0 transition-opacity group-hover:opacity-100">
-                    <span className="material-symbols-outlined">add</span>
-                  </span>
                 </div>
                 <h4 className="font-bold text-on-surface">{item.name}</h4>
                 <p className="font-semibold text-secondary">

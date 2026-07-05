@@ -1,265 +1,283 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { AddToCartButton } from "@/components/AddToCartButton";
+import { FimiGiftGuide } from "@/components/FimiGiftGuide";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { getFeaturedProducts } from "@/lib/products";
+import { getFeaturedStoreProducts } from "@/lib/woocommerce";
 import { getHomeContent } from "@/lib/wordpress";
 
 export const metadata: Metadata = {
   title: "Inicio",
   description:
-    "Ropa para bebés diseñada con ternura, textiles orgánicos y el estilo MINIFIMY.",
+    "Minifimy acompana primeras veces con ropa de bebe suave, regalos con significado y prendas elegidas con amor.",
 };
 
-const categoryCards = [
-  {
-    title: "Recién Nacido",
-    subtitle: "Talles 00 a 3 meses",
-    href: "/catalogo/recien-nacido",
-    image: "/brand/banners/banner-foto.jpg",
-  },
-  {
-    title: "Mini Aventuras",
-    subtitle: "Talles 3 a 24 meses",
-    href: "/catalogo/aventura",
-    image: "/brand/banners/banner-tipografico.jpg",
-  },
-  {
-    title: "Accesorios",
-    subtitle: "Complementos con estilo",
-    href: "/catalogo/accesorios",
-    image: "/brand/illustrations/nube.svg",
-    contain: true,
-  },
-];
-
 export default async function HomePage() {
-  const featured = getFeaturedProducts();
-  const acf = await getHomeContent();
-
-  const heroImage =
-    typeof acf?.hero_banner === "string"
-      ? acf.hero_banner
-      : acf?.hero_banner?.url ?? "/brand/banners/banner-foto.jpg";
-  const heroTitle = acf?.hero_title;
-  const heroSubtitle =
-    acf?.hero_subtitle ??
-    "Acabamos de abrir nuestra tienda de ropa para bebés: prendas orgánicas y suaves.";
-  const announcements = [
-    "Envíos sin cargo en compras superiores a AR$ 25.000",
-    "10% off en primera compra con el código MINIFIMY10",
-    "Cambios y devoluciones fáciles hasta 30 días",
-    "Pagos seguros y cuotas sin interés",
-  ];
+  const [home, featured] = await Promise.all([getHomeContent(), getFeaturedStoreProducts()]);
+  const configuredHero = home.heroFeaturedProductSlug
+    ? featured.find((product) => product.slug === home.heroFeaturedProductSlug)
+    : undefined;
+  const heroProduct = configuredHero ?? featured[0];
+  const configuredCompanion = home.heroCompanionProductSlug
+    ? featured.find((product) => product.slug === home.heroCompanionProductSlug)
+    : undefined;
+  const heroCompanion = configuredCompanion ?? featured.find((product) => product.id !== heroProduct?.id) ?? heroProduct;
+  const supportProducts = featured.filter((product) => product.id !== heroProduct?.id);
 
   return (
-    <main className="pt-20">
-      <section className="announcement-marquee mx-6 mt-4 rounded-lg bg-primary py-3 text-xs font-semibold uppercase tracking-widest text-on-primary shadow-lg shadow-primary/20">
-        <div className="announcement-track">
-          <div className="announcement-row">
-            {announcements.map((item, index) => (
-              <span key={`announce-${index}`}>{item}</span>
-            ))}
-          </div>
-          <div className="announcement-row" aria-hidden="true">
-            {announcements.map((item, index) => (
-              <span key={`announce-dup-${index}`}>{item}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-      <section className="relative mx-auto max-w-7xl px-6 pb-12 pt-6 md:pb-20 md:pt-10">
-        <ScrollReveal>
-          <div className="relative h-[240px] overflow-hidden rounded-xl bg-surface-container-low shadow-2xl sm:h-[280px] md:h-[380px] lg:h-[420px]">
-            <Image
-              src={heroImage}
-              alt="Bebé con prenda orgánica MINIFIMY"
-              fill
-              sizes="(min-width: 1280px) 1200px, (min-width: 1024px) 90vw, 100vw"
-              className="object-contain sm:object-cover sm:object-[center_35%]"
-              quality={90}
-              priority
-            />
-          </div>
-        </ScrollReveal>
-
-        <ScrollReveal delayMs={120} className="mt-10 space-y-6 md:mt-14">
-          <span className="inline-block rounded-full bg-primary-container px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-on-primary-container">
-            Nuevo lanzamiento
-          </span>
-          <h1 className="max-w-3xl font-headline text-4xl font-bold leading-[1.1] text-on-surface md:text-6xl">
-            {heroTitle ? (
-              heroTitle
-            ) : (
-              <>
-                Bienvenidos a <span className="text-primary italic">MINIFIMY</span>
-              </>
-            )}
-          </h1>
-          <p className="max-w-2xl text-lg leading-relaxed text-on-surface-variant">
-            {heroSubtitle}
-          </p>
-          <div className="flex flex-wrap gap-4">
-            <Link
-              href="/catalogo"
-              className="rounded-md bg-primary px-8 py-4 font-bold text-on-primary shadow-lg shadow-primary/20 transition-transform duration-300 hover:scale-105"
-            >
-              Comprar ahora
-            </Link>
-            <Link
-              href="/catalogo"
-              className="rounded-md bg-secondary-container px-8 py-4 font-bold text-on-secondary-container transition-colors hover:bg-secondary-fixed"
-            >
-              Ver catálogo
-            </Link>
-          </div>
-        </ScrollReveal>
-      </section>
-
-      <section className="pattern-surface mx-auto max-w-7xl px-6 py-20">
-        <ScrollReveal className="mb-12 flex items-end justify-between">
-          <div>
-            <h2 className="font-headline text-3xl font-bold text-on-surface md:text-4xl">
-              Explora por etapas
-            </h2>
-            <p className="mt-2 text-on-surface-variant">Creciendo con ellos en cada paso.</p>
-          </div>
-        </ScrollReveal>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {categoryCards.map((card, index) => (
-            <ScrollReveal key={card.title} delayMs={index * 90}>
-              <Link
-                href={card.href}
-                className="group relative flex aspect-[3/4] flex-col justify-end overflow-hidden rounded-lg bg-surface-container-low p-8 transition-all duration-500 hover:shadow-xl"
-              >
-                <Image
-                  src={card.image}
-                  alt={card.title}
-                  fill
-                  sizes="(min-width: 768px) 30vw, 90vw"
-                  className={
-                    card.contain
-                      ? "object-contain p-10 opacity-70 transition-transform duration-700 group-hover:scale-105"
-                      : "object-cover opacity-90 transition-transform duration-700 group-hover:scale-110"
-                  }
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-surface-container-highest/80 via-transparent to-transparent" />
-                <div className="relative z-10">
-                  <h3 className="mb-2 font-headline text-2xl font-bold text-on-surface">
-                    {card.title}
-                  </h3>
-                  <p className="mb-4 text-sm text-on-surface-variant">{card.subtitle}</p>
-                  <span className="inline-flex items-center gap-2 text-primary font-bold">
-                    Ver más{" "}
-                    <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                  </span>
-                </div>
+    <main className="minifimy-story overflow-hidden bg-background pt-20">
+      <section className="nursery-hero relative px-5 pb-16 pt-10 sm:px-8 lg:px-10">
+        <div className="mx-auto grid min-h-[calc(100vh-8rem)] max-w-7xl items-center gap-10 lg:grid-cols-[0.72fr_1.28fr]">
+          <ScrollReveal className="relative z-10 max-w-xl space-y-7">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/78 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary shadow-soft">
+              <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
+              {home.heroKicker}
+            </span>
+            <div className="space-y-5">
+              <h1 className="font-headline text-5xl font-extrabold leading-[0.96] text-on-surface sm:text-6xl lg:text-7xl">
+                {home.heroTitle}
+              </h1>
+              <p className="max-w-md text-base leading-8 text-on-surface-variant sm:text-lg">
+                {home.heroSubtitle}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href={home.heroPrimaryHref} className="btn-primary gap-2 rounded-full px-7">
+                {home.heroPrimaryLabel}
+                <span className="material-symbols-outlined text-lg">arrow_forward</span>
               </Link>
-            </ScrollReveal>
-          ))}
-        </div>
-      </section>
-
-      <section className="pattern-surface mx-auto max-w-7xl px-6 py-24">
-        <ScrollReveal className="mb-16 text-center">
-          <h2 className="font-headline text-4xl font-bold text-on-surface">Nuestros favoritos</h2>
-          <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-secondary" />
-        </ScrollReveal>
-        <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
-          {featured.map((product, index) => (
-            <ScrollReveal key={product.id} delayMs={index * 80}>
-              <div className="group">
-                <div className="relative mb-4 aspect-square overflow-hidden rounded-lg bg-surface-container-low">
-                  <div className="pointer-events-none absolute inset-0 opacity-20">
-                    <Image
-                      src="/brand/frames/marco-dots.png"
-                      alt=""
-                      fill
-                      sizes="(min-width: 1024px) 20vw, (min-width: 640px) 40vw, 45vw"
-                      className="object-cover"
-                    />
-                  </div>
-                  <Image
-                    src={product.images[0]}
-                    alt={product.name}
-                    fill
-                    sizes="(min-width: 1024px) 20vw, (min-width: 640px) 40vw, 45vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <Link
-                    href={`/producto/${product.slug}`}
-                    className="absolute bottom-4 right-4 rounded-md bg-white/90 p-3 text-primary opacity-0 backdrop-blur transition-opacity group-hover:opacity-100"
-                    aria-label={`Ver ${product.name}`}
-                  >
-                    <span className="material-symbols-outlined">add_shopping_cart</span>
-                  </Link>
-                </div>
-                <h4 className="font-headline font-bold text-on-surface">{product.name}</h4>
-                <p className="mt-1 font-bold text-secondary">
-                  AR$ {product.price.toLocaleString("es-AR")}
-                </p>
-              </div>
-            </ScrollReveal>
-          ))}
-        </div>
-      </section>
-
-      <section className="pattern-surface relative mx-6 overflow-hidden rounded-lg bg-surface-container py-24">
-        <div className="pointer-events-none absolute inset-0 opacity-5">
-          <Image
-            src="/brand/illustrations/jirafa.svg"
-            alt="Patrón decorativo"
-            fill
-            sizes="100vw"
-            className="object-cover opacity-40"
-          />
-        </div>
-        <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
-          <ScrollReveal className="mb-12 flex justify-center">
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white p-4 shadow-sm">
-              <Image src="/brand/logo.svg" alt="Logo minifimy" width={64} height={64} />
+              <Link href={home.heroSecondaryHref} className="btn-ghost gap-2 rounded-full bg-white/78 px-7">
+                {home.heroSecondaryLabel}
+              </Link>
             </div>
           </ScrollReveal>
-          <ScrollReveal delayMs={100}>
-            <h2 className="mb-12 font-headline text-4xl font-bold text-on-surface">
-              Por qué elegir minifimy
-            </h2>
-          </ScrollReveal>
-          <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
-            {[
-              {
-                icon: "eco",
-                title: "Sustentabilidad",
-                text: "Procesos éticos y materiales de bajo impacto ambiental.",
-              },
-              {
-                icon: "temp_preferences_eco",
-                title: "Algodón orgánico",
-                text: "Libre de químicos, ideal para la piel más sensible.",
-              },
-              {
-                icon: "favorite",
-                title: "Hecho con amor",
-                text: "Atención meticulosa a cada costura y detalle.",
-              },
-            ].map((item, index) => (
-              <ScrollReveal key={item.title} delayMs={index * 120}>
-                <div className="flex flex-col items-center">
-                  <span
-                    className="material-symbols-outlined mb-4 text-4xl text-primary"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    {item.icon}
-                  </span>
-                  <h4 className="mb-2 font-headline font-bold">{item.title}</h4>
-                  <p className="text-sm leading-relaxed text-on-surface-variant">
-                    {item.text}
-                  </p>
+
+          <ScrollReveal delayMs={120} className="relative">
+            <div className="hero-showcase relative overflow-hidden bg-[#eadfcb]/90 p-5 shadow-lift sm:p-7">
+              <Image
+                src="/brand/illustrations/nube.svg"
+                alt=""
+                width={150}
+                height={92}
+                className="fimy-drift pointer-events-none absolute right-8 top-6 w-28 opacity-45 sm:w-36"
+                priority
+              />
+              <div className="relative grid gap-5 md:grid-cols-[1.02fr_0.98fr]">
+                {heroProduct && (
+                  <Link href={`/producto/${heroProduct.slug}`} className="hero-feature-card group overflow-hidden bg-white p-3 shadow-soft">
+                    <div className="relative aspect-[4/5] overflow-hidden rounded-[1.4rem] bg-surface-container">
+                      <Image
+                        src={heroProduct.images[0]}
+                        alt={heroProduct.name}
+                        fill
+                        sizes="(min-width: 1024px) 430px, 90vw"
+                        className="object-cover transition duration-700 group-hover:scale-105"
+                        priority
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-4 px-2 pb-2 pt-4">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Elegido por Fimi</p>
+                        <h2 className="mt-1 font-headline text-2xl font-extrabold leading-tight text-on-surface">{heroProduct.name}</h2>
+                      </div>
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition group-hover:translate-x-1">
+                        <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                      </span>
+                    </div>
+                  </Link>
+                )}
+
+                <div className="grid content-between gap-5">
+                  <div className="hero-fimi-note bg-white/78 p-5 shadow-soft">
+                    <div className="flex items-start gap-4">
+                      <Image src="/brand/illustrations/jirafa.svg" alt="Fimi" width={74} height={105} className="fimy-float mt-1 w-14 shrink-0" />
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">{home.fimiNoteTitle}</p>
+                        <p className="mt-2 text-base font-semibold leading-7 text-on-surface-variant">
+                          {home.fimiNoteText}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {heroCompanion && (
+                    <Link href={`/producto/${heroCompanion.slug}`} className="hero-side-product group grid grid-cols-[0.72fr_1fr] gap-4 bg-[#f8efdf] p-4 shadow-soft">
+                      <div className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-surface-container">
+                        <Image
+                          src={heroCompanion.images[0]}
+                          alt={heroCompanion.name}
+                          fill
+                          sizes="(min-width: 1024px) 210px, 45vw"
+                          className="object-cover transition duration-700 group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="flex flex-col justify-center">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Tambien puede gustarte</p>
+                        <h3 className="mt-2 font-headline text-xl font-extrabold leading-tight text-on-surface">{heroCompanion.name}</h3>
+                        <p className="mt-2 text-sm font-bold text-secondary">AR$ {heroCompanion.price.toLocaleString("es-AR")}</p>
+                      </div>
+                    </Link>
+                  )}
+
+                  <div className="rounded-full bg-white/72 px-5 py-3 text-sm font-bold text-primary shadow-soft">
+                    {home.heroGiftChip}
+                  </div>
                 </div>
+              </div>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      <FimiGiftGuide products={featured} title={home.guideTitle} intro={home.guideIntro} />
+
+      <section className="story-river relative px-5 py-20 sm:px-8 lg:px-10">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+          <ScrollReveal className="space-y-6">
+            <span className="chip bg-white/60">{home.editorialKicker}</span>
+            <h2 className="max-w-2xl font-headline text-4xl font-extrabold leading-tight text-on-surface sm:text-5xl">
+              {home.editorialTitle}
+            </h2>
+            <div className="space-y-3 pt-2">
+              {home.editorialNotes.map((note) => (
+                <p key={note} className="border-b border-primary/15 pb-3 text-base leading-7 text-on-surface-variant">
+                  {note}
+                </p>
+              ))}
+            </div>
+          </ScrollReveal>
+          <ScrollReveal delayMs={120}>
+            <div className="editorial-product-row grid gap-4 md:grid-cols-3">
+              {supportProducts.slice(0, 3).map((product) => (
+                <Link key={product.id} href={`/producto/${product.slug}`} className="editorial-mini-product group overflow-hidden bg-white/82 p-3 shadow-soft transition duration-500 hover:-translate-y-1 hover:shadow-lift">
+                  <div className="relative aspect-[4/5] overflow-hidden rounded-[1.2rem]">
+                    <Image src={product.images[0]} alt={product.name} fill sizes="260px" className="object-cover transition duration-700 group-hover:scale-105" />
+                  </div>
+                  <p className="px-1 pt-3 font-headline text-base font-extrabold leading-tight text-on-surface">{product.name}</p>
+                </Link>
+              ))}
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      <section className="relative mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10">
+        <ScrollReveal className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+          <div className="max-w-xl space-y-3">
+            <span className="chip">{home.featuredSectionKicker}</span>
+            <h2 className="font-headline text-4xl font-extrabold leading-tight text-on-surface">{home.featuredSectionTitle}</h2>
+          </div>
+          <Link href="/catalogo" className="inline-flex items-center gap-2 self-start rounded-full bg-white px-6 py-3 text-sm font-bold text-primary shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift md:self-auto">
+            Ver todo
+            <span className="material-symbols-outlined text-lg">arrow_forward</span>
+          </Link>
+        </ScrollReveal>
+
+        {heroProduct && (
+          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+            <ScrollReveal>
+              <article className="product-editorial-card grid min-h-[560px] overflow-hidden bg-[#f0dfc8] shadow-soft md:grid-cols-[0.95fr_1.05fr]">
+                <Link href={`/producto/${heroProduct.slug}`} className="relative min-h-[320px] overflow-hidden md:min-h-full">
+                  <Image
+                    src={heroProduct.images[0]}
+                    alt={heroProduct.name}
+                    fill
+                    sizes="(min-width: 1024px) 42vw, 95vw"
+                    className="object-cover transition duration-700 hover:scale-105"
+                  />
+                </Link>
+                <div className="flex flex-col justify-between p-8 sm:p-10">
+                  <div className="space-y-5">
+                    <span className="text-xs font-bold uppercase tracking-[0.22em] text-secondary">Elegido por Fimi</span>
+                    <h3 className="font-headline text-4xl font-extrabold leading-tight text-on-surface">{heroProduct.name}</h3>
+                    <p className="max-w-sm text-base leading-8 text-on-surface-variant">{heroProduct.description}</p>
+                  </div>
+                  <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="font-headline text-2xl font-extrabold text-secondary">AR$ {heroProduct.price.toLocaleString("es-AR")}</p>
+                    <AddToCartButton product={heroProduct} className="rounded-full bg-primary px-7 py-4 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
+                      Agregar al carrito
+                    </AddToCartButton>
+                  </div>
+                </div>
+              </article>
+            </ScrollReveal>
+
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1">
+              {supportProducts.slice(0, 3).map((product, index) => (
+                <ScrollReveal key={product.id} delayMs={index * 80}>
+                  <article className="product-note-card grid grid-cols-[120px_1fr] gap-5 bg-white/72 p-4 shadow-soft transition duration-500 hover:-translate-y-1 hover:shadow-lift sm:grid-cols-[150px_1fr]">
+                    <Link href={`/producto/${product.slug}`} className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-surface-container">
+                      <Image
+                        src={product.images[0]}
+                        alt={product.name}
+                        fill
+                        sizes="(min-width: 1024px) 180px, 35vw"
+                        className="object-cover transition duration-700 hover:scale-105"
+                      />
+                    </Link>
+                    <div className="flex min-w-0 flex-col justify-between py-1">
+                      <div>
+                        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-primary">{product.badge ?? "Minifimy"}</p>
+                        <h3 className="font-headline text-xl font-extrabold leading-tight text-on-surface">
+                          <Link href={`/producto/${product.slug}`}>{product.name}</Link>
+                        </h3>
+                      </div>
+                      <div className="mt-5 flex items-center justify-between gap-3">
+                        <p className="font-bold text-secondary">AR$ {product.price.toLocaleString("es-AR")}</p>
+                        <AddToCartButton product={product} className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary transition hover:bg-primary-dim" aria-label={`Agregar ${product.name} al carrito`}>
+                          <span className="material-symbols-outlined text-lg">shopping_basket</span>
+                        </AddToCartButton>
+                      </div>
+                    </div>
+                  </article>
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="pattern-surface px-5 py-20 sm:px-8 lg:px-10">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+          <ScrollReveal className="space-y-5">
+            <span className="chip">{home.trustKicker}</span>
+            <h2 className="max-w-xl font-headline text-4xl font-extrabold leading-tight text-on-surface">{home.trustTitle}</h2>
+          </ScrollReveal>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {home.trustItems.map((item, index) => (
+              <ScrollReveal key={`${item.title}-${index}`} delayMs={index * 80}>
+                <article className="rounded-[1.5rem] bg-white/72 p-6 shadow-soft">
+                  <span className="material-symbols-outlined mb-6 text-3xl text-primary">{item.icon}</span>
+                  <h3 className="font-headline text-xl font-extrabold">{item.title}</h3>
+                </article>
               </ScrollReveal>
             ))}
           </div>
         </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-5 pb-24 sm:px-8 lg:px-10">
+        <ScrollReveal className="newsletter-cloud overflow-hidden bg-[#d3e0ea] p-8 shadow-soft sm:p-10">
+          <div className="grid items-center gap-8 md:grid-cols-[1fr_auto]">
+            <div className="space-y-3">
+              <h2 className="font-headline text-3xl font-extrabold text-on-surface">{home.newsletterTitle}</h2>
+              <p className="max-w-xl leading-7">{home.newsletterText}</p>
+            </div>
+            <form className="flex w-full flex-col gap-3 sm:w-[420px] sm:flex-row">
+              <label className="sr-only" htmlFor="newsletter-email">Email</label>
+              <input
+                id="newsletter-email"
+                type="email"
+                placeholder="Tu email"
+                className="min-h-12 flex-1 rounded-full border border-white/70 bg-white/85 px-5 text-sm text-on-surface outline-none transition focus:border-primary"
+              />
+              <button type="submit" className="rounded-full bg-secondary px-7 py-3 text-sm font-bold text-on-secondary transition hover:bg-secondary-dim">
+                Suscribirme
+              </button>
+            </form>
+          </div>
+        </ScrollReveal>
       </section>
     </main>
   );

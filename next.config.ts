@@ -1,17 +1,24 @@
 import type { NextConfig } from "next";
 
-const wordpressUrl = process.env.WORDPRESS_URL;
-let wordpressHost: string | undefined;
-try {
-  wordpressHost = wordpressUrl ? new URL(wordpressUrl).hostname : undefined;
-} catch {
-  wordpressHost = undefined;
-}
+const remoteUrls = [process.env.WORDPRESS_URL, process.env.WOOCOMMERCE_URL].filter(Boolean) as string[];
+const remotePatterns = remoteUrls.flatMap((url) => {
+  try {
+    const parsed = new URL(url);
+    return [
+      {
+        protocol: parsed.protocol.replace(":", "") as "http" | "https",
+        hostname: parsed.hostname,
+      },
+    ];
+  } catch {
+    return [];
+  }
+});
 
 const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
-    domains: wordpressHost ? [wordpressHost] : [],
+    remotePatterns,
   },
 };
 
