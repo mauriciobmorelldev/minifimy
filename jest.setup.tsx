@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import "@testing-library/jest-dom";
+import { jest } from "@jest/globals";
 import React from "react";
 
 jest.mock("next/image", () => ({

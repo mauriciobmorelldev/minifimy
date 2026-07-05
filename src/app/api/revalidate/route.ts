@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as { tags?: string[] };
   const tags = body.tags?.filter((tag) => allowedTags.has(tag)) ?? Object.values(CACHE_TAGS);
 
-  tags.forEach((tag) => revalidateTag(tag));
+  tags.forEach((tag) => revalidateTag(tag, "max"));
 
   return NextResponse.json({ ok: true, tags, revalidatedAt: new Date().toISOString() });
 }
