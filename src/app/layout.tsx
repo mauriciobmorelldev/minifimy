@@ -4,6 +4,7 @@ import { Analytics } from "@/components/Analytics";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { MinifimyIntroLoader } from "@/components/MinifimyIntroLoader";
+import { SiteLockedScreen } from "@/components/SiteLockedScreen";
 import { WhatsAppFimy } from "@/components/WhatsAppFimy";
 import { CartProvider } from "@/context/cart-context";
 import { FeedbackProvider } from "@/context/feedback-context";
@@ -40,11 +41,24 @@ export const metadata: Metadata = {
   },
 };
 
+const siteLocked = process.env.NEXT_PUBLIC_SITE_LOCKED !== "false";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  if (siteLocked) {
+    return (
+      <html lang="es" className={`${beVietnam.variable} ${plusJakarta.variable}`}>
+        <body className="min-h-screen bg-background font-body text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
+          <SiteLockedScreen />
+          <Analytics />
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="es" className={`${beVietnam.variable} ${plusJakarta.variable}`}>
       <body className="min-h-screen bg-background font-body text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
