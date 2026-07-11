@@ -1,8 +1,8 @@
 export const CACHE_TAGS = {
   home: "home-content",
-  products: "woo-products",
-  categories: "woo-categories",
-  checkout: "woo-checkout",
+  products: "fimy-products",
+  categories: "fimy-categories",
+  checkout: "fimy-checkout",
 } as const;
 
 export const CACHE_SECONDS = {

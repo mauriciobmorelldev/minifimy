@@ -106,11 +106,11 @@ export async function POST(request: NextRequest) {
   });
 
   if (!order) {
-    return NextResponse.json({ message: "Fimy no pudo crear la orden." }, { status: 502 });
+    return NextResponse.json({ message: "No pudimos preparar tu pedido. Intentemos de nuevo." }, { status: 502 });
   }
 
   return NextResponse.json({
-    message: "Orden creada en Fimy.",
+    message: "Pedido preparado.",
     orderId: order.id,
     orderKey: order.orderKey,
     paymentUrl: order.paymentUrl,

@@ -40,14 +40,14 @@ export function AccountClient() {
         setOrders(payload.orders ?? []);
         if (payload.message && !payload.orders) setStatus(payload.message);
       })
-      .catch(() => setStatus("No pudimos cargar tus pedidos desde Fimy."))
+      .catch(() => setStatus("No pudimos cargar tus pedidos. Intentemos de nuevo en un ratito."))
       .finally(() => setLoadingOrders(false));
   }, [session]);
 
   const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    setStatus("Validando con Fimy...");
+    setStatus("Revisando tus datos...");
 
     const response = await fetch("/api/account/login", {
       method: "POST",
@@ -63,13 +63,13 @@ export function AccountClient() {
 
     window.localStorage.setItem(SESSION_KEY, JSON.stringify(payload.session));
     setSession(payload.session);
-    setStatus("Listo, sesion validada por Fimy.");
+    setStatus("Listo, ya estas en tu cuenta.");
   };
 
   const submitRegister = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    setStatus("Creando cuenta en Fimy...");
+    setStatus("Estamos creando tu cuenta...");
 
     const response = await fetch("/api/account/register", {
       method: "POST",
@@ -101,10 +101,10 @@ export function AccountClient() {
           Cuenta Minifimy
         </span>
         <h1 className="mt-5 font-headline text-[2.25rem] font-extrabold leading-tight text-on-surface md:text-5xl">
-          Todo se ve en Next, todo se guarda en Fimy.
+          Tu espacio Minifimy.
         </h1>
         <p className="mt-4 text-sm leading-7 text-on-surface-variant md:text-base">
-          Registro, login y pedidos se consultan contra Fimy/Fimy. No duplicamos clientes en Next.
+          Entra para ver tus pedidos, guardar tus datos y comprar mas rapido.
         </p>
 
         {session ? (
@@ -131,7 +131,7 @@ export function AccountClient() {
       <section className="rounded-[2rem] bg-white/82 p-5 shadow-soft md:p-8">
         {!session && mode === "login" && (
           <form onSubmit={submitLogin} className="space-y-4">
-            <h2 className="font-headline text-2xl font-extrabold text-on-surface">Entrar con Fimy</h2>
+            <h2 className="font-headline text-2xl font-extrabold text-on-surface">Entrar a mi cuenta</h2>
             <input name="email" type="email" required placeholder="Email" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
             <input name="password" type="password" required placeholder="Clave" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
             <button className="w-full rounded-full bg-primary py-3.5 font-bold text-on-primary">Iniciar sesion</button>
@@ -140,7 +140,7 @@ export function AccountClient() {
 
         {!session && mode === "register" && (
           <form onSubmit={submitRegister} className="space-y-4">
-            <h2 className="font-headline text-2xl font-extrabold text-on-surface">Crear cuenta Fimy</h2>
+            <h2 className="font-headline text-2xl font-extrabold text-on-surface">Crear cuenta</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               <input name="firstName" required placeholder="Nombre" className="rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
               <input name="lastName" placeholder="Apellido" className="rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
@@ -154,7 +154,7 @@ export function AccountClient() {
 
         {session && (
           <div>
-            <h2 className="font-headline text-2xl font-extrabold text-on-surface">Tus pedidos Fimy</h2>
+            <h2 className="font-headline text-2xl font-extrabold text-on-surface">Tus pedidos</h2>
             {loadingOrders ? <p className="mt-4 text-sm text-on-surface-variant">Cargando pedidos...</p> : null}
             <div className="mt-5 space-y-3">
               {orders.map((order) => (

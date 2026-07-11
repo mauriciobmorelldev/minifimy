@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export function GET() {
   return NextResponse.json(
-    { message: "Auth visual vive en Next. Usa /api/account/login o /api/account/register para operar contra Fimy/Fimy." },
+    { message: "Esta ruta ya no esta disponible." },
     { status: 410 }
   );
 }

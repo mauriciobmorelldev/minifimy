@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const session = await loginStoreCustomer(payload.email, payload.password);
   if (!session) {
     return NextResponse.json(
-      { message: "Fimy no valido el acceso. Configura JWT/Auth en Fimy para login headless." },
+      { message: "No pudimos iniciar sesion con esos datos." },
       { status: 401 }
     );
   }

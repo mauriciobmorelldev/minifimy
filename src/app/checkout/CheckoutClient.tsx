@@ -45,7 +45,7 @@ function formatPostalCode(value: string) {
 }
 
 export default function CheckoutClient() {
-  const { items, total } = useCart();
+  const { items, total, clearCart } = useCart();
   const [status, setStatus] = useState<string | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<CheckoutPaymentMethod[]>([]);
   const [shippingMethods, setShippingMethods] = useState<CheckoutShippingMethod[]>([]);
@@ -74,11 +74,11 @@ export default function CheckoutClient() {
         setShippingMethodId((current) => current || nextShippingMethods[0]?.id || "");
 
         if (nextPaymentMethods.length === 0 || nextShippingMethods.length === 0) {
-          setStatus("Fimy no esta devolviendo metodos activos de pago o envio.");
+          setStatus("Todavia no encontramos opciones disponibles para completar la compra.");
         }
       })
       .catch(() => {
-        if (active) setStatus("No pudimos cargar pagos y envios desde Fimy.");
+        if (active) setStatus("No pudimos cargar las opciones de compra. Probemos de nuevo en un ratito.");
       });
 
     return () => {
@@ -106,7 +106,7 @@ export default function CheckoutClient() {
   };
 
   const onSubmit = async (data: CheckoutFormValues) => {
-    setStatus("Estamos creando tu orden en Fimy...");
+    setStatus("Estamos preparando tu pedido...");
 
     const response = await fetch("/api/checkout", {
       method: "POST",
@@ -121,12 +121,13 @@ export default function CheckoutClient() {
 
     if (!response.ok) {
       const payload = await response.json().catch(() => ({})) as { message?: string };
-      setStatus(payload.message ?? "Hubo un problema al crear la orden en Fimy.");
+      setStatus(payload.message ?? "No pudimos preparar tu pedido. Revisemos los datos e intentemos otra vez.");
       return;
     }
 
     const payload = await response.json() as { message?: string; paymentUrl?: string; orderId?: number; orderKey?: string };
     if (payload.orderId) {
+      clearCart();
       const params = new URLSearchParams();
       if (payload.orderKey) params.set("key", payload.orderKey);
       if (payload.paymentUrl) params.set("pay", payload.paymentUrl);
@@ -152,7 +153,7 @@ export default function CheckoutClient() {
             Dejamos todo listo para que llegue a casa.
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-on-surface-variant md:text-base md:leading-8">
-            Pagos, envios y ordenes se toman desde Fimy. Minifimy solo muestra una experiencia mas linda.
+Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso.
           </p>
         </header>
 
@@ -274,7 +275,7 @@ export default function CheckoutClient() {
                           />
                           <span>
                             <strong className="block text-on-surface">{method.title}</strong>
-                            <span className="block text-xs text-on-surface-variant">{method.description || "Configurado en Fimy"}</span>
+                            <span className="block text-xs text-on-surface-variant">{method.description || "Disponible para tu compra"}</span>
                             <span className="mt-1 block text-xs font-bold text-secondary">AR$ {method.total.toLocaleString("es-AR")}</span>
                           </span>
                         </label>
@@ -296,7 +297,7 @@ export default function CheckoutClient() {
                           />
                           <span>
                             <strong className="block text-on-surface">{method.title}</strong>
-                            <span className="block text-xs text-on-surface-variant">{method.description || "Configurado en Fimy"}</span>
+                            <span className="block text-xs text-on-surface-variant">{method.description || "Disponible para tu compra"}</span>
                           </span>
                         </label>
                       ))}
@@ -305,7 +306,7 @@ export default function CheckoutClient() {
                 </div>
 
                 <label className="text-sm font-semibold text-on-surface">
-                  Nota para Fimy, opcional
+                  Nota para preparar tu pedido, opcional
                   <textarea
                     {...register("notes")}
                     className="mt-2 min-h-28 w-full rounded-[1.5rem] bg-[#fbf4ea] px-5 py-4 outline-none ring-1 ring-transparent focus:ring-primary/35"
@@ -377,7 +378,7 @@ export default function CheckoutClient() {
               </div>
 
               <p className="mt-5 rounded-[1.4rem] bg-primary/10 p-4 text-xs leading-5 text-primary">
-                Pagos, envios, clientes y ordenes quedan registrados en Fimy.
+                Tu pedido queda guardado para que podamos prepararlo y acompanarte con el seguimiento.
               </p>
             </aside>
           </div>

@@ -9,7 +9,7 @@ interface OrderPayPageProps {
 
 export const metadata: Metadata = {
   title: "Pagar pedido",
-  description: "Resumen de orden Minifimy generado desde Fimy.",
+  description: "Resumen de pedido Minifimy.",
 };
 
 function isExternalPaymentUrl(value?: string) {
@@ -33,7 +33,7 @@ export default async function OrderPayPage({ params, searchParams }: OrderPayPag
       <main className="mobile-soft-page mx-auto min-h-screen max-w-4xl px-5 py-28">
         <section className="rounded-[2rem] bg-white/82 p-8 text-center shadow-soft">
           <h1 className="font-headline text-3xl font-extrabold text-on-surface">No encontramos esta orden.</h1>
-          <p className="mt-3 text-sm text-on-surface-variant">Puede faltar la clave del pedido o Fimy no la esta devolviendo.</p>
+          <p className="mt-3 text-sm text-on-surface-variant">No pudimos validar este pedido. Si ya compraste, escribinos y te ayudamos.</p>
           <Link href="/checkout" className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 font-bold text-on-primary">Volver al checkout</Link>
         </section>
       </main>
@@ -49,10 +49,10 @@ export default async function OrderPayPage({ params, searchParams }: OrderPayPag
         <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_0.75fr]">
           <div>
             <h1 className="font-headline text-[2.25rem] font-extrabold leading-tight text-on-surface md:text-5xl">
-              Ya tenemos tu orden en Fimy.
+              Ya tenemos tu pedido.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-on-surface-variant md:text-base">
-              Esta pantalla reemplaza el order-pay visual de Fimy. La orden, estado, total y metodo de pago salen de Fimy.
+              Revisa el resumen y continua con el pago cuando este todo bien.
             </p>
           </div>
           <div className="rounded-[1.5rem] bg-white/78 p-5 shadow-soft">
@@ -90,11 +90,11 @@ export default async function OrderPayPage({ params, searchParams }: OrderPayPag
             </a>
           ) : (
             <div className="mt-5 rounded-[1.4rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">
-              Fimy creo la orden, pero no devolvio un link externo de pago. Para Mercado Pago 100% headless necesitamos que el plugin exponga la preferencia/link de pago por API, asi esta pantalla puede mostrar el boton sin abrir Fimy.
+              Tu pedido ya quedo reservado. Todavia no pudimos abrir el pago automatico; escribinos y te ayudamos a completarlo.
             </div>
           )}
           <Link href={`/gracias?order=${order.id}`} className="mt-4 flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-primary shadow-soft">
-            Ya pague / ver confirmacion
+            Ver confirmacion
           </Link>
         </aside>
       </section>

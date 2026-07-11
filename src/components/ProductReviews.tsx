@@ -25,7 +25,7 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
   const submitReview = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    setStatus("Enviando resena a Fimy...");
+    setStatus("Enviando tu resena...");
 
     const response = await fetch(`/api/productos/${productSlug}/reviews`, {
       method: "POST",
@@ -50,7 +50,7 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
     <section className="mt-14 rounded-[2rem] bg-white/72 p-5 shadow-soft md:mt-20 md:p-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Resenas reales</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Opiniones de familias</span>
           <h2 className="mt-2 font-headline text-2xl font-extrabold text-on-surface md:text-3xl">
             Familias que ya eligieron Minifimy
           </h2>
@@ -78,14 +78,14 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
           ))}
           {reviews.length === 0 && (
             <div className="rounded-[1.5rem] bg-[#fbf4ea] p-5 text-sm leading-6 text-on-surface-variant">
-              Todavia no hay resenas aprobadas para este producto. Podes dejar la primera y Fimy la guarda.
+              Todavia no hay opiniones publicadas para este producto. Podes dejar la primera.
             </div>
           )}
         </div>
 
         <form onSubmit={submitReview} className="rounded-[1.5rem] bg-[#efe4d0] p-5 shadow-soft">
           <h3 className="font-headline text-xl font-extrabold text-on-surface">Dejar una resena</h3>
-          <p className="mt-2 text-sm leading-6 text-on-surface-variant">Se envia a Fimy y puede quedar pendiente de aprobacion.</p>
+          <p className="mt-2 text-sm leading-6 text-on-surface-variant">La revisamos antes de publicarla para cuidar la comunidad.</p>
           <div className="mt-5 space-y-3">
             <input name="reviewer" required placeholder="Tu nombre" className="w-full rounded-full bg-white/82 px-5 py-3 text-sm outline-none" />
             <input name="email" type="email" required placeholder="Email" className="w-full rounded-full bg-white/82 px-5 py-3 text-sm outline-none" />

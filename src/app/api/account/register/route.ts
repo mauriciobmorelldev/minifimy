@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
   });
 
   if (!customer) {
-    return NextResponse.json({ message: "Fimy no pudo crear la cuenta. Revisa si el email ya existe." }, { status: 502 });
+    return NextResponse.json({ message: "No pudimos crear la cuenta. Puede que ese email ya este registrado." }, { status: 502 });
   }
 
-  return NextResponse.json({ message: "Cuenta creada en Fimy.", customer });
+  return NextResponse.json({ message: "Cuenta creada. Ya podes iniciar sesion.", customer });
 }
