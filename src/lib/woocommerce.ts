@@ -98,6 +98,14 @@ export interface StoreOrderSummary {
   dateCreated?: string;
 }
 
+export interface StoreOrderPaymentDetails extends StoreOrderSummary {
+  orderKey?: string;
+  paymentMethod: string;
+  paymentMethodTitle: string;
+  customerEmail?: string;
+  items: { id: number; name: string; quantity: number; total: string }[];
+}
+
 type WooPaymentGateway = {
   id: string;
   title?: string;
@@ -163,6 +171,23 @@ type WooOrderSummary = {
   date_created?: string;
 };
 
+type WooLineItem = {
+  id: number;
+  name?: string;
+  quantity?: number;
+  total?: string;
+};
+
+type WooOrderPaymentDetails = WooOrderSummary & {
+  order_key?: string;
+  payment_method?: string;
+  payment_method_title?: string;
+  billing?: { email?: string };
+  line_items?: WooLineItem[];
+  payment_url?: string;
+  checkout_payment_url?: string;
+};
+
 type WordPressAuthResponse = {
   token?: string;
   user_email?: string;
@@ -175,13 +200,17 @@ type WordPressUserMe = {
   email?: string;
 };
 
-function buildWooOrderPayUrl(order: WooOrder) {
-  if (!STORE_URL || !order.order_key) return undefined;
+function getExternalPaymentUrl(value?: string) {
+  if (!value) return undefined;
 
-  const url = new URL(`${STORE_URL}/checkout/order-pay/${order.id}/`);
-  url.searchParams.set("pay_for_order", "true");
-  url.searchParams.set("key", order.order_key);
-  return url.toString();
+  try {
+    const paymentUrl = new URL(value);
+    const storeUrl = STORE_URL ? new URL(STORE_URL) : null;
+    if (storeUrl && paymentUrl.hostname === storeUrl.hostname) return undefined;
+    return value;
+  } catch {
+    return undefined;
+  }
 }
 
 function getSettingNumber(value?: string) {
@@ -693,6 +722,32 @@ export async function getStoreShippingMethods(): Promise<StoreShippingMethod[]> 
   return methodsByZone.flat();
 }
 
+export async function getStoreOrderForPayment(orderId: string, orderKey?: string) {
+  const order = await fetchWoo<WooOrderPaymentDetails>(
+    `orders/${orderId}`,
+    {},
+    0,
+    [CACHE_TAGS.checkout]
+  );
+
+  if (!order) return null;
+  if (orderKey && order.order_key && order.order_key !== orderKey) return null;
+
+  return {
+    ...mapWooOrderSummary(order),
+    orderKey: order.order_key,
+    paymentMethod: order.payment_method ?? "",
+    paymentMethodTitle: cleanText(order.payment_method_title) || order.payment_method || "Pago pendiente",
+    customerEmail: order.billing?.email,
+    items: (order.line_items ?? []).map((item) => ({
+      id: item.id,
+      name: item.name ?? "Producto",
+      quantity: item.quantity ?? 1,
+      total: item.total ?? "0",
+    })),
+  } satisfies StoreOrderPaymentDetails;
+}
+
 export async function createStoreOrder(input: CreateStoreOrderInput) {
   const [paymentMethods, shippingMethods] = await Promise.all([
     getStorePaymentMethods(),
@@ -747,6 +802,6 @@ export async function createStoreOrder(input: CreateStoreOrderInput) {
   return {
     id: order.id,
     orderKey: order.order_key,
-    paymentUrl: order.payment_url ?? order.checkout_payment_url ?? buildWooOrderPayUrl(order),
+    paymentUrl: getExternalPaymentUrl(order.payment_url ?? order.checkout_payment_url),
   };
 }

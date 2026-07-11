@@ -8,6 +8,7 @@ import { SiteLockedScreen } from "@/components/SiteLockedScreen";
 import { WhatsAppFimy } from "@/components/WhatsAppFimy";
 import { CartProvider } from "@/context/cart-context";
 import { FeedbackProvider } from "@/context/feedback-context";
+import { getStoreCategories } from "@/lib/woocommerce";
 import { getSiteSettings } from "@/lib/wordpress";
 import "./globals.css";
 
@@ -52,7 +53,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const siteSettings = await getSiteSettings();
+  const [siteSettings, storeCategories] = await Promise.all([getSiteSettings(), getStoreCategories()]);
+  const categoryMenu = [
+    { href: "/catalogo", label: "Catalogo" },
+    ...storeCategories.slice(0, 5).map((category) => ({
+      href: `/catalogo/${category.slug}`,
+      label: category.name,
+    })),
+  ];
+  const mainMenu = siteSettings.menusFromWordPress ? siteSettings.mainMenu : categoryMenu;
+
   if (siteLocked) {
     return (
       <html lang="es" className={`${beVietnam.variable} ${plusJakarta.variable}`}>
@@ -76,7 +86,7 @@ export default async function RootLayout({
               Saltar al contenido
             </a>
             <MinifimyIntroLoader />
-            <Header navLinks={siteSettings.mainMenu} />
+            <Header navLinks={mainMenu} />
             <div id="main-content">{children}</div>
             <Footer exploreLinks={siteSettings.footerExploreMenu} supportLinks={siteSettings.footerSupportMenu} />
             <WhatsAppFimy phone={siteSettings.whatsappPhone} message={siteSettings.whatsappMessage} messages={siteSettings.whatsappMessages} />

@@ -8,29 +8,8 @@ interface ProductCardProps {
   compact?: boolean;
 }
 
-function colorValue(color: string) {
-  const normalized = color.toLowerCase();
-  const palette: Record<string, string> = {
-    natural: "#e9ddc7",
-    beige: "#dbc7aa",
-    crema: "#f6ead6",
-    blanco: "#fffaf1",
-    rosa: "#eec7bf",
-    celeste: "#c8d9e6",
-    salvia: "#aebc9a",
-    verde: "#aebc9a",
-    terracota: "#d9a17b",
-    gris: "#c8c2b7",
-  };
-
-  return Object.entries(palette).find(([name]) => normalized.includes(name))?.[1] ?? "#d8c7aa";
-}
-
 export function ProductCard({ product, compact = false }: ProductCardProps) {
   const image = product.images[0] ?? "/brand/illustrations/jirafa.svg";
-  const sizes = product.sizes?.length ? product.sizes : ["Único"];
-  const colors = product.colors ?? [];
-
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-[1.55rem] bg-white/82 shadow-soft ring-1 ring-white/70 transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-lift md:rounded-[2rem]">
       <div className="pointer-events-none absolute inset-x-5 top-5 h-24 rounded-full bg-[#f7efe3] opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-80 md:h-28" />
@@ -81,29 +60,6 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
               {product.description}
             </p>
           )}
-
-          <div className="mb-4 space-y-2 md:mb-5">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-[10px] font-bold uppercase tracking-[0.16em] text-on-surface-variant">Talles</span>
-              {sizes.slice(0, compact ? 2 : 4).map((size) => (
-                <span key={size} className="rounded-full bg-[#fbf4ea] px-2.5 py-1 text-[11px] font-bold text-primary/80 md:px-3 md:text-xs">
-                  {size}
-                </span>
-              ))}
-            </div>
-
-            {colors.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="mr-1 text-[10px] font-bold uppercase tracking-[0.16em] text-on-surface-variant">Colores</span>
-                {colors.slice(0, compact ? 3 : 5).map((color) => (
-                  <span key={color} className="inline-flex items-center gap-1.5 rounded-full bg-[#fbf4ea] px-2.5 py-1 text-[11px] font-bold text-primary/80">
-                    <span className="h-3 w-3 rounded-full ring-1 ring-on-surface/10" style={{ backgroundColor: colorValue(color) }} />
-                    {!compact && color}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
 
           <AddToCartButton
             product={product}

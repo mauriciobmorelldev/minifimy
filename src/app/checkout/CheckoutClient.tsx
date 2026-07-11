@@ -125,13 +125,16 @@ export default function CheckoutClient() {
       return;
     }
 
-    const payload = await response.json() as { message?: string; paymentUrl?: string; orderId?: number };
-    if (payload.paymentUrl) {
-      window.location.href = payload.paymentUrl;
+    const payload = await response.json() as { message?: string; paymentUrl?: string; orderId?: number; orderKey?: string };
+    if (payload.orderId) {
+      const params = new URLSearchParams();
+      if (payload.orderKey) params.set("key", payload.orderKey);
+      if (payload.paymentUrl) params.set("pay", payload.paymentUrl);
+      window.location.href = `/orden/pagar/${payload.orderId}${params.toString() ? `?${params.toString()}` : ""}`;
       return;
     }
 
-    window.location.href = `/gracias${payload.orderId ? `?order=${payload.orderId}` : ""}`;
+    window.location.href = "/gracias";
   };
 
   return (

@@ -79,6 +79,7 @@ export type SiteSettings = {
   mainMenu: MenuItem[];
   footerExploreMenu: MenuItem[];
   footerSupportMenu: MenuItem[];
+  menusFromWordPress: boolean;
   whatsappPhone?: string;
   whatsappMessage: string;
   whatsappMessages: string[];
@@ -140,17 +141,16 @@ export const fallbackSiteSettings: SiteSettings = {
     { href: "/contacto", label: "Contacto" },
     { href: "/contacto", label: "Politicas" },
   ],
+  menusFromWordPress: false,
   whatsappPhone: process.env.NEXT_PUBLIC_STORE_WHATSAPP_PHONE,
   whatsappMessage: "Hola Minifimy! Quiero hacer una consulta.",
   whatsappMessages: ["Hola, soy Fimi.", "Te ayudo a elegir?"],
 };
 
-function normalizeMenu(items: { label?: string; href?: string }[] | undefined, fallback: MenuItem[]) {
-  const menu = items
+function normalizeMenu(items: { label?: string; href?: string }[] | undefined) {
+  return items
     ?.map((item) => ({ label: item.label?.trim() ?? "", href: item.href?.trim() ?? "" }))
-    .filter((item) => item.label && item.href);
-
-  return menu && menu.length > 0 ? menu : fallback;
+    .filter((item) => item.label && item.href) ?? [];
 }
 
 function normalizePhone(value?: string) {
@@ -158,10 +158,16 @@ function normalizePhone(value?: string) {
 }
 
 function normalizeSiteSettings(acf?: HomeACF | null): SiteSettings {
+  const mainMenu = normalizeMenu(acf?.main_menu);
+  const footerExploreMenu = normalizeMenu(acf?.footer_explore_menu);
+  const footerSupportMenu = normalizeMenu(acf?.footer_support_menu);
+  const menusFromWordPress = mainMenu.length > 0 || footerExploreMenu.length > 0 || footerSupportMenu.length > 0;
+
   return {
-    mainMenu: normalizeMenu(acf?.main_menu, fallbackSiteSettings.mainMenu),
-    footerExploreMenu: normalizeMenu(acf?.footer_explore_menu, fallbackSiteSettings.footerExploreMenu),
-    footerSupportMenu: normalizeMenu(acf?.footer_support_menu, fallbackSiteSettings.footerSupportMenu),
+    mainMenu: mainMenu.length > 0 ? mainMenu : fallbackSiteSettings.mainMenu,
+    footerExploreMenu: footerExploreMenu.length > 0 ? footerExploreMenu : fallbackSiteSettings.footerExploreMenu,
+    footerSupportMenu: footerSupportMenu.length > 0 ? footerSupportMenu : fallbackSiteSettings.footerSupportMenu,
+    menusFromWordPress,
     whatsappPhone: normalizePhone(acf?.whatsapp_phone) ?? normalizePhone(fallbackSiteSettings.whatsappPhone),
     whatsappMessage: firstText(acf?.whatsapp_message, fallbackSiteSettings.whatsappMessage),
     whatsappMessages:
