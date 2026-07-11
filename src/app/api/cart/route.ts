@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
-  const body = await request.json();
-  return NextResponse.json({
-    message: "Carrito actualizado",
-    payload: body,
-  });
+export async function POST() {
+  return NextResponse.json(
+    {
+      message: "El carrito no se persiste en Next. La orden, cliente, envio y pago se crean en WooCommerce al checkout.",
+    },
+    { status: 410 }
+  );
 }

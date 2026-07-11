@@ -180,6 +180,23 @@ function canUseWooCommerce() {
   return Boolean(STORE_URL && CONSUMER_KEY && CONSUMER_SECRET);
 }
 
+function buildStorefrontUrl(path: string) {
+  if (!STORE_URL) return path;
+  return new URL(path, `${STORE_URL}/`).toString();
+}
+
+export function getWooStorefrontUrls() {
+  return {
+    account: buildStorefrontUrl("my-account/"),
+    login: buildStorefrontUrl("my-account/"),
+    register: buildStorefrontUrl("my-account/"),
+    orders: buildStorefrontUrl("my-account/orders/"),
+    lostPassword: buildStorefrontUrl("my-account/lost-password/"),
+    checkout: buildStorefrontUrl("checkout/"),
+    newsletter: process.env.WORDPRESS_NEWSLETTER_URL || buildStorefrontUrl("newsletter/"),
+  };
+}
+
 function cleanText(value?: string) {
   return value?.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim() ?? "";
 }

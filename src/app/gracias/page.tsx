@@ -14,7 +14,7 @@ export default function ThankYouPage() {
           ¡Gracias por tu compra!
         </h1>
         <p className="mt-3 text-sm text-on-surface-variant">
-          Te enviamos un email con los detalles del pedido.
+          WooCommerce te va a enviar el email con los detalles y el estado del pedido.
         </p>
         <Link href="/catalogo" className="btn-primary mt-6 inline-flex">
           Seguir comprando

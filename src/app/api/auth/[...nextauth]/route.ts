@@ -1,6 +1,8 @@
-import NextAuth from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import { getWooStorefrontUrls } from "@/lib/woocommerce";
 
-const handler = NextAuth(authOptions);
+export function GET() {
+  return NextResponse.redirect(getWooStorefrontUrls().account);
+}
 
-export { handler as GET, handler as POST };
+export const POST = GET;

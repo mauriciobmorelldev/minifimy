@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { FimiGiftGuide } from "@/components/FimiGiftGuide";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { getFeaturedStoreProducts } from "@/lib/woocommerce";
+import { getFeaturedStoreProducts, getWooStorefrontUrls } from "@/lib/woocommerce";
 import { getHomeContent } from "@/lib/wordpress";
 
 export const metadata: Metadata = {
@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
+  const woo = getWooStorefrontUrls();
   const [home, featured] = await Promise.all([getHomeContent(), getFeaturedStoreProducts()]);
   const configuredHero = home.heroFeaturedProductSlug
     ? featured.find((product) => product.slug === home.heroFeaturedProductSlug)
@@ -264,16 +265,18 @@ export default async function HomePage() {
               <h2 className="font-headline text-3xl font-extrabold text-on-surface">{home.newsletterTitle}</h2>
               <p className="max-w-xl leading-7">{home.newsletterText}</p>
             </div>
-            <form className="flex w-full flex-col gap-3 sm:w-[420px] sm:flex-row">
+            <form action={woo.newsletter} method="post" className="flex w-full flex-col gap-3 sm:w-[420px] sm:flex-row">
               <label className="sr-only" htmlFor="newsletter-email">Email</label>
               <input
                 id="newsletter-email"
+                name="email"
                 type="email"
+                required
                 placeholder="Tu email"
                 className="min-h-12 flex-1 rounded-full border border-white/70 bg-white/85 px-5 text-sm text-on-surface outline-none transition focus:border-primary"
               />
               <button type="submit" className="rounded-full bg-secondary px-7 py-3 text-sm font-bold text-on-secondary transition hover:bg-secondary-dim">
-                Suscribirme
+                Suscribirme en WordPress
               </button>
             </form>
           </div>
