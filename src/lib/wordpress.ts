@@ -34,6 +34,12 @@ export type HomeACF = {
   newsletter_text?: string;
   hero_banner?: ACFImage;
   announcements?: { text?: string }[];
+  main_menu?: { label?: string; href?: string }[];
+  footer_explore_menu?: { label?: string; href?: string }[];
+  footer_support_menu?: { label?: string; href?: string }[];
+  whatsapp_phone?: string;
+  whatsapp_message?: string;
+  whatsapp_messages?: { text?: string }[];
 };
 
 export type HomeContent = {
@@ -61,6 +67,21 @@ export type HomeContent = {
   trustItems: { icon: string; title: string }[];
   newsletterTitle: string;
   newsletterText: string;
+};
+
+
+export type MenuItem = {
+  label: string;
+  href: string;
+};
+
+export type SiteSettings = {
+  mainMenu: MenuItem[];
+  footerExploreMenu: MenuItem[];
+  footerSupportMenu: MenuItem[];
+  whatsappPhone?: string;
+  whatsappMessage: string;
+  whatsappMessages: string[];
 };
 
 const HOME_SLUG = process.env.WORDPRESS_HOME_SLUG ?? "inicio";
@@ -101,6 +122,53 @@ export const fallbackHomeContent: HomeContent = {
   newsletterTitle: "Cartitas suaves de Minifimy",
   newsletterText: "Novedades, regalos y pequenas joyitas para mirar con tiempo.",
 };
+
+
+export const fallbackSiteSettings: SiteSettings = {
+  mainMenu: [
+    { href: "/catalogo", label: "Catalogo" },
+    { href: "/catalogo/recien-nacido", label: "Recien nacido" },
+    { href: "/catalogo/aventura", label: "Mini aventuras" },
+    { href: "/catalogo/accesorios", label: "Accesorios" },
+  ],
+  footerExploreMenu: [
+    { href: "/catalogo", label: "Catalogo" },
+    { href: "/contacto", label: "Guia de talles" },
+    { href: "/contacto", label: "Envios y devoluciones" },
+  ],
+  footerSupportMenu: [
+    { href: "/contacto", label: "Contacto" },
+    { href: "/contacto", label: "Politicas" },
+  ],
+  whatsappPhone: process.env.NEXT_PUBLIC_STORE_WHATSAPP_PHONE,
+  whatsappMessage: "Hola Minifimy! Quiero hacer una consulta.",
+  whatsappMessages: ["Hola, soy Fimi.", "Te ayudo a elegir?"],
+};
+
+function normalizeMenu(items: { label?: string; href?: string }[] | undefined, fallback: MenuItem[]) {
+  const menu = items
+    ?.map((item) => ({ label: item.label?.trim() ?? "", href: item.href?.trim() ?? "" }))
+    .filter((item) => item.label && item.href);
+
+  return menu && menu.length > 0 ? menu : fallback;
+}
+
+function normalizePhone(value?: string) {
+  return value?.replace(/[^0-9]/g, "") || undefined;
+}
+
+function normalizeSiteSettings(acf?: HomeACF | null): SiteSettings {
+  return {
+    mainMenu: normalizeMenu(acf?.main_menu, fallbackSiteSettings.mainMenu),
+    footerExploreMenu: normalizeMenu(acf?.footer_explore_menu, fallbackSiteSettings.footerExploreMenu),
+    footerSupportMenu: normalizeMenu(acf?.footer_support_menu, fallbackSiteSettings.footerSupportMenu),
+    whatsappPhone: normalizePhone(acf?.whatsapp_phone) ?? normalizePhone(fallbackSiteSettings.whatsappPhone),
+    whatsappMessage: firstText(acf?.whatsapp_message, fallbackSiteSettings.whatsappMessage),
+    whatsappMessages:
+      (acf?.whatsapp_messages?.map((item) => item.text).filter(Boolean) as string[] | undefined) ??
+      fallbackSiteSettings.whatsappMessages,
+  };
+}
 
 function firstText(value: string | undefined, fallback: string) {
   return value?.trim() || fallback;
@@ -162,5 +230,21 @@ export async function getHomeContent(): Promise<HomeContent> {
     return normalizeHomeContent(pages?.[0]?.acf);
   } catch {
     return fallbackHomeContent;
+  }
+}
+export async function getSiteSettings(): Promise<SiteSettings> {
+  const base = normalizeBaseUrl(process.env.WORDPRESS_URL);
+  if (!base) return fallbackSiteSettings;
+
+  try {
+    const res = await fetch(`${base}/wp-json/wp/v2/pages?slug=${HOME_SLUG}&_fields=acf`, {
+      next: { revalidate: CACHE_SECONDS.home, tags: [CACHE_TAGS.home] },
+    });
+
+    if (!res.ok) return fallbackSiteSettings;
+    const pages = (await res.json()) as { acf?: HomeACF }[];
+    return normalizeSiteSettings(pages?.[0]?.acf);
+  } catch {
+    return fallbackSiteSettings;
   }
 }

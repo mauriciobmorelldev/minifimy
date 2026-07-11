@@ -65,6 +65,39 @@ export interface CreateStoreOrderInput {
   shippingMethodId: string;
 }
 
+export interface StoreCustomerInput {
+  email: string;
+  firstName: string;
+  lastName?: string;
+  password: string;
+  phone?: string;
+}
+
+export interface StoreReview {
+  id: string;
+  reviewer: string;
+  review: string;
+  rating: number;
+  dateCreated?: string;
+  verified: boolean;
+}
+
+export interface CreateStoreReviewInput {
+  productId: string;
+  reviewer: string;
+  email: string;
+  review: string;
+  rating: number;
+}
+
+export interface StoreOrderSummary {
+  id: number;
+  status: string;
+  total: string;
+  currency: string;
+  dateCreated?: string;
+}
+
 type WooPaymentGateway = {
   id: string;
   title?: string;
@@ -103,6 +136,43 @@ type WooOrder = {
   order_key?: string;
   payment_url?: string;
   checkout_payment_url?: string;
+};
+
+type WooCustomer = {
+  id: number;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+};
+
+type WooProductReview = {
+  id: number;
+  product_id?: number;
+  reviewer?: string;
+  review?: string;
+  rating?: number;
+  date_created?: string;
+  verified?: boolean;
+};
+
+type WooOrderSummary = {
+  id: number;
+  status?: string;
+  total?: string;
+  currency?: string;
+  date_created?: string;
+};
+
+type WordPressAuthResponse = {
+  token?: string;
+  user_email?: string;
+  user_display_name?: string;
+};
+
+type WordPressUserMe = {
+  id: number;
+  name?: string;
+  email?: string;
 };
 
 function buildWooOrderPayUrl(order: WooOrder) {
@@ -180,21 +250,13 @@ function canUseWooCommerce() {
   return Boolean(STORE_URL && CONSUMER_KEY && CONSUMER_SECRET);
 }
 
-function buildStorefrontUrl(path: string) {
-  if (!STORE_URL) return path;
+function buildWordPressUrl(path: string) {
+  if (!STORE_URL) return null;
   return new URL(path, `${STORE_URL}/`).toString();
 }
 
-export function getWooStorefrontUrls() {
-  return {
-    account: buildStorefrontUrl("my-account/"),
-    login: buildStorefrontUrl("my-account/"),
-    register: buildStorefrontUrl("my-account/"),
-    orders: buildStorefrontUrl("my-account/orders/"),
-    lostPassword: buildStorefrontUrl("my-account/lost-password/"),
-    checkout: buildStorefrontUrl("checkout/"),
-    newsletter: process.env.WORDPRESS_NEWSLETTER_URL || buildStorefrontUrl("newsletter/"),
-  };
+export function getWordPressNewsletterUrl() {
+  return process.env.WORDPRESS_NEWSLETTER_URL ?? buildWordPressUrl("wp-json/minifimy/v1/newsletter");
 }
 
 function cleanText(value?: string) {
@@ -287,6 +349,27 @@ function mapWooCategory(category: WooCategory): Category {
   };
 }
 
+function mapWooReview(review: WooProductReview): StoreReview {
+  return {
+    id: String(review.id),
+    reviewer: cleanText(review.reviewer) || "Familia Minifimy",
+    review: cleanText(review.review),
+    rating: Math.min(Math.max(Number(review.rating) || 0, 0), 5),
+    dateCreated: review.date_created,
+    verified: Boolean(review.verified),
+  };
+}
+
+function mapWooOrderSummary(order: WooOrderSummary): StoreOrderSummary {
+  return {
+    id: order.id,
+    status: order.status ?? "pending",
+    total: order.total ?? "0",
+    currency: order.currency ?? "ARS",
+    dateCreated: order.date_created,
+  };
+}
+
 async function fetchWoo<T>(path: string, params: Record<string, string | number | boolean>, revalidate: number, tags: string[]) {
   const url = buildWooUrl(path, params);
   if (!url) return null;
@@ -302,6 +385,40 @@ async function fetchWoo<T>(path: string, params: Record<string, string | number 
       return null;
     }
 
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function getWordPressJson<T>(path: string, token?: string) {
+  const url = buildWordPressUrl(path);
+  if (!url) return null;
+
+  try {
+    const response = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function postWordPressJson<T>(path: string, body: unknown) {
+  const configuredUrl = path.startsWith("http") ? path : buildWordPressUrl(path);
+  if (!configuredUrl) return null;
+
+  try {
+    const response = await fetch(configuredUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
     return (await response.json()) as T;
   } catch {
     return null;
@@ -425,6 +542,95 @@ export async function getStoreProductBySlug(slug: string) {
 export async function getStoreProductsByCategory(slug: string) {
   const allProducts = await getStoreProducts({ perPage: 100 });
   return allProducts.filter((product) => product.category === slug);
+}
+
+export async function createStoreCustomer(input: StoreCustomerInput) {
+  const customer = await postWoo<WooCustomer>("customers", {
+    email: input.email,
+    first_name: input.firstName,
+    last_name: input.lastName,
+    username: input.email,
+    password: input.password,
+    billing: {
+      first_name: input.firstName,
+      last_name: input.lastName,
+      email: input.email,
+      phone: input.phone,
+    },
+  });
+
+  if (!customer) return null;
+  return { id: customer.id, email: customer.email, firstName: customer.first_name, lastName: customer.last_name };
+}
+
+export async function loginStoreCustomer(email: string, password: string) {
+  const endpoint = process.env.WORDPRESS_AUTH_TOKEN_ENDPOINT || "wp-json/jwt-auth/v1/token";
+  const session = await postWordPressJson<WordPressAuthResponse>(endpoint, {
+    username: email,
+    password,
+  });
+
+  if (!session?.token) return null;
+  return {
+    token: session.token,
+    email: session.user_email ?? email,
+    name: session.user_display_name,
+  };
+}
+
+export async function verifyWordPressCustomerToken(token: string) {
+  const user = await getWordPressJson<WordPressUserMe>("wp-json/wp/v2/users/me", token);
+  if (!user?.email) return null;
+  return user;
+}
+
+export async function getStoreCustomerByEmail(email: string) {
+  const customers = await fetchWoo<WooCustomer[]>(
+    "customers",
+    { email, per_page: 1 },
+    0,
+    [CACHE_TAGS.checkout]
+  );
+  return customers?.[0] ?? null;
+}
+
+export async function getStoreOrdersForCustomerEmail(email: string) {
+  const customer = await getStoreCustomerByEmail(email);
+  if (!customer?.id) return [];
+
+  const orders = await fetchWoo<WooOrderSummary[]>(
+    "orders",
+    { customer: customer.id, per_page: 20 },
+    0,
+    [CACHE_TAGS.checkout]
+  );
+
+  return (orders ?? []).map(mapWooOrderSummary);
+}
+
+export async function getStoreProductReviews(productId: string) {
+  if (!canUseWooCommerce()) return [];
+
+  const reviews = await fetchWoo<WooProductReview[]>(
+    "products/reviews",
+    { product: Number(productId), per_page: 12, status: "approved" },
+    CACHE_SECONDS.products,
+    [CACHE_TAGS.products]
+  );
+
+  return (reviews ?? []).map(mapWooReview).filter((review) => review.review);
+}
+
+export async function createStoreProductReview(input: CreateStoreReviewInput) {
+  const review = await postWoo<WooProductReview>("products/reviews", {
+    product_id: Number(input.productId),
+    reviewer: input.reviewer,
+    reviewer_email: input.email,
+    review: input.review,
+    rating: input.rating,
+  });
+
+  return review ? mapWooReview(review) : null;
 }
 
 export async function getStorePaymentMethods(): Promise<StorePaymentMethod[]> {

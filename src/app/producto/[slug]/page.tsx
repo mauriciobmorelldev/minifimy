@@ -1,20 +1,15 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ProductCarousel } from "@/components/ProductCarousel";
 import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
+import { ProductReviews } from "@/components/ProductReviews";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { getStoreCategories, getStoreProductBySlug, getStoreProducts } from "@/lib/woocommerce";
+import { getStoreCategories, getStoreProductBySlug, getStoreProductReviews, getStoreProducts } from "@/lib/woocommerce";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
-
-const reviews = [
-  ["Sofia", "La tela es hermosa y llego con una presentacion divina."],
-  ["Mica", "Compre para regalar y quedo super delicado. Todo muy cuidado."],
-  ["Valen", "El talle fue tal cual y la prenda se siente muy suave."],
-];
 
 export const revalidate = 300;
 
@@ -68,6 +63,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     .filter((item) => item.id !== product.id && item.category === product.category)
     .concat(allProducts.filter((item) => item.id !== product.id && item.category !== product.category))
     .slice(0, 8);
+  const productReviews = await getStoreProductReviews(product.id);
 
   return (
     <main className="mobile-soft-page mx-auto max-w-7xl px-4 pb-12 pt-24 md:px-6">
@@ -182,35 +178,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </ScrollReveal>
       </div>
 
-      <section className="mt-14 rounded-[2rem] bg-white/72 p-5 shadow-soft md:mt-20 md:p-8">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Resenas</span>
-            <h2 className="mt-2 font-headline text-2xl font-extrabold text-on-surface md:text-3xl">
-              Familias que ya eligieron Minifimy
-            </h2>
-          </div>
-          <div className="rounded-full bg-[#f7efe3] px-4 py-2 text-sm font-bold text-secondary">
-            4.9 / 5
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          {reviews.map(([name, text]) => (
-            <article key={name} className="rounded-[1.5rem] bg-[#fbf4ea] p-5">
-              <div className="mb-3 flex text-secondary" aria-label="5 estrellas">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <span key={index} className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    star
-                  </span>
-                ))}
-              </div>
-              <p className="text-sm leading-6 text-on-surface-variant">“{text}”</p>
-              <p className="mt-4 text-sm font-bold text-on-surface">{name}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      <ProductReviews productSlug={product.slug} initialReviews={productReviews} />
 
       <div className="mt-14 md:mt-24">
         <ProductCarousel

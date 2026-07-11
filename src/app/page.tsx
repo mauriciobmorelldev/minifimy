@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { FimiGiftGuide } from "@/components/FimiGiftGuide";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { getFeaturedStoreProducts, getWooStorefrontUrls } from "@/lib/woocommerce";
+import { getFeaturedStoreProducts, getWordPressNewsletterUrl } from "@/lib/woocommerce";
 import { getHomeContent } from "@/lib/wordpress";
 
 export const metadata: Metadata = {
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const woo = getWooStorefrontUrls();
+  const newsletterUrl = getWordPressNewsletterUrl();
   const [home, featured] = await Promise.all([getHomeContent(), getFeaturedStoreProducts()]);
   const configuredHero = home.heroFeaturedProductSlug
     ? featured.find((product) => product.slug === home.heroFeaturedProductSlug)
@@ -265,7 +265,7 @@ export default async function HomePage() {
               <h2 className="font-headline text-3xl font-extrabold text-on-surface">{home.newsletterTitle}</h2>
               <p className="max-w-xl leading-7">{home.newsletterText}</p>
             </div>
-            <form action={woo.newsletter} method="post" className="flex w-full flex-col gap-3 sm:w-[420px] sm:flex-row">
+            <form action={newsletterUrl ?? "/api/newsletter"} method="post" className="flex w-full flex-col gap-3 sm:w-[420px] sm:flex-row">
               <label className="sr-only" htmlFor="newsletter-email">Email</label>
               <input
                 id="newsletter-email"

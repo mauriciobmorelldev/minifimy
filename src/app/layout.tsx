@@ -8,6 +8,7 @@ import { SiteLockedScreen } from "@/components/SiteLockedScreen";
 import { WhatsAppFimy } from "@/components/WhatsAppFimy";
 import { CartProvider } from "@/context/cart-context";
 import { FeedbackProvider } from "@/context/feedback-context";
+import { getSiteSettings } from "@/lib/wordpress";
 import "./globals.css";
 
 const beVietnam = Be_Vietnam_Pro({
@@ -46,11 +47,12 @@ const siteLocked =
   (process.env.NODE_ENV === "production" &&
     process.env.NEXT_PUBLIC_SITE_LOCKED !== "false");
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const siteSettings = await getSiteSettings();
   if (siteLocked) {
     return (
       <html lang="es" className={`${beVietnam.variable} ${plusJakarta.variable}`}>
@@ -74,10 +76,10 @@ export default function RootLayout({
               Saltar al contenido
             </a>
             <MinifimyIntroLoader />
-            <Header />
+            <Header navLinks={siteSettings.mainMenu} />
             <div id="main-content">{children}</div>
-            <Footer />
-            <WhatsAppFimy />
+            <Footer exploreLinks={siteSettings.footerExploreMenu} supportLinks={siteSettings.footerSupportMenu} />
+            <WhatsAppFimy phone={siteSettings.whatsappPhone} message={siteSettings.whatsappMessage} messages={siteSettings.whatsappMessages} />
           </CartProvider>
         </FeedbackProvider>
         <Analytics />

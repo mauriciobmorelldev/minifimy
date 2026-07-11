@@ -1,6 +1,16 @@
 import Link from "next/link";
 
-export function Footer() {
+type FooterLink = {
+  href: string;
+  label: string;
+};
+
+interface FooterProps {
+  exploreLinks: FooterLink[];
+  supportLinks: FooterLink[];
+}
+
+export function Footer({ exploreLinks, supportLinks }: FooterProps) {
   return (
     <footer className="w-full rounded-t-[2rem] bg-surface-container mt-12">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-12 py-16 md:grid-cols-3">
@@ -26,41 +36,29 @@ export function Footer() {
         <div className="flex flex-col gap-6">
           <h4 className="text-xs font-bold uppercase tracking-widest text-primary">Explorar</h4>
           <div className="flex flex-col gap-3 text-xs uppercase tracking-widest text-primary/70">
-            <Link
-              href="/catalogo"
-              className="opacity-80 transition-opacity hover:opacity-100 hover:underline decoration-secondary underline-offset-4"
-            >
-              Catálogo
-            </Link>
-            <Link
-              href="/contacto"
-              className="opacity-80 transition-opacity hover:opacity-100 hover:underline decoration-secondary underline-offset-4"
-            >
-              Guía de talles
-            </Link>
-            <Link
-              href="/contacto"
-              className="opacity-80 transition-opacity hover:opacity-100 hover:underline decoration-secondary underline-offset-4"
-            >
-              Envíos y devoluciones
-            </Link>
+            {exploreLinks.map((link) => (
+              <Link
+                key={`${link.href}-${link.label}`}
+                href={link.href}
+                className="opacity-80 transition-opacity hover:opacity-100 hover:underline decoration-secondary underline-offset-4"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
         <div className="flex flex-col gap-6">
           <h4 className="text-xs font-bold uppercase tracking-widest text-primary">Soporte</h4>
           <div className="flex flex-col gap-3 text-xs uppercase tracking-widest text-primary/70">
-            <Link
-              href="/contacto"
-              className="opacity-80 transition-opacity hover:opacity-100 hover:underline decoration-secondary underline-offset-4"
-            >
-              Contacto
-            </Link>
-            <Link
-              href="/contacto"
-              className="opacity-80 transition-opacity hover:opacity-100 hover:underline decoration-secondary underline-offset-4"
-            >
-              Políticas
-            </Link>
+            {supportLinks.map((link) => (
+              <Link
+                key={`${link.href}-${link.label}`}
+                href={link.href}
+                className="opacity-80 transition-opacity hover:opacity-100 hover:underline decoration-secondary underline-offset-4"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>

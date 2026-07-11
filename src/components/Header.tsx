@@ -7,14 +7,16 @@ import { FormEvent, useState } from "react";
 import { MiniCartDrawer } from "@/components/MiniCartDrawer";
 import { useCart } from "@/context/cart-context";
 
-const navLinks = [
-  { href: "/catalogo", label: "Catálogo" },
-  { href: "/catalogo/recien-nacido", label: "Recién nacido" },
-  { href: "/catalogo/aventura", label: "Mini aventuras" },
-  { href: "/catalogo/accesorios", label: "Accesorios" },
-];
+type NavLink = {
+  href: string;
+  label: string;
+};
 
-export function Header() {
+interface HeaderProps {
+  navLinks: NavLink[];
+}
+
+export function Header({ navLinks }: HeaderProps) {
   const { items } = useCart();
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
   const [mobileOpen, setMobileOpen] = useState(false);

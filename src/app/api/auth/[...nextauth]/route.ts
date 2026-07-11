@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import { getWooStorefrontUrls } from "@/lib/woocommerce";
 
 export function GET() {
-  return NextResponse.redirect(getWooStorefrontUrls().account);
+  return NextResponse.json(
+    { message: "Auth visual vive en Next. Usa /api/account/login o /api/account/register para operar contra WordPress/WooCommerce." },
+    { status: 410 }
+  );
 }
 
 export const POST = GET;
