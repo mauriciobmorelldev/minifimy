@@ -179,8 +179,23 @@ export async function getStoreCategories() {
 }
 
 export async function getStoreProductBySlug(slug: string) {
-  const products = await getStoreProducts({ perPage: 100 });
-  return products.find((product) => product.slug === slug);
+  if (!canUseWooCommerce()) {
+    return fallbackProducts.find((product) => product.slug === slug);
+  }
+
+  const data = await fetchWoo<WooProduct[]>(
+    "products",
+    {
+      slug,
+      per_page: 1,
+      status: "publish",
+      _fields: WOO_PRODUCT_FIELDS,
+    },
+    CACHE_SECONDS.products,
+    [CACHE_TAGS.products]
+  );
+
+  return data?.[0] ? mapWooProduct(data[0]) : undefined;
 }
 
 export async function getStoreProductsByCategory(slug: string) {

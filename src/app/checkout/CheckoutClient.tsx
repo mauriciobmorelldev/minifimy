@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { useCart } from "@/context/cart-context";
 
@@ -16,6 +16,21 @@ interface CheckoutFormValues {
   notes: string;
 }
 
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+function formatPhone(value: string) {
+  const digits = onlyDigits(value).slice(0, 10);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+  return `${digits.slice(0, 2)} ${digits.slice(2, 6)}-${digits.slice(6)}`;
+}
+
+function formatPostalCode(value: string) {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+}
+
 export default function CheckoutClient() {
   const { items, total } = useCart();
   const [status, setStatus] = useState<string | null>(null);
@@ -25,10 +40,23 @@ export default function CheckoutClient() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+    setValue,
   } = useForm<CheckoutFormValues>();
 
+  const maskPhone = (event: ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(event.target.value);
+    event.target.value = formatted;
+    setValue("phone", formatted, { shouldValidate: true });
+  };
+
+  const maskPostalCode = (event: ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPostalCode(event.target.value);
+    event.target.value = formatted;
+    setValue("postalCode", formatted, { shouldValidate: true });
+  };
+
   const onSubmit = async (data: CheckoutFormValues) => {
-    setStatus("Estamos preparando tu checkout...");
+    setStatus("Estamos preparando tu checkout de Mercado Pago...");
 
     const response = await fetch("/api/checkout", {
       method: "POST",
@@ -44,7 +72,12 @@ export default function CheckoutClient() {
       return;
     }
 
-    const payload = await response.json();
+    const payload = await response.json() as { message?: string; initPoint?: string };
+    if (payload.initPoint) {
+      window.location.href = payload.initPoint;
+      return;
+    }
+
     setStatus(payload.message ?? "Checkout iniciado.");
   };
 
@@ -63,7 +96,7 @@ export default function CheckoutClient() {
             Dejamos todo listo para que llegue a casa.
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-on-surface-variant md:text-base md:leading-8">
-            Completá tus datos con calma. Si algo no encaja, Fimi te acompaña por WhatsApp antes de confirmar.
+            Completá tus datos con calma. El pago se abre en Mercado Pago de forma segura.
           </p>
         </header>
 
@@ -98,6 +131,7 @@ export default function CheckoutClient() {
                     {...register("name", { required: true })}
                     className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                     type="text"
+                    autoComplete="name"
                     placeholder="Nombre completo"
                   />
                   {errors.name && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
@@ -110,6 +144,7 @@ export default function CheckoutClient() {
                       {...register("email", { required: true })}
                       className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                       type="email"
+                      autoComplete="email"
                       placeholder="tu@email.com"
                     />
                     {errors.email && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
@@ -117,10 +152,13 @@ export default function CheckoutClient() {
                   <label className="text-sm font-semibold text-on-surface">
                     WhatsApp
                     <input
-                      {...register("phone", { required: true })}
+                      {...register("phone", { required: true, onChange: maskPhone })}
                       className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                       type="tel"
-                      placeholder="11 1234 5678"
+                      inputMode="numeric"
+                      maxLength={12}
+                      autoComplete="tel"
+                      placeholder="11 1234-5678"
                     />
                     {errors.phone && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
                   </label>
@@ -132,6 +170,7 @@ export default function CheckoutClient() {
                     {...register("address", { required: true })}
                     className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                     type="text"
+                    autoComplete="street-address"
                     placeholder="Calle, número, piso/depto"
                   />
                   {errors.address && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
@@ -144,6 +183,7 @@ export default function CheckoutClient() {
                       {...register("city", { required: true })}
                       className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                       type="text"
+                      autoComplete="address-level2"
                       placeholder="Ciudad"
                     />
                     {errors.city && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
@@ -151,9 +191,12 @@ export default function CheckoutClient() {
                   <label className="text-sm font-semibold text-on-surface">
                     Código postal
                     <input
-                      {...register("postalCode", { required: true })}
+                      {...register("postalCode", { required: true, onChange: maskPostalCode })}
                       className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                       type="text"
+                      inputMode="text"
+                      maxLength={8}
+                      autoComplete="postal-code"
                       placeholder="CP"
                     />
                     {errors.postalCode && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
@@ -175,8 +218,8 @@ export default function CheckoutClient() {
                 disabled={isSubmitting}
                 className="mt-7 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 font-headline text-base font-bold text-on-primary shadow-soft transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isSubmitting ? "Preparando..." : "Confirmar compra"}
-                <span className="material-symbols-outlined">arrow_forward</span>
+                {isSubmitting ? "Preparando..." : "Pagar con Mercado Pago"}
+                <span className="material-symbols-outlined">payments</span>
               </button>
               {status && <p className="mt-4 rounded-[1.3rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">{status}</p>}
             </form>
@@ -227,7 +270,7 @@ export default function CheckoutClient() {
               </div>
 
               <p className="mt-5 rounded-[1.4rem] bg-primary/10 p-4 text-xs leading-5 text-primary">
-                WooCommerce va a manejar productos, stock, precios y órdenes. Esta pantalla queda como experiencia frontend conectada al backend.
+                El pago se procesa con Mercado Pago. WooCommerce mantiene productos, stock, precios y órdenes.
               </p>
             </aside>
           </div>

@@ -7,7 +7,7 @@ import { ScrollReveal } from "@/components/ScrollReveal";
 import { getStoreCategories, getStoreProductBySlug, getStoreProducts } from "@/lib/woocommerce";
 
 interface ProductPageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export const revalidate = 300;
@@ -18,7 +18,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  const product = await getStoreProductBySlug(params.slug);
+  const { slug } = await params;
+  const product = await getStoreProductBySlug(slug);
   return {
     title: product ? product.name : "Producto",
     description: product?.description ?? "Detalle de producto MINIFIMY.",
@@ -32,20 +33,41 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   };
 }
 
+function colorValue(color: string) {
+  const normalized = color.toLowerCase();
+  const palette: Record<string, string> = {
+    natural: "#e9ddc7",
+    beige: "#dbc7aa",
+    crema: "#f6ead6",
+    blanco: "#fffaf1",
+    rosa: "#eec7bf",
+    celeste: "#c8d9e6",
+    salvia: "#aebc9a",
+    verde: "#aebc9a",
+    terracota: "#d9a17b",
+    gris: "#c8c2b7",
+  };
+
+  return Object.entries(palette).find(([name]) => normalized.includes(name))?.[1] ?? "#d8c7aa";
+}
+
 export default async function ProductPage({ params }: ProductPageProps) {
+  const { slug } = await params;
   const [product, categories, allProducts] = await Promise.all([
-    getStoreProductBySlug(params.slug),
+    getStoreProductBySlug(slug),
     getStoreCategories(),
     getStoreProducts({ perPage: 100 }),
   ]);
 
   if (!product) {
     return (
-      <main className="mx-auto w-full max-w-6xl px-6 py-24">
-        <p className="text-sm text-on-surface-variant">Producto no encontrado.</p>
-        <Link href="/catalogo" className="btn-ghost mt-6 inline-flex">
-          Volver al catálogo
-        </Link>
+      <main className="mobile-soft-page mx-auto w-full max-w-6xl px-4 py-28 md:px-6">
+        <div className="rounded-[2rem] bg-white/80 p-8 text-center shadow-soft">
+          <p className="text-sm text-on-surface-variant">Producto no encontrado o todavía no publicado.</p>
+          <Link href="/catalogo" className="btn-ghost mt-6 inline-flex">
+            Volver al catálogo
+          </Link>
+        </div>
       </main>
     );
   }
@@ -54,13 +76,20 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const gallery = product.images.length >= 3
     ? product.images
     : [product.images[0], product.images[0], product.images[0]];
-  const recommendations = allProducts.filter((item) => item.id !== product.id).slice(0, 4);
+  const recommendations = allProducts
+    .filter((item) => item.id !== product.id && item.category === product.category)
+    .concat(allProducts.filter((item) => item.id !== product.id && item.category !== product.category))
+    .slice(0, 8);
 
   return (
     <main className="mobile-soft-page mx-auto max-w-7xl px-4 pb-12 pt-24 md:px-6">
-      <nav className="mb-6 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-[10px] font-medium uppercase tracking-widest text-on-surface-variant/60 md:mb-8 md:text-xs">
+      <nav className="mb-6 flex items-center gap-2 overflow-x-auto whitespace-nowrap rounded-full bg-white/64 px-4 py-2 text-[10px] font-medium uppercase tracking-widest text-on-surface-variant/70 shadow-soft md:mb-8 md:text-xs" aria-label="Breadcrumb">
         <Link href="/" className="transition-colors hover:text-primary">
           Inicio
+        </Link>
+        <span className="material-symbols-outlined text-[12px]">chevron_right</span>
+        <Link href="/catalogo" className="transition-colors hover:text-primary">
+          Catálogo
         </Link>
         <span className="material-symbols-outlined text-[12px]">chevron_right</span>
         <Link
@@ -73,17 +102,29 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <span className="text-on-surface">{product.name}</span>
       </nav>
 
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <Link href="/catalogo" className="inline-flex items-center gap-2 rounded-full bg-white/78 px-4 py-2 text-sm font-bold text-primary shadow-soft transition hover:bg-white">
+          <span className="material-symbols-outlined text-lg">arrow_back</span>
+          Volver al catálogo
+        </Link>
+        <Link href="/carrito" className="inline-flex items-center gap-2 rounded-full bg-[#f7efe3] px-4 py-2 text-sm font-bold text-secondary shadow-soft">
+          Ver carrito
+          <span className="material-symbols-outlined text-lg">shopping_basket</span>
+        </Link>
+      </div>
+
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
         <ScrollReveal className="space-y-6 lg:col-span-7">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[1.6rem] bg-surface-container-low md:rounded-xl">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[1.6rem] bg-surface-container-low md:rounded-[2rem]">
             <Image
               src={product.images[0]}
               alt={product.name}
               fill
               sizes="(min-width: 1024px) 55vw, 90vw"
               className="object-cover"
+              priority
             />
-            <div className="absolute left-6 top-6 rounded-full bg-surface/90 px-4 py-2 shadow-sm backdrop-blur">
+            <div className="absolute left-5 top-5 rounded-full bg-surface/90 px-4 py-2 shadow-sm backdrop-blur md:left-6 md:top-6">
               <span className="flex items-center gap-2 text-xs font-bold text-primary">
                 <span className="material-symbols-outlined text-sm">eco</span>
                 MINIFIMY
@@ -94,7 +135,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {gallery.map((image, index) => (
               <div
                 key={`${image}-${index}`}
-                className="aspect-square overflow-hidden rounded-[1.1rem] bg-surface-container-low md:rounded-lg"
+                className="aspect-square overflow-hidden rounded-[1.1rem] bg-surface-container-low md:rounded-[1.4rem]"
               >
                 <Image
                   src={image}
@@ -108,8 +149,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
         </ScrollReveal>
 
-        <ScrollReveal delayMs={120} className="space-y-8 lg:col-span-5">
+        <ScrollReveal delayMs={120} className="space-y-7 lg:col-span-5">
           <header>
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{category?.name ?? product.category}</p>
             <h1 className="font-headline text-[2.15rem] font-bold leading-tight text-on-surface md:text-4xl">
               {product.name}
             </h1>
@@ -124,23 +166,39 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </header>
 
           {product.sizes && product.sizes.length > 0 && (
-            <div className="space-y-4">
-              <label className="block text-sm font-bold uppercase tracking-widest text-on-surface">
-                Selecciona talle
-              </label>
-              <div className="flex flex-wrap gap-3">
+            <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
+              <span className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+                Talles disponibles
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
                 {product.sizes.map((size, index) => (
                   <button
                     key={size}
                     type="button"
-                    className={`rounded-full border-2 px-4 py-2 text-sm font-medium transition-all md:px-6 md:py-3 md:text-base ${
+                    className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${
                       index === 0
-                        ? "border-primary bg-primary-container font-bold text-on-primary-container"
-                        : "border-outline-variant/30 text-on-surface hover:border-primary hover:text-primary"
+                        ? "border-primary bg-primary text-on-primary"
+                        : "border-outline-variant/30 bg-white text-primary hover:border-primary"
                     }`}
                   >
                     {size}
                   </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {product.colors && product.colors.length > 0 && (
+            <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
+              <span className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+                Colores disponibles
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                {product.colors.map((color) => (
+                  <span key={color} className="inline-flex items-center gap-2 rounded-full bg-[#fbf4ea] px-3 py-2 text-xs font-bold text-primary">
+                    <span className="h-4 w-4 rounded-full ring-1 ring-on-surface/10" style={{ backgroundColor: colorValue(color) }} />
+                    {color}
+                  </span>
                 ))}
               </div>
             </div>
@@ -156,7 +214,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </AddToCartButton>
           </div>
 
-          <div className="space-y-4 rounded-[1.5rem] bg-surface-container-low p-5 md:rounded-xl md:p-6">
+          <div className="space-y-4 rounded-[1.5rem] bg-surface-container-low p-5 md:p-6">
             <div className="flex items-start gap-4">
               <span className="material-symbols-outlined text-primary">local_shipping</span>
               <div>

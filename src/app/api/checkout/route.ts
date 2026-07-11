@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStoreProducts } from "@/lib/woocommerce";
-import { stripe } from "@/lib/stripe";
 
 interface CheckoutItem {
   product?: { id?: string; name?: string; price?: number };
@@ -9,21 +8,27 @@ interface CheckoutItem {
 
 interface CheckoutPayload {
   items?: CheckoutItem[];
-  customer?: { email?: string };
+  customer?: { email?: string; name?: string; phone?: string; address?: string; city?: string; postalCode?: string };
 }
 
 const MAX_CHECKOUT_ITEMS = 20;
 const MAX_QUANTITY_PER_ITEM = 10;
+const SHIPPING_PRICE = 950;
+const MERCADO_PAGO_API = "https://api.mercadopago.com/checkout/preferences";
 
 function isValidEmail(value?: string) {
   return !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function getSiteUrl() {
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://minifimy.com";
 }
 
 export async function POST(request: NextRequest) {
   const payload = (await request.json().catch(() => null)) as CheckoutPayload | null;
 
   if (!payload?.items || !Array.isArray(payload.items) || payload.items.length === 0) {
-    return NextResponse.json({ message: "Carrito inválido." }, { status: 400 });
+    return NextResponse.json({ message: "Carrito invalido." }, { status: 400 });
   }
 
   if (payload.items.length > MAX_CHECKOUT_ITEMS) {
@@ -31,7 +36,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!isValidEmail(payload.customer?.email)) {
-    return NextResponse.json({ message: "Email inválido." }, { status: 400 });
+    return NextResponse.json({ message: "Email invalido." }, { status: 400 });
   }
 
   const storeProducts = await getStoreProducts({ perPage: 100 });
@@ -45,38 +50,79 @@ export async function POST(request: NextRequest) {
   }).filter(Boolean) as { product: (typeof storeProducts)[number]; quantity: number }[];
 
   if (safeItems.length === 0) {
-    return NextResponse.json({ message: "No encontramos productos válidos para cobrar." }, { status: 400 });
+    return NextResponse.json({ message: "No encontramos productos validos para cobrar." }, { status: 400 });
   }
 
-  if (!stripe) {
+  if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
     return NextResponse.json({
-      message: "Stripe no configurado. Simulación de checkout exitosa.",
+      message: "Mercado Pago no configurado. Simulacion de checkout exitosa.",
       items: safeItems,
       customer: payload.customer,
     });
   }
 
-  const lineItems = safeItems.map((item) => ({
-    price_data: {
-      currency: "ars",
-      product_data: {
-        name: item.product.name,
-      },
-      unit_amount: Math.round(item.product.price * 100),
+  const siteUrl = getSiteUrl();
+  const preferenceResponse = await fetch(MERCADO_PAGO_API, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
     },
-    quantity: item.quantity,
-  }));
-
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    line_items: lineItems,
-    success_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://minifimy.com"}/gracias`,
-    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://minifimy.com"}/carrito`,
-    customer_email: payload.customer?.email,
+    body: JSON.stringify({
+      items: [
+        ...safeItems.map((item) => ({
+          id: item.product.id,
+          title: item.product.name,
+          quantity: item.quantity,
+          currency_id: "ARS",
+          unit_price: item.product.price,
+        })),
+        {
+          id: "shipping",
+          title: "Envio estimado",
+          quantity: 1,
+          currency_id: "ARS",
+          unit_price: SHIPPING_PRICE,
+        },
+      ],
+      payer: {
+        name: payload.customer?.name,
+        email: payload.customer?.email,
+        phone: payload.customer?.phone ? { number: payload.customer.phone } : undefined,
+        address: payload.customer?.address
+          ? {
+              street_name: payload.customer.address,
+              zip_code: payload.customer.postalCode,
+            }
+          : undefined,
+      },
+      back_urls: {
+        success: `${siteUrl}/gracias`,
+        failure: `${siteUrl}/checkout`,
+        pending: `${siteUrl}/checkout`,
+      },
+      auto_return: "approved",
+      statement_descriptor: "MINIFIMY",
+      external_reference: `minifimy-${Date.now()}`,
+      metadata: {
+        city: payload.customer?.city,
+        postal_code: payload.customer?.postalCode,
+      },
+    }),
   });
 
+  if (!preferenceResponse.ok) {
+    return NextResponse.json({ message: "Mercado Pago no pudo crear la preferencia." }, { status: 502 });
+  }
+
+  const preference = await preferenceResponse.json() as { id?: string; init_point?: string; sandbox_init_point?: string };
+  const initPoint = process.env.MERCADO_PAGO_USE_SANDBOX === "true"
+    ? preference.sandbox_init_point
+    : preference.init_point;
+
   return NextResponse.json({
-    message: "Checkout generado",
-    sessionId: session.id,
+    message: "Checkout de Mercado Pago generado.",
+    preferenceId: preference.id,
+    initPoint,
   });
 }
