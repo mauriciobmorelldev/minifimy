@@ -1,27 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStoreProducts } from "@/lib/woocommerce";
+import {
+  createStoreOrder,
+  getStorePaymentMethods,
+  getStoreProducts,
+  getStoreShippingMethods,
+} from "@/lib/woocommerce";
 
 interface CheckoutItem {
-  product?: { id?: string; name?: string; price?: number };
+  product?: { id?: string };
+  selection?: { size?: string; color?: string };
   quantity?: number;
 }
 
 interface CheckoutPayload {
   items?: CheckoutItem[];
-  customer?: { email?: string; name?: string; phone?: string; address?: string; city?: string; postalCode?: string };
+  paymentMethodId?: string;
+  shippingMethodId?: string;
+  customer?: {
+    email?: string;
+    name?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    notes?: string;
+  };
 }
 
 const MAX_CHECKOUT_ITEMS = 20;
 const MAX_QUANTITY_PER_ITEM = 10;
-const SHIPPING_PRICE = 950;
-const MERCADO_PAGO_API = "https://api.mercadopago.com/checkout/preferences";
 
 function isValidEmail(value?: string) {
-  return !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  return Boolean(value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
 }
 
-function getSiteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://minifimy.com";
+function hasRequiredCustomerData(customer?: CheckoutPayload["customer"]) {
+  return Boolean(
+    customer?.name &&
+      customer.email &&
+      customer.phone &&
+      customer.address &&
+      customer.city &&
+      customer.postalCode &&
+      isValidEmail(customer.email)
+  );
+}
+
+export async function GET() {
+  const [paymentMethods, shippingMethods] = await Promise.all([
+    getStorePaymentMethods(),
+    getStoreShippingMethods(),
+  ]);
+
+  return NextResponse.json({ paymentMethods, shippingMethods });
 }
 
 export async function POST(request: NextRequest) {
@@ -35,9 +66,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Demasiados productos en el carrito." }, { status: 400 });
   }
 
-  if (!isValidEmail(payload.customer?.email)) {
-    return NextResponse.json({ message: "Email invalido." }, { status: 400 });
+  if (!hasRequiredCustomerData(payload.customer)) {
+    return NextResponse.json({ message: "Datos de cliente incompletos." }, { status: 400 });
   }
+
+  if (!payload.paymentMethodId || !payload.shippingMethodId) {
+    return NextResponse.json({ message: "Selecciona pago y envio." }, { status: 400 });
+  }
+
+  const customer = payload.customer;
 
   const storeProducts = await getStoreProducts({ perPage: 100 });
   const storeProductsById = new Map(storeProducts.map((product) => [product.id, product]));
@@ -46,83 +83,36 @@ export async function POST(request: NextRequest) {
     const productId = item.product?.id;
     const product = productId ? storeProductsById.get(productId) : null;
     const quantity = Math.min(Math.max(Number(item.quantity) || 1, 1), MAX_QUANTITY_PER_ITEM);
-    return product ? { product, quantity } : null;
-  }).filter(Boolean) as { product: (typeof storeProducts)[number]; quantity: number }[];
+    return product ? { productId: product.id, quantity, selection: item.selection } : null;
+  }).filter(Boolean) as { productId: string; quantity: number; selection?: { size?: string; color?: string } }[];
 
   if (safeItems.length === 0) {
     return NextResponse.json({ message: "No encontramos productos validos para cobrar." }, { status: 400 });
   }
 
-  if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
-    return NextResponse.json({
-      message: "Mercado Pago no configurado. Simulacion de checkout exitosa.",
-      items: safeItems,
-      customer: payload.customer,
-    });
-  }
-
-  const siteUrl = getSiteUrl();
-  const preferenceResponse = await fetch(MERCADO_PAGO_API, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
-      "Content-Type": "application/json",
+  const order = await createStoreOrder({
+    customer: {
+      name: customer!.name!,
+      email: customer!.email!,
+      phone: customer!.phone!,
+      address: customer!.address!,
+      city: customer!.city!,
+      postalCode: customer!.postalCode!,
+      notes: customer!.notes,
     },
-    body: JSON.stringify({
-      items: [
-        ...safeItems.map((item) => ({
-          id: item.product.id,
-          title: item.product.name,
-          quantity: item.quantity,
-          currency_id: "ARS",
-          unit_price: item.product.price,
-        })),
-        {
-          id: "shipping",
-          title: "Envio estimado",
-          quantity: 1,
-          currency_id: "ARS",
-          unit_price: SHIPPING_PRICE,
-        },
-      ],
-      payer: {
-        name: payload.customer?.name,
-        email: payload.customer?.email,
-        phone: payload.customer?.phone ? { number: payload.customer.phone } : undefined,
-        address: payload.customer?.address
-          ? {
-              street_name: payload.customer.address,
-              zip_code: payload.customer.postalCode,
-            }
-          : undefined,
-      },
-      back_urls: {
-        success: `${siteUrl}/gracias`,
-        failure: `${siteUrl}/checkout`,
-        pending: `${siteUrl}/checkout`,
-      },
-      auto_return: "approved",
-      statement_descriptor: "MINIFIMY",
-      external_reference: `minifimy-${Date.now()}`,
-      metadata: {
-        city: payload.customer?.city,
-        postal_code: payload.customer?.postalCode,
-      },
-    }),
+    items: safeItems,
+    paymentMethodId: payload.paymentMethodId,
+    shippingMethodId: payload.shippingMethodId,
   });
 
-  if (!preferenceResponse.ok) {
-    return NextResponse.json({ message: "Mercado Pago no pudo crear la preferencia." }, { status: 502 });
+  if (!order) {
+    return NextResponse.json({ message: "WooCommerce no pudo crear la orden." }, { status: 502 });
   }
 
-  const preference = await preferenceResponse.json() as { id?: string; init_point?: string; sandbox_init_point?: string };
-  const initPoint = process.env.MERCADO_PAGO_USE_SANDBOX === "true"
-    ? preference.sandbox_init_point
-    : preference.init_point;
-
   return NextResponse.json({
-    message: "Checkout de Mercado Pago generado.",
-    preferenceId: preference.id,
-    initPoint,
+    message: "Orden creada en WooCommerce.",
+    orderId: order.id,
+    orderKey: order.orderKey,
+    paymentUrl: order.paymentUrl,
   });
 }

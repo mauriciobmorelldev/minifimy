@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -43,14 +43,14 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
-                Fimi está guardando
+                Fimi esta guardando
               </span>
               <h2 className="mt-1 font-headline text-2xl font-extrabold text-on-surface">
                 Tu bolsita suave
               </h2>
               <p className="mt-1 text-sm text-on-surface-variant">
                 {itemCount === 0
-                  ? "Todavía no elegiste prendas."
+                  ? "Todavia no elegiste prendas."
                   : `${itemCount} ${itemCount === 1 ? "producto elegido" : "productos elegidos"}.`}
               </p>
             </div>
@@ -80,14 +80,14 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
               Fimi te ayuda a elegir.
             </h3>
             <p className="mt-3 text-sm leading-6 text-on-surface-variant">
-              Empezá por recién nacido, regalos con amor o esos tejidos que se sienten abrazo.
+              Empeza por recien nacido, regalos con amor o esos tejidos que se sienten abrazo.
             </p>
             <Link
               href="/catalogo"
               onClick={onClose}
               className="mt-7 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-on-primary shadow-soft"
             >
-              Ver catálogo
+              Ver catalogo
               <span className="material-symbols-outlined text-lg">arrow_forward</span>
             </Link>
           </div>
@@ -96,7 +96,7 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
             <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
               {items.map((item) => (
                 <article
-                  key={item.product.id}
+                  key={item.id}
                   className="grid grid-cols-[88px_1fr] gap-4 rounded-[1.6rem] bg-white/78 p-3 shadow-soft"
                 >
                   <Image
@@ -113,12 +113,12 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
                           {item.product.name}
                         </h3>
                         <p className="mt-1 text-xs text-on-surface-variant">
-                          {item.product.category} · {item.product.sizes?.[0] ?? "Único"}
+                          {item.product.category}{item.selection?.size ? ` · Talle ${item.selection.size}` : ""}{item.selection?.color ? ` · ${item.selection.color}` : ""}
                         </p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => removeFromCart(item.product.id)}
+                        onClick={() => removeFromCart(item.id)}
                         className="text-on-surface-variant transition-colors hover:text-error"
                         aria-label={`Quitar ${item.product.name}`}
                       >
@@ -129,7 +129,7 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
                       <div className="flex items-center gap-3 rounded-full bg-[#f7efe3] px-3 py-1.5">
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
                           className="text-primary"
                           aria-label="Reducir cantidad"
                         >
@@ -138,7 +138,7 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
                         <span className="text-sm font-bold">{item.quantity}</span>
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           className="text-primary"
                           aria-label="Aumentar cantidad"
                         >

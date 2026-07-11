@@ -2,15 +2,17 @@
 
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { useCart } from "@/context/cart-context";
-import type { Product } from "@/models/product";
+import type { Product, ProductSelection } from "@/models/product";
 
 interface AddToCartButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick" | "type"> {
   product: Product;
+  quantity?: number;
+  selection?: ProductSelection;
   className?: string;
   children?: ReactNode;
 }
 
-export function AddToCartButton({ product, className, children, ...buttonProps }: AddToCartButtonProps) {
+export function AddToCartButton({ product, quantity = 1, selection, className, children, ...buttonProps }: AddToCartButtonProps) {
   const { addToCart } = useCart();
   const [status, setStatus] = useState<"idle" | "added">("idle");
   const [bump, setBump] = useState(false);
@@ -37,7 +39,7 @@ export function AddToCartButton({ product, className, children, ...buttonProps }
       className={classes}
       {...buttonProps}
       onClick={() => {
-        addToCart(product);
+        addToCart(product, quantity, selection);
         setStatus("added");
         setBump(true);
         window.setTimeout(() => setBump(false), 350);

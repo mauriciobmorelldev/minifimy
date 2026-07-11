@@ -1,14 +1,20 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductCarousel } from "@/components/ProductCarousel";
+import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { getStoreCategories, getStoreProductBySlug, getStoreProducts } from "@/lib/woocommerce";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
+
+const reviews = [
+  ["Sofia", "La tela es hermosa y llego con una presentacion divina."],
+  ["Mica", "Compre para regalar y quedo super delicado. Todo muy cuidado."],
+  ["Valen", "El talle fue tal cual y la prenda se siente muy suave."],
+];
 
 export const revalidate = 300;
 
@@ -33,24 +39,6 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   };
 }
 
-function colorValue(color: string) {
-  const normalized = color.toLowerCase();
-  const palette: Record<string, string> = {
-    natural: "#e9ddc7",
-    beige: "#dbc7aa",
-    crema: "#f6ead6",
-    blanco: "#fffaf1",
-    rosa: "#eec7bf",
-    celeste: "#c8d9e6",
-    salvia: "#aebc9a",
-    verde: "#aebc9a",
-    terracota: "#d9a17b",
-    gris: "#c8c2b7",
-  };
-
-  return Object.entries(palette).find(([name]) => normalized.includes(name))?.[1] ?? "#d8c7aa";
-}
-
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
   const [product, categories, allProducts] = await Promise.all([
@@ -63,9 +51,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
     return (
       <main className="mobile-soft-page mx-auto w-full max-w-6xl px-4 py-28 md:px-6">
         <div className="rounded-[2rem] bg-white/80 p-8 text-center shadow-soft">
-          <p className="text-sm text-on-surface-variant">Producto no encontrado o todavía no publicado.</p>
+          <p className="text-sm text-on-surface-variant">Producto no encontrado o todavia no publicado.</p>
           <Link href="/catalogo" className="btn-ghost mt-6 inline-flex">
-            Volver al catálogo
+            Volver al catalogo
           </Link>
         </div>
       </main>
@@ -89,14 +77,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </Link>
         <span className="material-symbols-outlined text-[12px]">chevron_right</span>
         <Link href="/catalogo" className="transition-colors hover:text-primary">
-          Catálogo
+          Catalogo
         </Link>
         <span className="material-symbols-outlined text-[12px]">chevron_right</span>
-        <Link
-          href={`/catalogo/${product.category}`}
-          className="transition-colors hover:text-primary"
-        >
-          {category?.name ?? "Categoría"}
+        <Link href={`/catalogo/${product.category}`} className="transition-colors hover:text-primary">
+          {category?.name ?? "Categoria"}
         </Link>
         <span className="material-symbols-outlined text-[12px]">chevron_right</span>
         <span className="text-on-surface">{product.name}</span>
@@ -105,7 +90,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Link href="/catalogo" className="inline-flex items-center gap-2 rounded-full bg-white/78 px-4 py-2 text-sm font-bold text-primary shadow-soft transition hover:bg-white">
           <span className="material-symbols-outlined text-lg">arrow_back</span>
-          Volver al catálogo
+          Volver al catalogo
         </Link>
         <Link href="/carrito" className="inline-flex items-center gap-2 rounded-full bg-[#f7efe3] px-4 py-2 text-sm font-bold text-secondary shadow-soft">
           Ver carrito
@@ -165,60 +150,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
           </header>
 
-          {product.sizes && product.sizes.length > 0 && (
-            <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
-              <span className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-                Talles disponibles
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                {product.sizes.map((size, index) => (
-                  <button
-                    key={size}
-                    type="button"
-                    className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${
-                      index === 0
-                        ? "border-primary bg-primary text-on-primary"
-                        : "border-outline-variant/30 bg-white text-primary hover:border-primary"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {product.colors && product.colors.length > 0 && (
-            <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
-              <span className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-                Colores disponibles
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                {product.colors.map((color) => (
-                  <span key={color} className="inline-flex items-center gap-2 rounded-full bg-[#fbf4ea] px-3 py-2 text-xs font-bold text-primary">
-                    <span className="h-4 w-4 rounded-full ring-1 ring-on-surface/10" style={{ backgroundColor: colorValue(color) }} />
-                    {color}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <AddToCartButton
-              product={product}
-              className="w-full gap-3 rounded-full bg-primary py-4 font-headline text-base text-on-primary shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95 md:py-5 md:text-lg"
-            >
-              <span className="material-symbols-outlined">shopping_bag</span>
-              Agregar al bolso
-            </AddToCartButton>
-          </div>
+          <ProductPurchasePanel product={product} />
 
           <div className="space-y-4 rounded-[1.5rem] bg-surface-container-low p-5 md:p-6">
             <div className="flex items-start gap-4">
               <span className="material-symbols-outlined text-primary">local_shipping</span>
               <div>
-                <h4 className="text-sm font-bold">Envío cuidado</h4>
+                <h4 className="text-sm font-bold">Envio cuidado</h4>
                 <p className="text-sm text-on-surface-variant">
                   Preparado en packaging Minifimy y despachado con seguimiento.
                 </p>
@@ -229,14 +167,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <div>
                 <h4 className="text-sm font-bold">Cambios simples</h4>
                 <p className="text-sm text-on-surface-variant">
-                  Acompañamiento para elegir talle o cambiar con tranquilidad.
+                  Acompanamiento para elegir talle o cambiar con tranquilidad.
                 </p>
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-headline text-xl font-bold">La historia detrás</h3>
+            <h3 className="font-headline text-xl font-bold">La historia detras</h3>
             <p className="leading-relaxed text-on-surface-variant">
               {product.description}
             </p>
@@ -244,13 +182,43 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </ScrollReveal>
       </div>
 
+      <section className="mt-14 rounded-[2rem] bg-white/72 p-5 shadow-soft md:mt-20 md:p-8">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Resenas</span>
+            <h2 className="mt-2 font-headline text-2xl font-extrabold text-on-surface md:text-3xl">
+              Familias que ya eligieron Minifimy
+            </h2>
+          </div>
+          <div className="rounded-full bg-[#f7efe3] px-4 py-2 text-sm font-bold text-secondary">
+            4.9 / 5
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {reviews.map(([name, text]) => (
+            <article key={name} className="rounded-[1.5rem] bg-[#fbf4ea] p-5">
+              <div className="mb-3 flex text-secondary" aria-label="5 estrellas">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <span key={index} className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    star
+                  </span>
+                ))}
+              </div>
+              <p className="text-sm leading-6 text-on-surface-variant">“{text}”</p>
+              <p className="mt-4 text-sm font-bold text-on-surface">{name}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <div className="mt-14 md:mt-24">
         <ProductCarousel
-          title="Completá el look"
+          title="Completa el look"
           eyebrow="Productos relacionados"
           description="Combos suaves para cada momento, listos para sumar a la bolsita."
           products={recommendations}
-          ctaLabel="Ver colección"
+          ctaLabel="Ver coleccion"
         />
       </div>
     </main>

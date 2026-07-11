@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { useCart } from "@/context/cart-context";
 
@@ -14,6 +14,19 @@ interface CheckoutFormValues {
   city: string;
   postalCode: string;
   notes: string;
+}
+
+interface CheckoutPaymentMethod {
+  id: string;
+  title: string;
+  description: string;
+}
+
+interface CheckoutShippingMethod {
+  id: string;
+  title: string;
+  description: string;
+  total: number;
 }
 
 function onlyDigits(value: string) {
@@ -34,14 +47,47 @@ function formatPostalCode(value: string) {
 export default function CheckoutClient() {
   const { items, total } = useCart();
   const [status, setStatus] = useState<string | null>(null);
-  const shipping = items.length > 0 ? 950 : 0;
-  const grandTotal = total + shipping;
+  const [paymentMethods, setPaymentMethods] = useState<CheckoutPaymentMethod[]>([]);
+  const [shippingMethods, setShippingMethods] = useState<CheckoutShippingMethod[]>([]);
+  const [paymentMethodId, setPaymentMethodId] = useState("");
+  const [shippingMethodId, setShippingMethodId] = useState("");
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
   } = useForm<CheckoutFormValues>();
+
+  useEffect(() => {
+    let active = true;
+
+    fetch("/api/checkout")
+      .then((response) => response.json())
+      .then((payload: { paymentMethods?: CheckoutPaymentMethod[]; shippingMethods?: CheckoutShippingMethod[] }) => {
+        if (!active) return;
+
+        const nextPaymentMethods = payload.paymentMethods ?? [];
+        const nextShippingMethods = payload.shippingMethods ?? [];
+        setPaymentMethods(nextPaymentMethods);
+        setShippingMethods(nextShippingMethods);
+        setPaymentMethodId((current) => current || nextPaymentMethods[0]?.id || "");
+        setShippingMethodId((current) => current || nextShippingMethods[0]?.id || "");
+      })
+      .catch(() => {
+        if (active) setStatus("No pudimos cargar pagos y envios desde WooCommerce.");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const selectedShippingMethod = useMemo(
+    () => shippingMethods.find((method) => method.id === shippingMethodId),
+    [shippingMethodId, shippingMethods]
+  );
+  const shipping = selectedShippingMethod?.total ?? 0;
+  const grandTotal = total + shipping;
 
   const maskPhone = (event: ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhone(event.target.value);
@@ -56,7 +102,7 @@ export default function CheckoutClient() {
   };
 
   const onSubmit = async (data: CheckoutFormValues) => {
-    setStatus("Estamos preparando tu checkout de Mercado Pago...");
+    setStatus("Estamos creando tu orden en WooCommerce...");
 
     const response = await fetch("/api/checkout", {
       method: "POST",
@@ -64,21 +110,24 @@ export default function CheckoutClient() {
       body: JSON.stringify({
         customer: data,
         items,
+        paymentMethodId,
+        shippingMethodId,
       }),
     });
 
     if (!response.ok) {
-      setStatus("Hubo un problema al procesar tu compra. Probá nuevamente o escribinos por WhatsApp.");
+      const payload = await response.json().catch(() => ({})) as { message?: string };
+      setStatus(payload.message ?? "Hubo un problema al crear la orden en WooCommerce.");
       return;
     }
 
-    const payload = await response.json() as { message?: string; initPoint?: string };
-    if (payload.initPoint) {
-      window.location.href = payload.initPoint;
+    const payload = await response.json() as { message?: string; paymentUrl?: string; orderId?: number };
+    if (payload.paymentUrl) {
+      window.location.href = payload.paymentUrl;
       return;
     }
 
-    setStatus(payload.message ?? "Checkout iniciado.");
+    window.location.href = `/gracias${payload.orderId ? `?order=${payload.orderId}` : ""}`;
   };
 
   return (
@@ -90,22 +139,22 @@ export default function CheckoutClient() {
       <section className="relative mx-auto max-w-6xl">
         <header className="mb-8 rounded-[1.8rem] bg-[#efe4d0] px-4 py-6 shadow-soft md:rounded-[2.4rem] md:px-10 md:py-8">
           <span className="inline-flex rounded-full bg-white/72 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary shadow-soft">
-            Último pasito
+            Ultimo pasito
           </span>
           <h1 className="mt-5 font-headline text-[2.15rem] font-extrabold leading-tight text-on-surface md:text-6xl">
             Dejamos todo listo para que llegue a casa.
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-on-surface-variant md:text-base md:leading-8">
-            Completá tus datos con calma. El pago se abre en Mercado Pago de forma segura.
+            Pagos, envios y ordenes se toman desde WooCommerce. Minifimy solo muestra una experiencia mas linda.
           </p>
         </header>
 
         {items.length === 0 ? (
           <div className="rounded-[2rem] bg-white/78 p-10 text-center shadow-soft">
-            <h2 className="font-headline text-3xl font-extrabold text-on-surface">Tu carrito está vacío.</h2>
-            <p className="mt-3 text-on-surface-variant">Primero elegí una prenda o regalo para avanzar al checkout.</p>
+            <h2 className="font-headline text-3xl font-extrabold text-on-surface">Tu carrito esta vacio.</h2>
+            <p className="mt-3 text-on-surface-variant">Primero elegi una prenda o regalo para avanzar al checkout.</p>
             <Link href="/catalogo" className="mt-6 inline-flex rounded-full bg-primary px-7 py-3 font-bold text-on-primary shadow-soft">
-              Volver al catálogo
+              Volver al catalogo
             </Link>
           </div>
         ) : (
@@ -120,7 +169,7 @@ export default function CheckoutClient() {
                 </div>
                 <div>
                   <h2 className="font-headline text-xl font-extrabold text-on-surface md:text-2xl">Datos de entrega</h2>
-                  <p className="text-sm text-on-surface-variant">Solo pedimos lo necesario para coordinar bien.</p>
+                  <p className="text-sm text-on-surface-variant">Solo pedimos lo necesario para crear la orden.</p>
                 </div>
               </div>
 
@@ -165,13 +214,13 @@ export default function CheckoutClient() {
                 </div>
 
                 <label className="text-sm font-semibold text-on-surface">
-                  Dirección
+                  Direccion
                   <input
                     {...register("address", { required: true })}
                     className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                     type="text"
                     autoComplete="street-address"
-                    placeholder="Calle, número, piso/depto"
+                    placeholder="Calle, numero, piso/depto"
                   />
                   {errors.address && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
                 </label>
@@ -189,7 +238,7 @@ export default function CheckoutClient() {
                     {errors.city && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
                   </label>
                   <label className="text-sm font-semibold text-on-surface">
-                    Código postal
+                    Codigo postal
                     <input
                       {...register("postalCode", { required: true, onChange: maskPostalCode })}
                       className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
@@ -203,22 +252,67 @@ export default function CheckoutClient() {
                   </label>
                 </div>
 
+                <div className="grid gap-4 md:grid-cols-2">
+                  <fieldset className="rounded-[1.5rem] bg-[#fbf4ea] p-4">
+                    <legend className="mb-3 text-sm font-bold text-on-surface">Metodo de envio</legend>
+                    <div className="space-y-2">
+                      {shippingMethods.map((method) => (
+                        <label key={method.id} className="flex cursor-pointer items-start gap-3 rounded-[1.1rem] bg-white/60 p-3 text-sm">
+                          <input
+                            type="radio"
+                            name="shippingMethod"
+                            checked={shippingMethodId === method.id}
+                            onChange={() => setShippingMethodId(method.id)}
+                            className="mt-1 text-primary focus:ring-primary/30"
+                          />
+                          <span>
+                            <strong className="block text-on-surface">{method.title}</strong>
+                            <span className="block text-xs text-on-surface-variant">{method.description || "Configurado en WooCommerce"}</span>
+                            <span className="mt-1 block text-xs font-bold text-secondary">AR$ {method.total.toLocaleString("es-AR")}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+
+                  <fieldset className="rounded-[1.5rem] bg-[#fbf4ea] p-4">
+                    <legend className="mb-3 text-sm font-bold text-on-surface">Metodo de pago</legend>
+                    <div className="space-y-2">
+                      {paymentMethods.map((method) => (
+                        <label key={method.id} className="flex cursor-pointer items-start gap-3 rounded-[1.1rem] bg-white/60 p-3 text-sm">
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            checked={paymentMethodId === method.id}
+                            onChange={() => setPaymentMethodId(method.id)}
+                            className="mt-1 text-primary focus:ring-primary/30"
+                          />
+                          <span>
+                            <strong className="block text-on-surface">{method.title}</strong>
+                            <span className="block text-xs text-on-surface-variant">{method.description || "Configurado en WooCommerce"}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </div>
+
                 <label className="text-sm font-semibold text-on-surface">
                   Nota para Fimi, opcional
                   <textarea
                     {...register("notes")}
                     className="mt-2 min-h-28 w-full rounded-[1.5rem] bg-[#fbf4ea] px-5 py-4 outline-none ring-1 ring-transparent focus:ring-primary/35"
-                    placeholder="Ej: es para regalo, necesitás tarjeta, preferís coordinar horario..."
+                    placeholder="Ej: es para regalo, necesitas tarjeta, preferis coordinar horario..."
                   />
                 </label>
               </div>
 
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !paymentMethodId || !shippingMethodId}
                 className="mt-7 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 font-headline text-base font-bold text-on-primary shadow-soft transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isSubmitting ? "Preparando..." : "Pagar con Mercado Pago"}
+                {isSubmitting ? "Creando orden..." : "Crear orden y pagar"}
                 <span className="material-symbols-outlined">payments</span>
               </button>
               {status && <p className="mt-4 rounded-[1.3rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">{status}</p>}
@@ -235,7 +329,7 @@ export default function CheckoutClient() {
 
               <div className="mt-6 space-y-4">
                 {items.map((item) => (
-                  <div key={item.product.id} className="grid grid-cols-[64px_1fr] gap-3 rounded-[1.4rem] bg-[#fbf4ea] p-3">
+                  <div key={item.id} className="grid grid-cols-[64px_1fr] gap-3 rounded-[1.4rem] bg-[#fbf4ea] p-3">
                     <Image
                       src={item.product.images[0]}
                       alt={item.product.name}
@@ -245,7 +339,7 @@ export default function CheckoutClient() {
                     />
                     <div className="min-w-0">
                       <p className="line-clamp-2 text-sm font-bold leading-tight text-on-surface">{item.product.name}</p>
-                      <p className="mt-1 text-xs text-on-surface-variant">Cantidad {item.quantity}</p>
+                      <p className="mt-1 text-xs text-on-surface-variant">Cantidad {item.quantity}</p>\n                      <p className="mt-1 text-xs text-on-surface-variant">{item.selection?.size ? `Talle ${item.selection.size}` : ""}{item.selection?.color ? ` Â· ${item.selection.color}` : ""}</p>
                       <p className="mt-2 text-sm font-extrabold text-secondary">
                         AR$ {(item.product.price * item.quantity).toLocaleString("es-AR")}
                       </p>
@@ -260,7 +354,7 @@ export default function CheckoutClient() {
                   <span>AR$ {total.toLocaleString("es-AR")}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Envío estimado</span>
+                  <span>{selectedShippingMethod?.title ?? "Envio"}</span>
                   <span>AR$ {shipping.toLocaleString("es-AR")}</span>
                 </div>
                 <div className="flex items-baseline justify-between pt-3 font-headline text-xl font-extrabold text-on-surface">
@@ -270,7 +364,7 @@ export default function CheckoutClient() {
               </div>
 
               <p className="mt-5 rounded-[1.4rem] bg-primary/10 p-4 text-xs leading-5 text-primary">
-                El pago se procesa con Mercado Pago. WooCommerce mantiene productos, stock, precios y órdenes.
+                Pagos, envios, clientes y ordenes quedan registrados en WooCommerce.
               </p>
             </aside>
           </div>

@@ -21,6 +21,101 @@ const WOO_PRODUCT_FIELDS = [
 
 const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description"].join(",");
 
+
+export interface StorePaymentMethod {
+  id: string;
+  title: string;
+  description: string;
+  enabled: boolean;
+}
+
+export interface StoreShippingMethod {
+  id: string;
+  title: string;
+  description: string;
+  total: number;
+  zoneId?: number;
+  instanceId?: number;
+}
+
+export interface StoreCheckoutItem {
+  productId: string;
+  quantity: number;
+  selection?: {
+    size?: string;
+    color?: string;
+  };
+}
+
+export interface StoreCheckoutCustomer {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  notes?: string;
+}
+
+export interface CreateStoreOrderInput {
+  customer: StoreCheckoutCustomer;
+  items: StoreCheckoutItem[];
+  paymentMethodId: string;
+  shippingMethodId: string;
+}
+
+type WooPaymentGateway = {
+  id: string;
+  title?: string;
+  description?: string;
+  enabled?: boolean;
+};
+
+type WooShippingZone = {
+  id: number;
+  name?: string;
+};
+
+type WooShippingZoneMethod = {
+  id: string;
+  instance_id?: number;
+  title?: string;
+  method_title?: string;
+  enabled?: boolean;
+  settings?: Record<string, { value?: string }>;
+};
+
+type WooOrder = {
+  id: number;
+  order_key?: string;
+  payment_url?: string;
+  checkout_payment_url?: string;
+};
+
+function getSettingNumber(value?: string) {
+  const normalized = Number(String(value ?? "0").replace(",", "."));
+  return Number.isFinite(normalized) ? normalized : 0;
+}
+
+async function postWoo<T>(path: string, body: unknown) {
+  const url = buildWooUrl(path);
+  if (!url) return null;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+
+    if (!response.ok) return null;
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 type WooImage = {
   src?: string;
   alt?: string;
@@ -201,4 +296,121 @@ export async function getStoreProductBySlug(slug: string) {
 export async function getStoreProductsByCategory(slug: string) {
   const allProducts = await getStoreProducts({ perPage: 100 });
   return allProducts.filter((product) => product.category === slug);
+}
+
+export async function getStorePaymentMethods(): Promise<StorePaymentMethod[]> {
+  if (!canUseWooCommerce()) {
+    return [{ id: "cod", title: "Pago a coordinar", description: "Confirmamos el pago por WhatsApp.", enabled: true }];
+  }
+
+  const data = await fetchWoo<WooPaymentGateway[]>(
+    "payment_gateways",
+    {},
+    CACHE_SECONDS.checkout,
+    [CACHE_TAGS.checkout]
+  );
+
+  return (data ?? [])
+    .filter((method) => method.enabled)
+    .map((method) => ({
+      id: method.id,
+      title: cleanText(method.title) || method.id,
+      description: cleanText(method.description),
+      enabled: Boolean(method.enabled),
+    }));
+}
+
+export async function getStoreShippingMethods(): Promise<StoreShippingMethod[]> {
+  if (!canUseWooCommerce()) {
+    return [{ id: "flat_rate", title: "Envio estimado", description: "A coordinar", total: 950 }];
+  }
+
+  const zones = await fetchWoo<WooShippingZone[]>(
+    "shipping/zones",
+    {},
+    CACHE_SECONDS.checkout,
+    [CACHE_TAGS.checkout]
+  );
+
+  const methodsByZone = await Promise.all(
+    (zones ?? []).map(async (zone) => {
+      const methods = await fetchWoo<WooShippingZoneMethod[]>(
+        `shipping/zones/${zone.id}/methods`,
+        {},
+        CACHE_SECONDS.checkout,
+        [CACHE_TAGS.checkout]
+      );
+
+      return (methods ?? [])
+        .filter((method) => method.enabled)
+        .map((method) => ({
+          id: String(method.instance_id ?? method.id),
+          title: cleanText(method.title || method.method_title) || "Envio",
+          description: cleanText(zone.name),
+          total: getSettingNumber(method.settings?.cost?.value),
+          zoneId: zone.id,
+          instanceId: method.instance_id,
+        }));
+    })
+  );
+
+  return methodsByZone.flat();
+}
+
+export async function createStoreOrder(input: CreateStoreOrderInput) {
+  const [paymentMethods, shippingMethods] = await Promise.all([
+    getStorePaymentMethods(),
+    getStoreShippingMethods(),
+  ]);
+  const paymentMethod = paymentMethods.find((method) => method.id === input.paymentMethodId);
+  const shippingMethod = shippingMethods.find((method) => method.id === input.shippingMethodId);
+
+  if (!paymentMethod || !shippingMethod) return null;
+
+  const order = await postWoo<WooOrder>("orders", {
+    payment_method: paymentMethod.id,
+    payment_method_title: paymentMethod.title,
+    set_paid: false,
+    status: "pending",
+    customer_note: input.customer.notes,
+    billing: {
+      first_name: input.customer.name,
+      email: input.customer.email,
+      phone: input.customer.phone,
+      address_1: input.customer.address,
+      city: input.customer.city,
+      postcode: input.customer.postalCode,
+      country: "AR",
+    },
+    shipping: {
+      first_name: input.customer.name,
+      address_1: input.customer.address,
+      city: input.customer.city,
+      postcode: input.customer.postalCode,
+      country: "AR",
+    },
+    line_items: input.items.map((item) => ({
+      product_id: Number(item.productId),
+      quantity: item.quantity,
+      meta_data: [
+        ...(item.selection?.size ? [{ key: "Talle", value: item.selection.size }] : []),
+        ...(item.selection?.color ? [{ key: "Color", value: item.selection.color }] : []),
+      ],
+    })),
+    shipping_lines: [
+      {
+        method_id: shippingMethod.instanceId ? String(shippingMethod.instanceId) : shippingMethod.id,
+        method_title: shippingMethod.title,
+        total: String(shippingMethod.total),
+      },
+    ],
+  });
+
+  if (!order) return null;
+
+  return {
+    id: order.id,
+    orderKey: order.order_key,
+    paymentUrl: order.payment_url ?? order.checkout_payment_url,
+  };
 }

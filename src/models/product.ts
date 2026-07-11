@@ -19,9 +19,16 @@ export interface Category {
   description: string;
 }
 
+export interface ProductSelection {
+  size?: string;
+  color?: string;
+}
+
 export interface CartItem {
+  id: string;
   product: Product;
   quantity: number;
+  selection?: ProductSelection;
 }
 
 export interface Order {

@@ -8,20 +8,31 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { CartItem, Product } from "@/models/product";
+import type { CartItem, Product, ProductSelection } from "@/models/product";
 
 interface CartContextValue {
   items: CartItem[];
   total: number;
-  addToCart: (product: Product, quantity?: number) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addToCart: (product: Product, quantity?: number, selection?: ProductSelection) => void;
+  removeFromCart: (itemId: string) => void;
+  updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
 }
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 const STORAGE_KEY = "minifimy-cart";
+
+function buildItemId(product: Product, selection?: ProductSelection) {
+  return [product.id, selection?.size ?? "", selection?.color ?? ""].join("::");
+}
+
+function normalizeCartItems(items: CartItem[]) {
+  return items.map((item) => ({
+    ...item,
+    id: item.id ?? buildItemId(item.product, item.selection),
+  }));
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -30,7 +41,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     if (stored) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setItems(JSON.parse(stored));
+      setItems(normalizeCartItems(JSON.parse(stored)));
     }
   }, []);
 
@@ -45,28 +56,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [items]
   );
 
-  const addToCart = (product: Product, quantity = 1) => {
+  const addToCart = (product: Product, quantity = 1, selection?: ProductSelection) => {
     setItems((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
+      const itemId = buildItemId(product, selection);
+      const existing = prev.find((item) => item.id === itemId);
       if (existing) {
         return prev.map((item) =>
-          item.product.id === product.id
+          item.id === itemId
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       }
-      return [...prev, { product, quantity }];
+      return [...prev, { id: itemId, product, quantity, selection }];
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setItems((prev) => prev.filter((item) => item.product.id !== productId));
+  const removeFromCart = (itemId: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== itemId));
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (itemId: string, quantity: number) => {
     setItems((prev) =>
       prev.map((item) =>
-        item.product.id === productId
+        item.id === itemId
           ? { ...item, quantity: Math.max(1, quantity) }
           : item
       )
