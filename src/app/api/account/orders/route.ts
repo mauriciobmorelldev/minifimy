@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
 
   const user = await verifyWordPressCustomerToken(token);
   if (!user?.email) {
-    return NextResponse.json({ message: "WordPress no pudo validar la sesion." }, { status: 401 });
+    return NextResponse.json({ message: "Fimy no pudo validar la sesion." }, { status: 401 });
   }
 
   const orders = await getStoreOrdersForCustomerEmail(user.email);

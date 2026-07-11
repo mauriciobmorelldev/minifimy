@@ -22,7 +22,7 @@ export function WhatsAppFimy({ phone, message, messages }: WhatsAppFimyProps) {
   if (!phone) return null;
 
   const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-  const visibleMessages = messages.length > 0 ? messages : ["Hola, soy Fimi."];
+  const visibleMessages = messages.length > 0 ? messages : ["Hola, soy Fimy."];
 
   return (
     <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">

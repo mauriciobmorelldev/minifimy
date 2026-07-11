@@ -13,7 +13,7 @@ interface ProductCarouselProps {
 
 export function ProductCarousel({
   title,
-  eyebrow = "Elegidos por Fimi",
+  eyebrow = "Elegidos por Fimy",
   description,
   products,
   href = "/catalogo",

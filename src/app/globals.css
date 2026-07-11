@@ -804,21 +804,21 @@
     border-radius: 1.8rem 1.5rem 2rem 1.7rem;
   }
 
-  .hero-fimi-note {
+  .hero-fimy-note {
     border-radius: 1.8rem 2.2rem 1.5rem 2rem;
   }
 
-  .fimi-guide {
+  .fimy-guide {
     background:
       radial-gradient(circle at 12% 12%, rgba(255, 255, 255, 0.86), transparent 24%),
       linear-gradient(180deg, rgb(255 248 239), rgb(252 244 232));
   }
 
-  .fimi-guide-panel {
+  .fimy-guide-panel {
     border-radius: 2.4rem 1.8rem 2.8rem 2rem;
   }
 
-  .fimi-recommendation {
+  .fimy-recommendation {
     border-radius: 2rem 2.6rem 1.8rem 2.4rem;
   }
 
@@ -834,9 +834,9 @@
     .hero-showcase,
     .hero-feature-card,
     .hero-side-product,
-    .hero-fimi-note,
-    .fimi-guide-panel,
-    .fimi-recommendation,
+    .hero-fimy-note,
+    .fimy-guide-panel,
+    .fimy-recommendation,
     .guide-product-card,
     .editorial-mini-product {
       border-radius: 1.55rem;

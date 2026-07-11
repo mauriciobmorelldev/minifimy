@@ -155,7 +155,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
             <div className="relative z-10 grid gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-center">
               <div>
                 <span className="inline-flex rounded-full bg-white/72 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary shadow-soft">
-                  Fimi te ayuda a elegir
+                  Fimy te ayuda a encontrar
                 </span>
                 <h1 className="mt-5 max-w-3xl font-headline text-[2.15rem] font-extrabold leading-[1.02] tracking-tight text-on-surface md:mt-6 md:text-6xl">
                   Encontrá esa prenda que se siente elegida con amor.
@@ -180,7 +180,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                     className="h-12 rounded-full bg-white/88 px-4 text-sm font-bold text-primary shadow-soft outline-none ring-1 ring-white/60 md:h-14 md:px-5"
                     aria-label="Ordenar productos"
                   >
-                    <option value="featured">Elegidos por Fimi</option>
+                    <option value="featured">Elegidos por Fimy</option>
                     <option value="newest">Más nuevos</option>
                     <option value="price-asc">Menor precio</option>
                     <option value="price-desc">Mayor precio</option>
@@ -208,7 +208,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                 </div>
                 <Image
                   src="/brand/illustrations/jirafa.svg"
-                  alt="Fimi"
+                  alt="Fimy"
                   width={120}
                   height={180}
                   className="absolute bottom-0 left-14 h-44 w-auto opacity-80"
@@ -242,8 +242,8 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
           <aside className="h-fit rounded-[1.6rem] bg-white/82 p-4 shadow-soft ring-1 ring-white/70 lg:sticky lg:top-28 lg:rounded-[2rem] lg:p-5" aria-label="Filtros de catálogo">
             <div className="mb-4 flex items-center justify-between gap-4 lg:mb-6">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Filtros</span>
-                <h2 className="font-headline text-xl font-extrabold text-on-surface md:text-2xl">Afinar búsqueda</h2>
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Fimy filtra por vos</span>
+                <h2 className="font-headline text-xl font-extrabold text-on-surface md:text-2xl">Elegir con calma</h2>
               </div>
               <button
                 type="button"
@@ -264,14 +264,17 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
               )}
             </div>
 
-            <div className={`${mobileFiltersOpen ? "block" : "hidden"} space-y-7 lg:block`}>
+            <div className={`${mobileFiltersOpen ? "block" : "hidden"} space-y-5 lg:block`}>
+              <p className="rounded-[1.2rem] bg-[#f7efe3] px-4 py-3 text-xs font-semibold leading-5 text-primary/85">
+                Usamos las categorias, talles, colores y precios reales cargados en Fimy.
+              </p>
               <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">Categoría</h3>
-                <div className="space-y-2">
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">Categoria</h3>
+                <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => setFilter({ categoria: "all" })}
-                    className={`w-full rounded-full px-4 py-2 text-left text-sm font-bold transition ${category === "all" ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
+                    className={`rounded-full px-4 py-2 text-sm font-bold transition ${category === "all" ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
                   >
                     Todo Minifimy
                   </button>
@@ -280,7 +283,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                       key={item.id}
                       type="button"
                       onClick={() => setFilter({ categoria: item.slug })}
-                      className={`w-full rounded-full px-4 py-2 text-left text-sm font-bold transition ${category === item.slug ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
+                      className={`rounded-full px-4 py-2 text-sm font-bold transition ${category === item.slug ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
                     >
                       {item.name}
                     </button>
@@ -438,14 +441,14 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
               <div className="rounded-[2rem] bg-white/72 p-10 text-center shadow-soft">
                 <Image
                   src="/brand/illustrations/jirafa.svg"
-                  alt="Fimi"
+                  alt="Fimy"
                   width={92}
                   height={140}
                   className="mx-auto mb-5 h-32 w-auto opacity-75"
                 />
-                <h3 className="font-headline text-xl font-extrabold text-on-surface md:text-2xl">Fimi no encontró algo exacto.</h3>
+                <h3 className="font-headline text-xl font-extrabold text-on-surface md:text-2xl">Fimy no encontro algo exacto.</h3>
                 <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-on-surface-variant">
-                  Probá con “regalo”, “recién nacido”, “body” o limpiá filtros para volver a ver toda la colección.
+Proba con “regalo”, “recien nacido”, “body” o limpia filtros para volver a ver toda la coleccion.
                 </p>
               </div>
             )}

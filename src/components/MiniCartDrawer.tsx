@@ -43,7 +43,7 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
-                Fimi esta guardando
+                Fimy esta guardando
               </span>
               <h2 className="mt-1 font-headline text-2xl font-extrabold text-on-surface">
                 Tu bolsita suave
@@ -70,14 +70,14 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
             <div className="mb-6 rounded-[2rem] bg-[#eadfcb] p-8">
               <Image
                 src="/brand/illustrations/jirafa.svg"
-                alt="Fimi"
+                alt="Fimy"
                 width={120}
                 height={160}
                 className="h-36 w-auto opacity-80"
               />
             </div>
             <h3 className="font-headline text-2xl font-extrabold text-on-surface">
-              Fimi te ayuda a elegir.
+              Fimy te ayuda a elegir.
             </h3>
             <p className="mt-3 text-sm leading-6 text-on-surface-variant">
               Empeza por recien nacido, regalos con amor o esos tejidos que se sienten abrazo.

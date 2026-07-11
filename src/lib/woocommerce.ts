@@ -362,6 +362,7 @@ function mapWooProduct(product: WooProduct): Product {
     price: Number(product.price || product.regular_price || 0),
     images: images && images.length > 0 ? images : ["/products/flatlay-01.jpg"],
     category,
+    categoryId: product.categories?.[0]?.id ? String(product.categories[0].id) : undefined,
     stock: product.stock_quantity ?? (product.stock_status === "instock" ? 1 : 0),
     badge: product.tags?.[0]?.name,
     sizes,
@@ -569,8 +570,16 @@ export async function getStoreProductBySlug(slug: string) {
 }
 
 export async function getStoreProductsByCategory(slug: string) {
-  const allProducts = await getStoreProducts({ perPage: 100 });
-  return allProducts.filter((product) => product.category === slug);
+  const categories = await getStoreCategories();
+  const category = categories.find((item) => item.slug === slug);
+
+  if (!category) return [];
+  if (!canUseWooCommerce()) {
+    const allProducts = await getStoreProducts({ perPage: 100 });
+    return allProducts.filter((product) => product.category === slug);
+  }
+
+  return getStoreProducts({ category: category.id, perPage: 100 });
 }
 
 export async function createStoreCustomer(input: StoreCustomerInput) {

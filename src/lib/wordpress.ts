@@ -35,6 +35,7 @@ export type HomeACF = {
   hero_banner?: ACFImage;
   announcements?: { text?: string }[];
   main_menu?: { label?: string; href?: string }[];
+  featured_menu_items?: { label?: string; href?: string }[];
   footer_explore_menu?: { label?: string; href?: string }[];
   footer_support_menu?: { label?: string; href?: string }[];
   whatsapp_phone?: string;
@@ -79,6 +80,7 @@ export type SiteSettings = {
   mainMenu: MenuItem[];
   footerExploreMenu: MenuItem[];
   footerSupportMenu: MenuItem[];
+  featuredMenuItems: MenuItem[];
   menusFromWordPress: boolean;
   whatsappPhone?: string;
   whatsappMessage: string;
@@ -91,12 +93,12 @@ export const fallbackHomeContent: HomeContent = {
   heroKicker: "Minifimy, con amor",
   heroTitle: "Un regalo que empieza antes de abrir la caja.",
   heroSubtitle:
-    "Fimi te acompana a elegir prendas suaves para esas primeras veces que quedan guardadas en la familia.",
+    "Fimy te acompana a elegir prendas suaves para esas primeras veces que quedan guardadas en la familia.",
   heroPrimaryLabel: "Encontrar algo especial",
   heroPrimaryHref: "/catalogo",
   heroSecondaryLabel: "Es para recien nacido",
   heroSecondaryHref: "/catalogo/recien-nacido",
-  fimiNoteTitle: "Fimi dice",
+  fimiNoteTitle: "Fimy dice",
   fimiNoteText:
     "Si es un regalo, empeza por una pieza suave, facil de combinar y lista para usar.",
   heroGiftChip: "Para baby shower, primeros dias o una visita con amor",
@@ -108,7 +110,7 @@ export const fallbackHomeContent: HomeContent = {
   editorialNotes: [
     "Las primeras veces merecen algo especial.",
     "Elegimos cada detalle como si fuera para nuestra familia.",
-    "Fimi aparece poquito, solo cuando puede ayudar.",
+    "Fimy aparece poquito, solo cuando puede ayudar.",
   ],
   featuredSectionKicker: "Encontramos algo especial",
   featuredSectionTitle: "Una seleccion pequena, pensada para elegir sin apuro.",
@@ -141,10 +143,11 @@ export const fallbackSiteSettings: SiteSettings = {
     { href: "/contacto", label: "Contacto" },
     { href: "/contacto", label: "Politicas" },
   ],
+  featuredMenuItems: [],
   menusFromWordPress: false,
   whatsappPhone: process.env.NEXT_PUBLIC_STORE_WHATSAPP_PHONE,
   whatsappMessage: "Hola Minifimy! Quiero hacer una consulta.",
-  whatsappMessages: ["Hola, soy Fimi.", "Te ayudo a elegir?"],
+  whatsappMessages: ["Hola, soy Fimy.", "Te ayudo a elegir?"],
 };
 
 function normalizeMenu(items: { label?: string; href?: string }[] | undefined) {
@@ -161,12 +164,14 @@ function normalizeSiteSettings(acf?: HomeACF | null): SiteSettings {
   const mainMenu = normalizeMenu(acf?.main_menu);
   const footerExploreMenu = normalizeMenu(acf?.footer_explore_menu);
   const footerSupportMenu = normalizeMenu(acf?.footer_support_menu);
-  const menusFromWordPress = mainMenu.length > 0 || footerExploreMenu.length > 0 || footerSupportMenu.length > 0;
+  const featuredMenuItems = normalizeMenu(acf?.featured_menu_items);
+  const menusFromWordPress = mainMenu.length > 0 || footerExploreMenu.length > 0 || footerSupportMenu.length > 0 || featuredMenuItems.length > 0;
 
   return {
     mainMenu: mainMenu.length > 0 ? mainMenu : fallbackSiteSettings.mainMenu,
     footerExploreMenu: footerExploreMenu.length > 0 ? footerExploreMenu : fallbackSiteSettings.footerExploreMenu,
     footerSupportMenu: footerSupportMenu.length > 0 ? footerSupportMenu : fallbackSiteSettings.footerSupportMenu,
+    featuredMenuItems,
     menusFromWordPress,
     whatsappPhone: normalizePhone(acf?.whatsapp_phone) ?? normalizePhone(fallbackSiteSettings.whatsappPhone),
     whatsappMessage: firstText(acf?.whatsapp_message, fallbackSiteSettings.whatsappMessage),

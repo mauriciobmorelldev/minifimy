@@ -25,7 +25,7 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
   const submitReview = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    setStatus("Enviando resena a WooCommerce...");
+    setStatus("Enviando resena a Fimy...");
 
     const response = await fetch(`/api/productos/${productSlug}/reviews`, {
       method: "POST",
@@ -78,14 +78,14 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
           ))}
           {reviews.length === 0 && (
             <div className="rounded-[1.5rem] bg-[#fbf4ea] p-5 text-sm leading-6 text-on-surface-variant">
-              Todavia no hay resenas aprobadas para este producto. Podes dejar la primera y WooCommerce la guarda.
+              Todavia no hay resenas aprobadas para este producto. Podes dejar la primera y Fimy la guarda.
             </div>
           )}
         </div>
 
         <form onSubmit={submitReview} className="rounded-[1.5rem] bg-[#efe4d0] p-5 shadow-soft">
           <h3 className="font-headline text-xl font-extrabold text-on-surface">Dejar una resena</h3>
-          <p className="mt-2 text-sm leading-6 text-on-surface-variant">Se envia a WooCommerce y puede quedar pendiente de aprobacion.</p>
+          <p className="mt-2 text-sm leading-6 text-on-surface-variant">Se envia a Fimy y puede quedar pendiente de aprobacion.</p>
           <div className="mt-5 space-y-3">
             <input name="reviewer" required placeholder="Tu nombre" className="w-full rounded-full bg-white/82 px-5 py-3 text-sm outline-none" />
             <input name="email" type="email" required placeholder="Email" className="w-full rounded-full bg-white/82 px-5 py-3 text-sm outline-none" />

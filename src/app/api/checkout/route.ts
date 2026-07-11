@@ -106,11 +106,11 @@ export async function POST(request: NextRequest) {
   });
 
   if (!order) {
-    return NextResponse.json({ message: "WooCommerce no pudo crear la orden." }, { status: 502 });
+    return NextResponse.json({ message: "Fimy no pudo crear la orden." }, { status: 502 });
   }
 
   return NextResponse.json({
-    message: "Orden creada en WooCommerce.",
+    message: "Orden creada en Fimy.",
     orderId: order.id,
     orderKey: order.orderKey,
     paymentUrl: order.paymentUrl,

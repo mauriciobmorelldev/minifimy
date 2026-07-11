@@ -79,7 +79,7 @@ export default async function HomePage() {
                     </div>
                     <div className="flex items-center justify-between gap-4 px-2 pb-2 pt-4">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Elegido por Fimi</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Elegido por Fimy</p>
                         <h2 className="mt-1 font-headline text-2xl font-extrabold leading-tight text-on-surface">{heroProduct.name}</h2>
                       </div>
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition group-hover:translate-x-1">
@@ -90,9 +90,9 @@ export default async function HomePage() {
                 )}
 
                 <div className="grid content-between gap-5">
-                  <div className="hero-fimi-note bg-white/78 p-5 shadow-soft">
+                  <div className="hero-fimy-note bg-white/78 p-5 shadow-soft">
                     <div className="flex items-start gap-4">
-                      <Image src="/brand/illustrations/jirafa.svg" alt="Fimi" width={74} height={105} className="fimy-float mt-1 w-14 shrink-0" />
+                      <Image src="/brand/illustrations/jirafa.svg" alt="Fimy" width={74} height={105} className="fimy-float mt-1 w-14 shrink-0" />
                       <div>
                         <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">{home.fimiNoteTitle}</p>
                         <p className="mt-2 text-base font-semibold leading-7 text-on-surface-variant">
@@ -190,7 +190,7 @@ export default async function HomePage() {
                 </Link>
                 <div className="flex flex-col justify-between p-8 sm:p-10">
                   <div className="space-y-5">
-                    <span className="text-xs font-bold uppercase tracking-[0.22em] text-secondary">Elegido por Fimi</span>
+                    <span className="text-xs font-bold uppercase tracking-[0.22em] text-secondary">Elegido por Fimy</span>
                     <h3 className="font-headline text-4xl font-extrabold leading-tight text-on-surface">{heroProduct.name}</h3>
                     <p className="max-w-sm text-base leading-8 text-on-surface-variant">{heroProduct.description}</p>
                   </div>
@@ -276,7 +276,7 @@ export default async function HomePage() {
                 className="min-h-12 flex-1 rounded-full border border-white/70 bg-white/85 px-5 text-sm text-on-surface outline-none transition focus:border-primary"
               />
               <button type="submit" className="rounded-full bg-secondary px-7 py-3 text-sm font-bold text-on-secondary transition hover:bg-secondary-dim">
-                Suscribirme en WordPress
+                Suscribirme en Fimy
               </button>
             </form>
           </div>

@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
   });
 
   if (!customer) {
-    return NextResponse.json({ message: "WooCommerce no pudo crear la cuenta. Revisa si el email ya existe." }, { status: 502 });
+    return NextResponse.json({ message: "Fimy no pudo crear la cuenta. Revisa si el email ya existe." }, { status: 502 });
   }
 
-  return NextResponse.json({ message: "Cuenta creada en WooCommerce.", customer });
+  return NextResponse.json({ message: "Cuenta creada en Fimy.", customer });
 }

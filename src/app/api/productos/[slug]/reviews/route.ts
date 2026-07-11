@@ -40,8 +40,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
   });
 
   if (!review) {
-    return NextResponse.json({ message: "WooCommerce no pudo guardar la resena." }, { status: 502 });
+    return NextResponse.json({ message: "Fimy no pudo guardar la resena." }, { status: 502 });
   }
 
-  return NextResponse.json({ message: "Resena enviada a WooCommerce. Puede quedar pendiente de aprobacion.", review });
+  return NextResponse.json({ message: "Resena enviada a Fimy. Puede quedar pendiente de aprobacion.", review });
 }

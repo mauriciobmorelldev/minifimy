@@ -33,7 +33,7 @@ export default function CartClient() {
                 Lo que elegiste con amor.
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-on-surface-variant md:text-base">
-                Revisa cantidades, envio y ultimos detalles antes de pasar por caja. Fimi lo mantiene simple.
+                Revisa cantidades, envio y ultimos detalles antes de pasar por caja. Fimy lo mantiene simple.
               </p>
             </div>
             {items.length > 0 && (
@@ -52,7 +52,7 @@ export default function CartClient() {
           <div className="mx-auto max-w-2xl rounded-[2.4rem] bg-white/78 p-10 text-center shadow-soft">
             <Image
               src="/brand/illustrations/jirafa.svg"
-              alt="Fimi"
+              alt="Fimy"
               width={120}
               height={170}
               className="mx-auto mb-6 h-40 w-auto opacity-80"
@@ -73,7 +73,7 @@ export default function CartClient() {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
             <div className="space-y-4 lg:col-span-8">
               <div className="rounded-[1.7rem] bg-white/64 px-5 py-4 text-sm font-semibold text-on-surface-variant shadow-soft">
-                Fimi guardo {itemCount} {itemCount === 1 ? "producto" : "productos"} para vos.
+                Fimy guardo {itemCount} {itemCount === 1 ? "producto" : "productos"} para vos.
               </div>
 
               {items.map((item) => (

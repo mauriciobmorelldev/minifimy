@@ -10,6 +10,7 @@ import { useCart } from "@/context/cart-context";
 type NavLink = {
   href: string;
   label: string;
+  children?: NavLink[];
 };
 
 interface HeaderProps {
@@ -77,18 +78,44 @@ export function Header({ navLinks }: HeaderProps) {
             <span className="sr-only">Minifimy</span>
           </Link>
 
-          <div className="hidden items-center gap-8 font-headline text-sm font-medium tracking-wide md:flex">
+          <div className="hidden items-center gap-7 font-headline text-sm font-medium tracking-wide md:flex">
             {navLinks.map((link) => {
               const active = pathname === link.href || (link.href !== "/catalogo" && pathname.startsWith(link.href));
+              if (link.children?.length) {
+                return (
+                  <div key={link.href} className="group relative pb-1">
+                    <Link
+                      href={link.href}
+                      className={`inline-flex items-center gap-1 transition-colors duration-300 ${active ? "border-b-2 border-secondary text-secondary" : "text-primary hover:text-secondary"}`}
+                    >
+                      {link.label}
+                      <span className="material-symbols-outlined text-base transition-transform group-hover:rotate-180">expand_more</span>
+                    </Link>
+                    <div className="pointer-events-none absolute left-1/2 top-[calc(100%+0.75rem)] z-50 w-72 -translate-x-1/2 translate-y-2 rounded-[1.4rem] bg-white/95 p-3 opacity-0 shadow-lift ring-1 ring-white/70 backdrop-blur-xl transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+                      <div className="mb-2 rounded-[1rem] bg-[#f7efe3] px-4 py-3">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Categorias</p>
+                        <p className="mt-1 text-xs leading-5 text-on-surface-variant">Todo lo que esta cargado en Fimy.</p>
+                      </div>
+                      <div className="grid gap-1">
+                        {link.children.map((child) => (
+                          <Link
+                            key={`${child.href}-${child.label}`}
+                            href={child.href}
+                            className="rounded-full px-4 py-2 text-sm font-bold text-primary transition hover:bg-[#f7efe3] hover:text-secondary"
+                          >
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`pb-1 transition-colors duration-300 ${
-                    active
-                      ? "border-b-2 border-secondary text-secondary"
-                      : "text-primary hover:text-secondary"
-                  }`}
+                  className={`pb-1 transition-colors duration-300 ${active ? "border-b-2 border-secondary text-secondary" : "text-primary hover:text-secondary"}`}
                 >
                   {link.label}
                 </Link>
@@ -180,7 +207,7 @@ export function Header({ navLinks }: HeaderProps) {
                 </button>
               </div>
               <p className="px-4 pb-2 pt-3 text-xs text-on-surface-variant">
-                Fimi puede ayudarte a encontrar regalos, tejidos y prendas para recién nacido.
+                Fimy puede ayudarte a encontrar regalos, tejidos y prendas para recién nacido.
               </p>
             </form>
           </div>
@@ -193,14 +220,24 @@ export function Header({ navLinks }: HeaderProps) {
             <div className="space-y-5 px-5 py-5">
               <div className="flex flex-col gap-4 font-headline text-base font-semibold text-primary">
                 {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={closeMobileMenu}
-                    className={`pb-2 transition-colors ${pathname === link.href ? "text-secondary" : "text-primary"}`}
-                  >
-                    {link.label}
-                  </Link>
+                  <div key={link.href} className="space-y-2">
+                    <Link
+                      href={link.href}
+                      onClick={closeMobileMenu}
+                      className={`block pb-2 transition-colors ${pathname === link.href ? "text-secondary" : "text-primary"}`}
+                    >
+                      {link.label}
+                    </Link>
+                    {link.children?.length ? (
+                      <div className="grid gap-2 rounded-[1.2rem] bg-white/70 p-3">
+                        {link.children.map((child) => (
+                          <Link key={`${child.href}-${child.label}`} href={child.href} onClick={closeMobileMenu} className="text-sm font-bold text-primary/80">
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
                 ))}
               </div>
             </div>

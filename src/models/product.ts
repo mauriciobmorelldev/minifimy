@@ -6,6 +6,7 @@ export interface Product {
   price: number;
   images: string[];
   category: string;
+  categoryId?: string;
   stock: number;
   badge?: string;
   sizes?: string[];

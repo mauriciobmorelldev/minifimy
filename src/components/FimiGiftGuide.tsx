@@ -72,18 +72,18 @@ export function FimiGiftGuide({ products, title, intro }: FimiGiftGuideProps) {
   }, [activeIntent, products]);
 
   return (
-    <section className="fimi-guide px-5 py-20 sm:px-8 lg:px-10" aria-labelledby="fimi-guide-title">
+    <section className="fimy-guide px-5 py-20 sm:px-8 lg:px-10" aria-labelledby="fimy-guide-title">
       <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.82fr_1.18fr]">
-        <div className="fimi-guide-panel relative overflow-hidden bg-[#efe4d1] p-7 shadow-soft sm:p-9">
+        <div className="fimy-guide-panel relative overflow-hidden bg-[#efe4d1] p-7 shadow-soft sm:p-9">
           <Image
             src="/brand/illustrations/jirafa.svg"
-            alt="Fimi"
+            alt="Fimy"
             width={130}
             height={190}
             className="fimy-float absolute -bottom-4 -right-2 w-24 opacity-80 sm:w-32"
           />
-          <span className="chip bg-white/70">Fimi te ayuda</span>
-          <h2 id="fimi-guide-title" className="mt-6 max-w-lg font-headline text-4xl font-extrabold leading-tight text-on-surface">
+          <span className="chip bg-white/70">Fimy te ayuda</span>
+          <h2 id="fimy-guide-title" className="mt-6 max-w-lg font-headline text-4xl font-extrabold leading-tight text-on-surface">
             {title}
           </h2>
           <p className="mt-4 max-w-md leading-7 text-on-surface-variant">
@@ -109,9 +109,9 @@ export function FimiGiftGuide({ products, title, intro }: FimiGiftGuideProps) {
           </div>
         </div>
 
-        <div className="fimi-recommendation bg-white/64 p-5 shadow-soft sm:p-6">
+        <div className="fimy-recommendation bg-white/64 p-5 shadow-soft sm:p-6">
           <div className="mb-6 rounded-[1.5rem] bg-[#f8efdf] p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">Fimi dice</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">Fimy dice</p>
             <h3 className="mt-2 font-headline text-2xl font-extrabold leading-tight text-on-surface">
               {activeIntent.title}
             </h3>

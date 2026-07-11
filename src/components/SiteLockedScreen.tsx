@@ -52,7 +52,7 @@ export function SiteLockedScreen() {
 
         <div className="locked-card relative mx-auto flex min-h-[360px] w-full max-w-xl items-center justify-center overflow-hidden bg-[#eadfcb]/95 p-8 shadow-lift sm:min-h-[460px]">
           <div className="locked-sun absolute left-10 top-10" />
-          <div className="locked-fimi-portrait absolute inset-x-14 top-8 h-64 rounded-full sm:inset-x-20 sm:h-80" />
+          <div className="locked-fimy-portrait absolute inset-x-14 top-8 h-64 rounded-full sm:inset-x-20 sm:h-80" />
           <Image
             src="/brand/illustrations/nube.svg"
             alt=""
@@ -66,11 +66,11 @@ export function SiteLockedScreen() {
           </div>
           <Image
             src="/brand/illustrations/jirafa.svg"
-            alt="Fimi, la guia de Minifimy"
+            alt="Fimy, la guia de Minifimy"
             width={260}
             height={380}
             priority
-            className="locked-fimi relative z-10 w-60 sm:w-80"
+            className="locked-fimy relative z-10 w-60 sm:w-80"
           />
         </div>
       </section>

@@ -11,10 +11,10 @@ export async function POST(request: NextRequest) {
   const session = await loginStoreCustomer(payload.email, payload.password);
   if (!session) {
     return NextResponse.json(
-      { message: "WordPress no valido el acceso. Configura JWT/Auth en WordPress para login headless." },
+      { message: "Fimy no valido el acceso. Configura JWT/Auth en Fimy para login headless." },
       { status: 401 }
     );
   }
 
-  return NextResponse.json({ message: "Sesion iniciada desde WordPress.", session });
+  return NextResponse.json({ message: "Sesion iniciada desde Fimy.", session });
 }
