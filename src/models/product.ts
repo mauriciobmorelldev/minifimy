@@ -19,6 +19,16 @@ export interface Category {
   description: string;
 }
 
+export interface ProductFilterOptions {
+  categories: Category[];
+  sizes: string[];
+  colors: string[];
+  price: {
+    min: number;
+    max: number;
+  };
+}
+
 export interface ProductSelection {
   size?: string;
   color?: string;

@@ -72,6 +72,10 @@ export default function CheckoutClient() {
         setShippingMethods(nextShippingMethods);
         setPaymentMethodId((current) => current || nextPaymentMethods[0]?.id || "");
         setShippingMethodId((current) => current || nextShippingMethods[0]?.id || "");
+
+        if (nextPaymentMethods.length === 0 || nextShippingMethods.length === 0) {
+          setStatus("WooCommerce no esta devolviendo metodos activos de pago o envio.");
+        }
       })
       .catch(() => {
         if (active) setStatus("No pudimos cargar pagos y envios desde WooCommerce.");
@@ -339,7 +343,13 @@ export default function CheckoutClient() {
                     />
                     <div className="min-w-0">
                       <p className="line-clamp-2 text-sm font-bold leading-tight text-on-surface">{item.product.name}</p>
-                      <p className="mt-1 text-xs text-on-surface-variant">Cantidad {item.quantity}</p>\n                      <p className="mt-1 text-xs text-on-surface-variant">{item.selection?.size ? `Talle ${item.selection.size}` : ""}{item.selection?.color ? ` Â· ${item.selection.color}` : ""}</p>
+                      <p className="mt-1 text-xs text-on-surface-variant">Cantidad {item.quantity}</p>
+                      {(item.selection?.size || item.selection?.color) && (
+                        <p className="mt-1 text-xs text-on-surface-variant">
+                          {item.selection?.size ? `Talle ${item.selection.size}` : ""}
+                          {item.selection?.color ? ` · ${item.selection.color}` : ""}
+                        </p>
+                      )}
                       <p className="mt-2 text-sm font-extrabold text-secondary">
                         AR$ {(item.product.price * item.quantity).toLocaleString("es-AR")}
                       </p>

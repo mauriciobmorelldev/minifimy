@@ -1,7 +1,7 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CatalogExperience } from "@/components/CatalogExperience";
-import { getStoreCategories, getStoreProducts } from "@/lib/woocommerce";
+import { getStoreProductFilters, getStoreProducts } from "@/lib/woocommerce";
 
 export const metadata: Metadata = {
   title: "Catálogo",
@@ -9,14 +9,14 @@ export const metadata: Metadata = {
 };
 
 export default async function CatalogPage() {
-  const [products, categories] = await Promise.all([
+  const [products, filterOptions] = await Promise.all([
     getStoreProducts({ perPage: 48 }),
-    getStoreCategories(),
+    getStoreProductFilters(),
   ]);
 
   return (
     <Suspense fallback={<main className="min-h-screen bg-[#fff8ef] pt-28" />}>
-      <CatalogExperience products={products} categories={categories} />
+      <CatalogExperience products={products} categories={filterOptions.categories} filterOptions={filterOptions} />
     </Suspense>
   );
 }

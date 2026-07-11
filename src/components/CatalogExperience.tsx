@@ -6,21 +6,14 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCarousel } from "@/components/ProductCarousel";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import type { Category, Product } from "@/models/product";
+import type { Category, Product, ProductFilterOptions } from "@/models/product";
 
 interface CatalogExperienceProps {
   products: Product[];
   categories: Category[];
+  filterOptions: ProductFilterOptions;
 }
 
-const giftMoments = [
-  "Recién nacido",
-  "Baby shower",
-  "Regalo con amor",
-  "Tejidos suaves",
-];
-
-const sizes = ["RN", "0-3m", "3-6m", "6-12m", "12-24m"];
 const PRODUCTS_PER_PAGE = 12;
 
 function normalize(value: string) {
@@ -35,13 +28,15 @@ function getSafePage(value: string | null) {
   return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
 }
 
-export function CatalogExperience({ products, categories }: CatalogExperienceProps) {
+export function CatalogExperience({ products, categories, filterOptions }: CatalogExperienceProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [category, setCategory] = useState(searchParams.get("categoria") ?? "all");
   const [size, setSize] = useState(searchParams.get("talle") ?? "all");
+  const [color, setColor] = useState(searchParams.get("color") ?? "all");
+  const [priceRange, setPriceRange] = useState(searchParams.get("precio") ?? "all");
   const [sort, setSort] = useState(searchParams.get("orden") ?? "featured");
   const [page, setPage] = useState(getSafePage(searchParams.get("page")));
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -60,32 +55,62 @@ export function CatalogExperience({ products, categories }: CatalogExperiencePro
     router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
   };
 
-  const setFilter = (next: Partial<{ q: string; categoria: string; talle: string; orden: string }>) => {
+  const setFilter = (next: Partial<{ q: string; categoria: string; talle: string; color: string; precio: string; orden: string }>) => {
     const nextQuery = next.q ?? query;
     const nextCategory = next.categoria ?? category;
     const nextSize = next.talle ?? size;
+    const nextColor = next.color ?? color;
+    const nextPriceRange = next.precio ?? priceRange;
     const nextSort = next.orden ?? sort;
 
     setQuery(nextQuery);
     setCategory(nextCategory);
     setSize(nextSize);
+    setColor(nextColor);
+    setPriceRange(nextPriceRange);
     setSort(nextSort);
     setPage(1);
-    updateUrl({ q: nextQuery, categoria: nextCategory, talle: nextSize, orden: nextSort, page: 1 });
+    updateUrl({ q: nextQuery, categoria: nextCategory, talle: nextSize, color: nextColor, precio: nextPriceRange, orden: nextSort, page: 1 });
   };
+
+  const priceRanges = useMemo(() => {
+    const { min, max } = filterOptions.price;
+    if (!max || min === max) return [];
+
+    const middle = Math.round((min + max) / 2 / 100) * 100;
+    return [
+      { id: `0-${middle}`, label: `Hasta AR$ ${middle.toLocaleString("es-AR")}`, min: 0, max: middle },
+      { id: `${middle}-${max}`, label: `AR$ ${middle.toLocaleString("es-AR")} a ${max.toLocaleString("es-AR")}`, min: middle, max },
+      { id: `${max}+`, label: `Desde AR$ ${max.toLocaleString("es-AR")}`, min: max, max: Number.POSITIVE_INFINITY },
+    ];
+  }, [filterOptions.price]);
+
+  const quickFilters = [
+    ...filterOptions.categories.slice(0, 3).map((item) => ({
+      label: item.name,
+      icon: "category",
+      action: () => setFilter({ categoria: item.slug }),
+    })),
+    ...(filterOptions.sizes[0]
+      ? [{ label: `Talle ${filterOptions.sizes[0]}`, icon: "straighten", action: () => setFilter({ talle: filterOptions.sizes[0] }) }]
+      : []),
+  ].slice(0, 4);
 
   const filteredProducts = useMemo(() => {
     const normalizedQuery = normalize(query.trim());
+    const selectedPriceRange = priceRanges.find((item) => item.id === priceRange);
     const filtered = products.filter((product) => {
       const haystack = normalize(
-        [product.name, product.description, product.category, product.badge, ...(product.sizes ?? [])]
+        [product.name, product.description, product.category, product.badge, ...(product.sizes ?? []), ...(product.colors ?? [])]
           .filter(Boolean)
           .join(" "),
       );
       const matchesQuery = !normalizedQuery || haystack.includes(normalizedQuery);
       const matchesCategory = category === "all" || product.category === category;
       const matchesSize = size === "all" || product.sizes?.includes(size);
-      return matchesQuery && matchesCategory && matchesSize;
+      const matchesColor = color === "all" || product.colors?.includes(color);
+      const matchesPrice = !selectedPriceRange || (product.price >= selectedPriceRange.min && product.price <= selectedPriceRange.max);
+      return matchesQuery && matchesCategory && matchesSize && matchesColor && matchesPrice;
     });
 
     return [...filtered].sort((a, b) => {
@@ -94,14 +119,15 @@ export function CatalogExperience({ products, categories }: CatalogExperiencePro
       if (sort === "newest") return String(b.id).localeCompare(String(a.id));
       return 0;
     });
-  }, [category, products, query, size, sort]);
+  }, [category, color, priceRange, priceRanges, products, query, size, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
   const currentPage = Math.min(page, totalPages);
   const pageStart = (currentPage - 1) * PRODUCTS_PER_PAGE;
   const paginatedProducts = filteredProducts.slice(pageStart, pageStart + PRODUCTS_PER_PAGE);
   const selectedCategoryName = categories.find((item) => item.slug === category)?.name ?? category;
-  const activeFilters = [query, category !== "all" ? selectedCategoryName : "", size !== "all" ? size : ""].filter(Boolean);
+  const selectedPriceName = priceRanges.find((item) => item.id === priceRange)?.label ?? priceRange;
+  const activeFilters = [query, category !== "all" ? selectedCategoryName : "", size !== "all" ? size : "", color !== "all" ? color : "", priceRange !== "all" ? selectedPriceName : ""].filter(Boolean);
 
   const goToPage = (nextPage: number) => {
     const boundedPage = Math.min(Math.max(nextPage, 1), totalPages);
@@ -114,7 +140,7 @@ export function CatalogExperience({ products, categories }: CatalogExperiencePro
 
   const resetFilters = () => {
     setMobileFiltersOpen(false);
-    setFilter({ q: "", categoria: "all", talle: "all", orden: "featured" });
+    setFilter({ q: "", categoria: "all", talle: "all", color: "all", precio: "all", orden: "featured" });
   };
 
   return (
@@ -195,18 +221,18 @@ export function CatalogExperience({ products, categories }: CatalogExperiencePro
 
         <ScrollReveal className="mt-6 md:mt-8">
           <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0">
-            {giftMoments.map((moment, index) => (
+            {quickFilters.map((filter) => (
               <button
-                key={moment}
+                key={filter.label}
                 type="button"
-                onClick={() => setFilter({ q: moment })}
+                onClick={filter.action}
                 className="group min-w-[72%] snap-start rounded-[1.35rem] bg-white/76 p-4 text-left shadow-soft transition-all duration-300 hover:-translate-y-1 hover:bg-white sm:min-w-[42%] md:min-w-0 md:rounded-[1.6rem] md:p-5"
               >
                 <span className="mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-[#f7efe3] text-primary transition-transform group-hover:rotate-[-8deg]">
-                  <span className="material-symbols-outlined">{["crib", "celebration", "favorite", "local_laundry_service"][index]}</span>
+                  <span className="material-symbols-outlined">{filter.icon}</span>
                 </span>
-                <span className="font-headline text-lg font-extrabold text-on-surface">{moment}</span>
-                <span className="mt-2 block text-sm text-on-surface-variant">Ver opciones suaves</span>
+                <span className="font-headline text-lg font-extrabold text-on-surface">{filter.label}</span>
+                <span className="mt-2 block text-sm text-on-surface-variant">Ver opciones reales</span>
               </button>
             ))}
           </div>
@@ -272,7 +298,7 @@ export function CatalogExperience({ products, categories }: CatalogExperiencePro
                   >
                     Todos
                   </button>
-                  {sizes.map((item) => (
+                  {filterOptions.sizes.map((item) => (
                     <button
                       key={item}
                       type="button"
@@ -284,6 +310,56 @@ export function CatalogExperience({ products, categories }: CatalogExperiencePro
                   ))}
                 </div>
               </div>
+
+              {filterOptions.colors.length > 0 && (
+                <div>
+                  <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">Color</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFilter({ color: "all" })}
+                      className={`rounded-full px-4 py-2 text-sm font-bold ${color === "all" ? "bg-secondary text-on-secondary" : "bg-[#f7efe3] text-primary"}`}
+                    >
+                      Todos
+                    </button>
+                    {filterOptions.colors.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => setFilter({ color: item })}
+                        className={`rounded-full px-4 py-2 text-sm font-bold ${color === item ? "bg-secondary text-on-secondary" : "bg-[#f7efe3] text-primary"}`}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {priceRanges.length > 0 && (
+                <div>
+                  <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">Precio</h3>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setFilter({ precio: "all" })}
+                      className={`w-full rounded-full px-4 py-2 text-left text-sm font-bold transition ${priceRange === "all" ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
+                    >
+                      Todos los precios
+                    </button>
+                    {priceRanges.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setFilter({ precio: item.id })}
+                        className={`w-full rounded-full px-4 py-2 text-left text-sm font-bold transition ${priceRange === item.id ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {activeFilters.length > 0 && (
                 <button
