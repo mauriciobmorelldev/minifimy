@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { ProductCarousel } from "@/components/ProductCarousel";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { getStoreCategories, getStoreProductBySlug, getStoreProducts } from "@/lib/woocommerce";
 
@@ -43,7 +44,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <main className="mx-auto w-full max-w-6xl px-6 py-24">
         <p className="text-sm text-on-surface-variant">Producto no encontrado.</p>
         <Link href="/catalogo" className="btn-ghost mt-6 inline-flex">
-          Volver al catalogo
+          Volver al catálogo
         </Link>
       </main>
     );
@@ -56,8 +57,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const recommendations = allProducts.filter((item) => item.id !== product.id).slice(0, 4);
 
   return (
-    <main className="mx-auto max-w-7xl px-6 pb-12 pt-24">
-      <nav className="mb-8 flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-on-surface-variant/60">
+    <main className="mobile-soft-page mx-auto max-w-7xl px-4 pb-12 pt-24 md:px-6">
+      <nav className="mb-6 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-[10px] font-medium uppercase tracking-widest text-on-surface-variant/60 md:mb-8 md:text-xs">
         <Link href="/" className="transition-colors hover:text-primary">
           Inicio
         </Link>
@@ -66,15 +67,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
           href={`/catalogo/${product.category}`}
           className="transition-colors hover:text-primary"
         >
-          {category?.name ?? "Categoria"}
+          {category?.name ?? "Categoría"}
         </Link>
         <span className="material-symbols-outlined text-[12px]">chevron_right</span>
         <span className="text-on-surface">{product.name}</span>
       </nav>
 
-      <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
         <ScrollReveal className="space-y-6 lg:col-span-7">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-surface-container-low">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[1.6rem] bg-surface-container-low md:rounded-xl">
             <Image
               src={product.images[0]}
               alt={product.name}
@@ -89,11 +90,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </span>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-3 gap-3 md:gap-6">
             {gallery.map((image, index) => (
               <div
                 key={`${image}-${index}`}
-                className="aspect-square overflow-hidden rounded-lg bg-surface-container-low"
+                className="aspect-square overflow-hidden rounded-[1.1rem] bg-surface-container-low md:rounded-lg"
               >
                 <Image
                   src={image}
@@ -109,11 +110,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         <ScrollReveal delayMs={120} className="space-y-8 lg:col-span-5">
           <header>
-            <h1 className="font-headline text-4xl font-bold leading-tight text-on-surface">
+            <h1 className="font-headline text-[2.15rem] font-bold leading-tight text-on-surface md:text-4xl">
               {product.name}
             </h1>
             <div className="mt-4 flex items-center justify-between gap-4">
-              <span className="font-headline text-3xl font-semibold text-secondary">
+              <span className="font-headline text-2xl font-semibold text-secondary md:text-3xl">
                 AR$ {product.price.toLocaleString("es-AR")}
               </span>
               <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-bold text-on-primary-container">
@@ -132,7 +133,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   <button
                     key={size}
                     type="button"
-                    className={`rounded-md border-2 px-6 py-3 font-medium transition-all ${
+                    className={`rounded-full border-2 px-4 py-2 text-sm font-medium transition-all md:px-6 md:py-3 md:text-base ${
                       index === 0
                         ? "border-primary bg-primary-container font-bold text-on-primary-container"
                         : "border-outline-variant/30 text-on-surface hover:border-primary hover:text-primary"
@@ -148,18 +149,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div className="space-y-4">
             <AddToCartButton
               product={product}
-              className="w-full gap-3 rounded-md bg-primary py-5 font-headline text-lg text-on-primary shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95"
+              className="w-full gap-3 rounded-full bg-primary py-4 font-headline text-base text-on-primary shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95 md:py-5 md:text-lg"
             >
               <span className="material-symbols-outlined">shopping_bag</span>
               Agregar al bolso
             </AddToCartButton>
           </div>
 
-          <div className="space-y-4 rounded-xl bg-surface-container-low p-6">
+          <div className="space-y-4 rounded-[1.5rem] bg-surface-container-low p-5 md:rounded-xl md:p-6">
             <div className="flex items-start gap-4">
               <span className="material-symbols-outlined text-primary">local_shipping</span>
               <div>
-                <h4 className="text-sm font-bold">Envio cuidado</h4>
+                <h4 className="text-sm font-bold">Envío cuidado</h4>
                 <p className="text-sm text-on-surface-variant">
                   Preparado en packaging Minifimy y despachado con seguimiento.
                 </p>
@@ -170,14 +171,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <div>
                 <h4 className="text-sm font-bold">Cambios simples</h4>
                 <p className="text-sm text-on-surface-variant">
-                  Acompanamiento para elegir talle o cambiar con tranquilidad.
+                  Acompañamiento para elegir talle o cambiar con tranquilidad.
                 </p>
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-headline text-xl font-bold">La historia detras</h3>
+            <h3 className="font-headline text-xl font-bold">La historia detrás</h3>
             <p className="leading-relaxed text-on-surface-variant">
               {product.description}
             </p>
@@ -185,44 +186,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </ScrollReveal>
       </div>
 
-      <section className="mt-24 space-y-12">
-        <ScrollReveal className="flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <h2 className="font-headline text-3xl font-bold">Completa el look</h2>
-            <p className="mt-2 text-on-surface-variant">
-              Combos suaves para cada momento.
-            </p>
-          </div>
-          <Link
-            href="/catalogo"
-            className="flex items-center gap-2 font-bold text-primary transition-all hover:gap-4"
-          >
-            Ver coleccion completa
-            <span className="material-symbols-outlined">arrow_forward</span>
-          </Link>
-        </ScrollReveal>
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {recommendations.map((item, index) => (
-            <ScrollReveal key={item.id} delayMs={index * 80}>
-              <Link href={`/producto/${item.slug}`} className="group">
-                <div className="relative mb-4 aspect-square overflow-hidden rounded-lg bg-surface-container-low">
-                  <Image
-                    src={item.images[0]}
-                    alt={item.name}
-                    fill
-                    sizes="(min-width: 1024px) 20vw, (min-width: 640px) 40vw, 80vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                </div>
-                <h4 className="font-bold text-on-surface">{item.name}</h4>
-                <p className="font-semibold text-secondary">
-                  AR$ {item.price.toLocaleString("es-AR")}
-                </p>
-              </Link>
-            </ScrollReveal>
-          ))}
-        </div>
-      </section>
+      <div className="mt-14 md:mt-24">
+        <ProductCarousel
+          title="Completá el look"
+          eyebrow="Productos relacionados"
+          description="Combos suaves para cada momento, listos para sumar a la bolsita."
+          products={recommendations}
+          ctaLabel="Ver colección"
+        />
+      </div>
     </main>
   );
 }

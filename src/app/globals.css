@@ -1,4 +1,4 @@
-﻿@import "@fontsource/material-symbols-outlined/index.css";
+@import "@fontsource/material-symbols-outlined/index.css";
 
 @tailwind base;
 @tailwind components;
@@ -939,6 +939,32 @@
   @media (prefers-reduced-motion: reduce) {
     .locked-fimi {
       animation: none !important;
+    }
+  }
+}
+
+@layer utilities {
+  .liquid-header {
+    background:
+      linear-gradient(135deg, rgba(255, 250, 241, 0.96), rgba(255, 248, 239, 0.88)),
+      radial-gradient(circle at 14% 8%, rgba(255, 255, 255, 0.92), transparent 34%);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    box-shadow: 0 18px 48px rgba(56, 50, 33, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px) saturate(1.16);
+    -webkit-backdrop-filter: blur(18px) saturate(1.16);
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (max-width: 640px) {
+    .mobile-soft-page {
+      padding-top: 5.75rem;
     }
   }
 }

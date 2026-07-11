@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useCart } from "@/context/cart-context";
@@ -7,22 +9,26 @@ import { useCart } from "@/context/cart-context";
 interface CheckoutFormValues {
   name: string;
   email: string;
+  phone: string;
   address: string;
   city: string;
   postalCode: string;
+  notes: string;
 }
 
 export default function CheckoutClient() {
   const { items, total } = useCart();
   const [status, setStatus] = useState<string | null>(null);
+  const shipping = items.length > 0 ? 950 : 0;
+  const grandTotal = total + shipping;
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<CheckoutFormValues>();
 
   const onSubmit = async (data: CheckoutFormValues) => {
-    setStatus("Procesando pago...");
+    setStatus("Estamos preparando tu checkout...");
 
     const response = await fetch("/api/checkout", {
       method: "POST",
@@ -34,7 +40,7 @@ export default function CheckoutClient() {
     });
 
     if (!response.ok) {
-      setStatus("Hubo un problema al procesar tu pago.");
+      setStatus("Hubo un problema al procesar tu compra. Probá nuevamente o escribinos por WhatsApp.");
       return;
     }
 
@@ -43,97 +49,190 @@ export default function CheckoutClient() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 py-24">
-      <div className="grid gap-10 md:grid-cols-[1.2fr,0.8fr]">
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="rounded-lg bg-surface-container-low p-8 shadow-soft"
-        >
-          <h1 className="text-3xl font-semibold text-on-surface font-headline">Checkout</h1>
-          <p className="mt-2 text-sm text-on-surface-variant">
-            Completa tus datos para finalizar la compra.
-          </p>
-
-          <div className="mt-6 grid gap-4">
-            <label className="text-sm">
-              Nombre y apellido
-              <input
-                {...register("name", { required: true })}
-                className="mt-2 w-full rounded-full bg-surface-container-lowest px-4 py-3 focus:ring-2 focus:ring-primary/40"
-                type="text"
-              />
-              {errors.name && <span className="text-xs text-error">Campo requerido</span>}
-            </label>
-            <label className="text-sm">
-              Email
-              <input
-                {...register("email", { required: true })}
-                className="mt-2 w-full rounded-full bg-surface-container-lowest px-4 py-3 focus:ring-2 focus:ring-primary/40"
-                type="email"
-              />
-              {errors.email && <span className="text-xs text-error">Campo requerido</span>}
-            </label>
-            <label className="text-sm">
-              Dirección
-              <input
-                {...register("address", { required: true })}
-                className="mt-2 w-full rounded-full bg-surface-container-lowest px-4 py-3 focus:ring-2 focus:ring-primary/40"
-                type="text"
-              />
-              {errors.address && <span className="text-xs text-error">Campo requerido</span>}
-            </label>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="text-sm">
-                Ciudad
-                <input
-                  {...register("city", { required: true })}
-                  className="mt-2 w-full rounded-full bg-surface-container-lowest px-4 py-3 focus:ring-2 focus:ring-primary/40"
-                  type="text"
-                />
-                {errors.city && <span className="text-xs text-error">Campo requerido</span>}
-              </label>
-              <label className="text-sm">
-                Código postal
-                <input
-                  {...register("postalCode", { required: true })}
-                  className="mt-2 w-full rounded-full bg-surface-container-lowest px-4 py-3 focus:ring-2 focus:ring-primary/40"
-                  type="text"
-                />
-                {errors.postalCode && <span className="text-xs text-error">Campo requerido</span>}
-              </label>
-            </div>
-          </div>
-
-          <button type="submit" className="btn-primary mt-6 w-full">
-            Confirmar pago
-          </button>
-          {status && <p className="mt-4 text-sm text-on-surface-variant">{status}</p>}
-        </form>
-
-        <aside className="rounded-lg bg-surface-container-low p-8 shadow-soft">
-          <h2 className="text-xl font-semibold text-on-surface font-headline">Resumen</h2>
-          <div className="mt-4 space-y-2 text-sm text-on-surface-variant">
-            {items.map((item) => (
-              <div key={item.product.id} className="flex justify-between">
-                <span>
-                  {item.product.name} x {item.quantity}
-                </span>
-                <span>
-                  AR$ {(item.product.price * item.quantity).toLocaleString("es-AR")}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 flex items-center justify-between text-base font-semibold">
-            <span>Total</span>
-            <span className="text-primary">AR$ {total.toLocaleString("es-AR")}</span>
-          </div>
-          <p className="mt-4 text-xs text-on-surface-variant">
-            El pago se simula con Stripe en modo prueba. Configurá tus llaves en variables
-            de entorno.
-          </p>
-        </aside>
+    <main className="mobile-soft-page relative overflow-hidden bg-[#fff8ef] px-4 pb-16 pt-28 md:px-6 md:pb-20">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.055]">
+        <Image src="/brand/patterns/pattern-01.png" alt="" fill sizes="100vw" className="object-cover" />
       </div>
+
+      <section className="relative mx-auto max-w-6xl">
+        <header className="mb-8 rounded-[1.8rem] bg-[#efe4d0] px-4 py-6 shadow-soft md:rounded-[2.4rem] md:px-10 md:py-8">
+          <span className="inline-flex rounded-full bg-white/72 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary shadow-soft">
+            Último pasito
+          </span>
+          <h1 className="mt-5 font-headline text-[2.15rem] font-extrabold leading-tight text-on-surface md:text-6xl">
+            Dejamos todo listo para que llegue a casa.
+          </h1>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-on-surface-variant md:text-base md:leading-8">
+            Completá tus datos con calma. Si algo no encaja, Fimi te acompaña por WhatsApp antes de confirmar.
+          </p>
+        </header>
+
+        {items.length === 0 ? (
+          <div className="rounded-[2rem] bg-white/78 p-10 text-center shadow-soft">
+            <h2 className="font-headline text-3xl font-extrabold text-on-surface">Tu carrito está vacío.</h2>
+            <p className="mt-3 text-on-surface-variant">Primero elegí una prenda o regalo para avanzar al checkout.</p>
+            <Link href="/catalogo" className="mt-6 inline-flex rounded-full bg-primary px-7 py-3 font-bold text-on-primary shadow-soft">
+              Volver al catálogo
+            </Link>
+          </div>
+        ) : (
+          <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="rounded-[1.7rem] bg-white/78 p-4 shadow-soft md:rounded-[2rem] md:p-8"
+            >
+              <div className="mb-7 flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-on-primary">
+                  <span className="material-symbols-outlined">local_shipping</span>
+                </div>
+                <div>
+                  <h2 className="font-headline text-xl font-extrabold text-on-surface md:text-2xl">Datos de entrega</h2>
+                  <p className="text-sm text-on-surface-variant">Solo pedimos lo necesario para coordinar bien.</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                <label className="text-sm font-semibold text-on-surface">
+                  Nombre y apellido
+                  <input
+                    {...register("name", { required: true })}
+                    className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
+                    type="text"
+                    placeholder="Nombre completo"
+                  />
+                  {errors.name && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
+                </label>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="text-sm font-semibold text-on-surface">
+                    Email
+                    <input
+                      {...register("email", { required: true })}
+                      className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
+                      type="email"
+                      placeholder="tu@email.com"
+                    />
+                    {errors.email && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
+                  </label>
+                  <label className="text-sm font-semibold text-on-surface">
+                    WhatsApp
+                    <input
+                      {...register("phone", { required: true })}
+                      className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
+                      type="tel"
+                      placeholder="11 1234 5678"
+                    />
+                    {errors.phone && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
+                  </label>
+                </div>
+
+                <label className="text-sm font-semibold text-on-surface">
+                  Dirección
+                  <input
+                    {...register("address", { required: true })}
+                    className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
+                    type="text"
+                    placeholder="Calle, número, piso/depto"
+                  />
+                  {errors.address && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
+                </label>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="text-sm font-semibold text-on-surface">
+                    Ciudad
+                    <input
+                      {...register("city", { required: true })}
+                      className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
+                      type="text"
+                      placeholder="Ciudad"
+                    />
+                    {errors.city && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
+                  </label>
+                  <label className="text-sm font-semibold text-on-surface">
+                    Código postal
+                    <input
+                      {...register("postalCode", { required: true })}
+                      className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
+                      type="text"
+                      placeholder="CP"
+                    />
+                    {errors.postalCode && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
+                  </label>
+                </div>
+
+                <label className="text-sm font-semibold text-on-surface">
+                  Nota para Fimi, opcional
+                  <textarea
+                    {...register("notes")}
+                    className="mt-2 min-h-28 w-full rounded-[1.5rem] bg-[#fbf4ea] px-5 py-4 outline-none ring-1 ring-transparent focus:ring-primary/35"
+                    placeholder="Ej: es para regalo, necesitás tarjeta, preferís coordinar horario..."
+                  />
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="mt-7 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 font-headline text-base font-bold text-on-primary shadow-soft transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isSubmitting ? "Preparando..." : "Confirmar compra"}
+                <span className="material-symbols-outlined">arrow_forward</span>
+              </button>
+              {status && <p className="mt-4 rounded-[1.3rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">{status}</p>}
+            </form>
+
+            <aside className="h-fit rounded-[2rem] bg-white/82 p-6 shadow-lift lg:sticky lg:top-28">
+              <div className="flex items-center gap-3">
+                <Image src="/brand/illustrations/jirafa.svg" alt="Fimi" width={52} height={74} className="h-16 w-auto opacity-80" />
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Resumen</span>
+                  <h2 className="font-headline text-xl font-extrabold text-on-surface md:text-2xl">Tu pedido</h2>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                {items.map((item) => (
+                  <div key={item.product.id} className="grid grid-cols-[64px_1fr] gap-3 rounded-[1.4rem] bg-[#fbf4ea] p-3">
+                    <Image
+                      src={item.product.images[0]}
+                      alt={item.product.name}
+                      width={64}
+                      height={76}
+                      className="h-20 w-16 rounded-[1rem] object-cover"
+                    />
+                    <div className="min-w-0">
+                      <p className="line-clamp-2 text-sm font-bold leading-tight text-on-surface">{item.product.name}</p>
+                      <p className="mt-1 text-xs text-on-surface-variant">Cantidad {item.quantity}</p>
+                      <p className="mt-2 text-sm font-extrabold text-secondary">
+                        AR$ {(item.product.price * item.quantity).toLocaleString("es-AR")}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 space-y-3 border-t border-outline-variant/30 pt-5 text-sm text-on-surface-variant">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>AR$ {total.toLocaleString("es-AR")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Envío estimado</span>
+                  <span>AR$ {shipping.toLocaleString("es-AR")}</span>
+                </div>
+                <div className="flex items-baseline justify-between pt-3 font-headline text-xl font-extrabold text-on-surface">
+                  <span>Total</span>
+                  <span className="text-primary">AR$ {grandTotal.toLocaleString("es-AR")}</span>
+                </div>
+              </div>
+
+              <p className="mt-5 rounded-[1.4rem] bg-primary/10 p-4 text-xs leading-5 text-primary">
+                WooCommerce va a manejar productos, stock, precios y órdenes. Esta pantalla queda como experiencia frontend conectada al backend.
+              </p>
+            </aside>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

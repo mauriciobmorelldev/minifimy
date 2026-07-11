@@ -2,6 +2,25 @@ import type { Category, Product } from "@/models/product";
 import { CACHE_SECONDS, CACHE_TAGS, normalizeBaseUrl } from "@/lib/cache";
 import { categories as fallbackCategories, products as fallbackProducts } from "@/lib/products";
 
+const WOO_PRODUCT_FIELDS = [
+  "id",
+  "name",
+  "slug",
+  "description",
+  "short_description",
+  "price",
+  "regular_price",
+  "stock_quantity",
+  "stock_status",
+  "images",
+  "categories",
+  "tags",
+  "attributes",
+  "featured",
+].join(",");
+
+const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description"].join(",");
+
 type WooImage = {
   src?: string;
   alt?: string;
@@ -43,6 +62,17 @@ function cleanText(value?: string) {
   return value?.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim() ?? "";
 }
 
+function getSafeImage(src?: string) {
+  if (!src) return null;
+
+  try {
+    const parsed = new URL(src);
+    return ["http:", "https:"].includes(parsed.protocol) ? src : null;
+  } catch {
+    return src.startsWith("/") ? src : null;
+  }
+}
+
 function buildWooUrl(path: string, params: Record<string, string | number | boolean> = {}) {
   if (!STORE_URL || !CONSUMER_KEY || !CONSUMER_SECRET) return null;
 
@@ -59,7 +89,7 @@ function buildWooUrl(path: string, params: Record<string, string | number | bool
 
 function mapWooProduct(product: WooProduct): Product {
   const category = product.categories?.[0]?.slug ?? "catalogo";
-  const images = product.images?.map((image) => image.src).filter(Boolean) as string[] | undefined;
+  const images = product.images?.map((image) => getSafeImage(image.src)).filter(Boolean) as string[] | undefined;
   const sizes = product.attributes?.find((attribute) =>
     attribute.name?.toLowerCase().includes("talle") || attribute.name?.toLowerCase().includes("size")
   )?.options;
@@ -116,6 +146,7 @@ export async function getStoreProducts(options: { featured?: boolean; category?:
       per_page: options.perPage ?? 24,
       status: "publish",
       stock_status: "instock",
+      _fields: WOO_PRODUCT_FIELDS,
       ...(options.featured ? { featured: true } : {}),
       ...(options.category ? { category: options.category } : {}),
     },
@@ -139,7 +170,7 @@ export async function getStoreCategories() {
 
   const data = await fetchWoo<WooCategory[]>(
     "products/categories",
-    { per_page: 50, hide_empty: true },
+    { per_page: 50, hide_empty: true, _fields: WOO_CATEGORY_FIELDS },
     CACHE_SECONDS.categories,
     [CACHE_TAGS.categories]
   );

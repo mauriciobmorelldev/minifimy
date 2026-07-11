@@ -27,21 +27,24 @@ const plusJakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL("https://minifimy.com"),
   title: {
-    default: "MINIFIMY | Ropa para bebés",
+    default: "MINIFIMY | Ropa para bebÃ©s",
     template: "%s | MINIFIMY",
   },
   description:
-    "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MINIFIMY.",
+    "Ropita suave, cÃ³moda y con mucho amor. DescubrÃ­ colecciones para bebÃ©s en MINIFIMY.",
   openGraph: {
-    title: "MINIFIMY | Ropa para bebés",
+    title: "MINIFIMY | Ropa para bebÃ©s",
     description:
-      "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MINIFIMY.",
+      "Ropita suave, cÃ³moda y con mucho amor. DescubrÃ­ colecciones para bebÃ©s en MINIFIMY.",
     type: "website",
     locale: "es_AR",
   },
 };
 
-const siteLocked = process.env.NEXT_PUBLIC_SITE_LOCKED !== "false";
+const siteLocked =
+  process.env.NEXT_PUBLIC_SITE_LOCKED === "true" ||
+  (process.env.NODE_ENV === "production" &&
+    process.env.NEXT_PUBLIC_SITE_LOCKED !== "false");
 
 export default function RootLayout({
   children,

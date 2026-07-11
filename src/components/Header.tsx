@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+import { MiniCartDrawer } from "@/components/MiniCartDrawer";
 import { useCart } from "@/context/cart-context";
 
 const navLinks = [
@@ -17,7 +18,11 @@ export function Header() {
   const { items } = useCart();
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [miniCartOpen, setMiniCartOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const pathname = usePathname();
+  const router = useRouter();
   const hiddenRoutes = ["/cargando-70", "/cargando-99"];
   const closeMobileMenu = () => setMobileOpen(false);
 
@@ -25,156 +30,182 @@ export function Header() {
     return null;
   }
 
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const normalized = query.trim();
+    router.push(normalized ? `/catalogo?q=${encodeURIComponent(normalized)}` : "/catalogo");
+    setSearchOpen(false);
+    setMobileOpen(false);
+  };
+
   return (
-    <nav
-      className="fixed top-0 z-50 w-full bg-background/80 glass-nav shadow-sm shadow-on-surface/5"
-      aria-label="Principal"
-    >
-      <div className="relative mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-3 md:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileOpen((prev) => !prev)}
-            className="flex h-10 w-10 items-center justify-center rounded-md bg-surface-container-highest text-primary"
-            aria-expanded={mobileOpen}
-            aria-label="Abrir menú"
-          >
-            <span className="material-symbols-outlined">
-              {mobileOpen ? "close" : "menu"}
-            </span>
-          </button>
-        </div>
-
-        <Link
-          href="/"
-          onClick={closeMobileMenu}
-          className="absolute left-1/2 flex -translate-x-1/2 items-center gap-3 md:static md:translate-x-0"
-        >
-          <Image
-            src="/brand/logo.svg"
-            alt="MINIFIMY"
-            width={140}
-            height={40}
-            className="h-8 w-auto md:h-9"
-            priority
-          />
-          <span className="sr-only">Minifimy</span>
-        </Link>
-
-        <div className="hidden items-center gap-8 font-headline text-sm font-medium tracking-wide md:flex">
-          {navLinks.map((link, index) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`pb-1 transition-colors duration-300 ${
-                index === 0
-                  ? "text-secondary border-b-2 border-secondary"
-                  : "text-primary hover:text-secondary"
-              }`}
+    <>
+      <nav
+        className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5"
+        aria-label="Principal"
+      >
+        <div className="liquid-header relative mx-auto flex max-w-7xl items-center justify-between rounded-[1.35rem] px-4 py-3 md:rounded-[1.7rem] md:px-6 md:py-3.5">
+          <div className="flex items-center gap-3 md:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileOpen((prev) => !prev)}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/82 text-primary shadow-soft ring-1 ring-white/70"
+              aria-expanded={mobileOpen}
+              aria-label="Abrir menú"
             >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-
-        <div className="hidden items-center gap-5 text-primary md:flex">
-          <button
-            type="button"
-            className="scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
-            aria-label="Buscar"
-          >
-            <span className="material-symbols-outlined">search</span>
-          </button>
-          <button
-            type="button"
-            className="scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
-            aria-label="Favoritos"
-          >
-            <span className="material-symbols-outlined">favorite</span>
-          </button>
-          <Link
-            href="/carrito"
-            className="relative scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
-            aria-label="Carrito"
-          >
-            <span className="material-symbols-outlined">shopping_basket</span>
-            {count > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-on-secondary">
-                {count}
+              <span className="material-symbols-outlined">
+                {mobileOpen ? "close" : "menu"}
               </span>
-            )}
-          </Link>
-          <Link
-            href="/cuenta"
-            className="scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
-            aria-label="Cuenta"
-          >
-            <span className="material-symbols-outlined">person</span>
-          </Link>
-        </div>
+            </button>
+          </div>
 
-        <div className="flex items-center gap-3 text-primary md:hidden">
           <Link
-            href="/carrito"
-            className="relative scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
-            aria-label="Carrito"
+            href="/"
+            onClick={closeMobileMenu}
+            className="absolute left-1/2 flex -translate-x-1/2 items-center gap-3 md:static md:translate-x-0"
           >
-            <span className="material-symbols-outlined">shopping_basket</span>
-            {count > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-on-secondary">
-                {count}
-              </span>
-            )}
+            <Image
+              src="/brand/logo.svg"
+              alt="MINIFIMY"
+              width={140}
+              height={40}
+              className="h-7 w-auto md:h-9"
+              priority
+            />
+            <span className="sr-only">Minifimy</span>
           </Link>
-        </div>
 
-        <div
-          className={`absolute left-0 right-0 top-full z-40 overflow-hidden border-t border-outline-variant/30 bg-surface-container/95 backdrop-blur-md transition-all duration-300 md:hidden ${
-            mobileOpen ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0"
-          }`}
-        >
-          <div className="space-y-6 px-6 py-6">
-            <div className="flex items-center gap-4 text-primary">
-              <button
-                type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-md bg-surface-container-highest"
-                aria-label="Buscar"
-              >
-                <span className="material-symbols-outlined">search</span>
-              </button>
-              <button
-                type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-md bg-surface-container-highest"
-                aria-label="Favoritos"
-              >
-                <span className="material-symbols-outlined">favorite</span>
-              </button>
-              <Link
-                href="/cuenta"
-                onClick={closeMobileMenu}
-                className="flex h-10 w-10 items-center justify-center rounded-md bg-surface-container-highest"
-                aria-label="Cuenta"
-              >
-                <span className="material-symbols-outlined">person</span>
-              </Link>
-            </div>
-            <div className="flex flex-col gap-4 font-headline text-base font-semibold text-primary">
-              {navLinks.map((link, index) => (
+          <div className="hidden items-center gap-8 font-headline text-sm font-medium tracking-wide md:flex">
+            {navLinks.map((link) => {
+              const active = pathname === link.href || (link.href !== "/catalogo" && pathname.startsWith(link.href));
+              return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  onClick={closeMobileMenu}
-                  className={`pb-2 transition-colors ${
-                    index === 0 ? "text-secondary" : "text-primary"
+                  className={`pb-1 transition-colors duration-300 ${
+                    active
+                      ? "border-b-2 border-secondary text-secondary"
+                      : "text-primary hover:text-secondary"
                   }`}
                 >
                   {link.label}
                 </Link>
-              ))}
+              );
+            })}
+          </div>
+
+          <div className="hidden items-center gap-5 text-primary md:flex">
+            <button
+              type="button"
+              onClick={() => setSearchOpen((prev) => !prev)}
+              className="scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
+              aria-label="Buscar"
+              aria-expanded={searchOpen}
+            >
+              <span className="material-symbols-outlined">search</span>
+            </button>
+            <button
+              type="button"
+              className="scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
+              aria-label="Favoritos"
+            >
+              <span className="material-symbols-outlined">favorite</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMiniCartOpen(true)}
+              className="relative scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
+              aria-label="Abrir carrito"
+            >
+              <span className="material-symbols-outlined">shopping_basket</span>
+              {count > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-on-secondary">
+                  {count}
+                </span>
+              )}
+            </button>
+            <Link
+              href="/cuenta"
+              className="scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
+              aria-label="Cuenta"
+            >
+              <span className="material-symbols-outlined">person</span>
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-3 text-primary md:hidden">
+            <button
+              type="button"
+              onClick={() => setSearchOpen((prev) => !prev)}
+              className="relative scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
+              aria-label="Buscar"
+            >
+              <span className="material-symbols-outlined">search</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMiniCartOpen(true)}
+              className="relative scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
+              aria-label="Abrir carrito"
+            >
+              <span className="material-symbols-outlined">shopping_basket</span>
+              {count > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-on-secondary">
+                  {count}
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div
+            className={`absolute left-6 right-6 top-[calc(100%+0.75rem)] z-40 overflow-hidden rounded-[1.5rem] bg-white/94 shadow-lift backdrop-blur-md transition-all duration-300 md:left-auto md:right-6 md:w-[420px] ${
+              searchOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
+            }`}
+          >
+            <form onSubmit={submitSearch} className="p-3">
+              <label className="sr-only" htmlFor="site-search">Buscar productos</label>
+              <div className="flex items-center gap-3 rounded-full bg-[#f7efe3] px-4 py-2">
+                <span className="material-symbols-outlined text-primary">search</span>
+                <input
+                  id="site-search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Body nube, regalo, ajuar..."
+                  className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none placeholder:text-on-surface-variant/65"
+                />
+                <button type="submit" className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-on-primary">
+                  Buscar
+                </button>
+              </div>
+              <p className="px-4 pb-2 pt-3 text-xs text-on-surface-variant">
+                Fimi puede ayudarte a encontrar regalos, tejidos y prendas para recién nacido.
+              </p>
+            </form>
+          </div>
+
+          <div
+            className={`absolute left-3 right-3 top-[calc(100%+0.65rem)] z-30 overflow-hidden rounded-[1.6rem] border border-white/70 bg-[#fffaf1]/98 shadow-lift backdrop-blur-xl transition-all duration-300 md:hidden ${
+              mobileOpen ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0"
+            }`}
+          >
+            <div className="space-y-5 px-5 py-5">
+              <div className="flex flex-col gap-4 font-headline text-base font-semibold text-primary">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={closeMobileMenu}
+                    className={`pb-2 transition-colors ${pathname === link.href ? "text-secondary" : "text-primary"}`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+      <MiniCartDrawer open={miniCartOpen} onClose={() => setMiniCartOpen(false)} />
+    </>
   );
 }

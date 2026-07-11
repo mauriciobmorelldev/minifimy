@@ -1,67 +1,84 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Product } from "@/models/product";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import type { Product } from "@/models/product";
 
 interface ProductCardProps {
   product: Product;
+  compact?: boolean;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, compact = false }: ProductCardProps) {
+  const image = product.images[0] ?? "/brand/illustrations/jirafa.svg";
+
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-lg bg-surface-container-low transition-all duration-300 hover:shadow-xl hover:shadow-on-surface/5">
-      <div className="pointer-events-none absolute inset-0 opacity-20">
-        <Image
-          src="/brand/frames/marco-dots.png"
-          alt=""
-          fill
-          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 40vw, 90vw"
-          className="object-cover"
-        />
-      </div>
-      <div className="relative z-10 flex flex-1 flex-col">
-        <div className="relative aspect-[4/5] overflow-hidden">
-          <Link href={`/producto/${product.slug}`} className="absolute inset-0">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-[1.55rem] bg-white/82 shadow-soft ring-1 ring-white/70 transition-all duration-500 hover:-translate-y-1 hover:bg-white hover:shadow-lift md:rounded-[2rem]">
+      <div className="pointer-events-none absolute inset-x-5 top-5 h-24 rounded-full bg-[#f7efe3] opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-80 md:h-28" />
+
+      <div className="relative z-10 flex flex-1 flex-col p-2.5 md:p-3">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-[#efe4d0] md:rounded-[1.55rem]">
+          <Link href={`/producto/${product.slug}`} className="absolute inset-0" aria-label={`Ver ${product.name}`}>
             <Image
-              src={product.images[0]}
+              src={image}
               alt={product.name}
               fill
-              sizes="(min-width: 1024px) 25vw, (min-width: 640px) 40vw, 90vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-110"
+              sizes="(min-width: 1280px) 25vw, (min-width: 640px) 45vw, 78vw"
+              className="object-cover transition-transform duration-700 ease-soft-spring group-hover:scale-[1.055]"
             />
           </Link>
-          <div className="absolute left-4 top-4 rounded-md bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-on-primary">
-            {product.badge ?? "Nuevo"}
+
+          <div className="absolute left-3 top-3 rounded-full bg-white/88 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-primary shadow-soft md:left-4 md:top-4 md:px-3 md:py-1.5 md:text-[10px]">
+            {product.badge ?? "Elegido"}
           </div>
           <button
             type="button"
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-md bg-white/80 text-primary opacity-0 backdrop-blur-sm transition-all group-hover:opacity-100"
+            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/86 text-primary shadow-soft backdrop-blur-sm transition-all hover:scale-105 hover:text-secondary md:right-4 md:top-4 md:h-10 md:w-10"
             aria-label="Guardar en favoritos"
           >
-            <span className="material-symbols-outlined">favorite</span>
+            <span className="material-symbols-outlined text-[18px] md:text-[20px]">favorite</span>
           </button>
         </div>
-        <div className="flex flex-1 flex-col p-6">
-          <div className="mb-2 flex items-start justify-between gap-4">
-            <h3 className="font-headline text-lg font-bold text-on-surface leading-tight">
-              <Link href={`/producto/${product.slug}`} className="hover:text-primary">
-                {product.name}
-              </Link>
-            </h3>
-            <span className="font-bold text-secondary">
+
+        <div className="flex flex-1 flex-col px-2 pb-3 pt-4 md:px-3 md:pb-4 md:pt-5">
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.16em] text-on-surface-variant md:text-[10px] md:tracking-[0.18em]">
+                {product.category}
+              </p>
+              <h3 className="font-headline text-base font-extrabold leading-tight text-on-surface md:text-xl">
+                <Link href={`/producto/${product.slug}`} className="transition-colors hover:text-primary">
+                  {product.name}
+                </Link>
+              </h3>
+            </div>
+            <span className="shrink-0 rounded-full bg-[#f7efe3] px-2.5 py-1.5 text-xs font-extrabold text-secondary md:px-3 md:py-2 md:text-sm">
               AR$ {product.price.toLocaleString("es-AR")}
             </span>
           </div>
-          <p className="mb-6 text-sm text-on-surface-variant">{product.description}</p>
+
+          {!compact && (
+            <p className="mb-4 line-clamp-2 text-xs leading-5 text-on-surface-variant md:mb-5 md:text-sm md:leading-6">
+              {product.description}
+            </p>
+          )}
+
+          <div className="mb-4 flex flex-wrap gap-1.5 md:mb-5 md:gap-2">
+            {(product.sizes ?? ["Único"]).slice(0, compact ? 2 : 3).map((size) => (
+              <span key={size} className="rounded-full bg-[#fbf4ea] px-2.5 py-1 text-[11px] font-bold text-primary/80 md:px-3 md:text-xs">
+                {size}
+              </span>
+            ))}
+          </div>
+
           <AddToCartButton
             product={product}
-            className="group/btn relative w-full rounded-md bg-primary py-4 font-headline text-sm font-bold text-on-primary"
+            className="group/btn relative mt-auto w-full overflow-hidden rounded-full bg-primary px-4 py-3 font-headline text-xs font-bold text-on-primary shadow-soft transition-transform hover:scale-[1.015] active:scale-[0.98] md:px-5 md:py-3.5 md:text-sm"
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
-              Agregar al carrito
-              <span className="material-symbols-outlined text-lg">shopping_basket</span>
+              Agregar a la bolsita
+              <span className="material-symbols-outlined text-base transition-transform group-hover/btn:translate-x-1 md:text-lg">shopping_basket</span>
             </span>
-            <span className="absolute inset-0 bg-primary-dim opacity-0 transition-opacity group-hover/btn:opacity-100" />
+            <span className="absolute inset-0 bg-secondary opacity-0 transition-opacity group-hover/btn:opacity-100" />
           </AddToCartButton>
         </div>
       </div>
