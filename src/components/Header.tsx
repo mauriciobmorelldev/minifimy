@@ -83,7 +83,7 @@ export function Header({ navLinks }: HeaderProps) {
               const active = pathname === link.href || (link.href !== "/catalogo" && pathname.startsWith(link.href));
               if (link.children?.length) {
                 return (
-                  <div key={link.href} className="group relative pb-1">
+                  <div key={link.href} className="group relative pb-3">
                     <Link
                       href={link.href}
                       className={`inline-flex items-center gap-1 transition-colors duration-300 ${active ? "border-b-2 border-secondary text-secondary" : "text-primary hover:text-secondary"}`}
@@ -91,7 +91,8 @@ export function Header({ navLinks }: HeaderProps) {
                       {link.label}
                       <span className="material-symbols-outlined text-base transition-transform group-hover:rotate-180">expand_more</span>
                     </Link>
-                    <div className="pointer-events-none absolute left-1/2 top-[calc(100%+0.75rem)] z-50 w-72 -translate-x-1/2 translate-y-2 rounded-[1.4rem] bg-white/95 p-3 opacity-0 shadow-lift ring-1 ring-white/70 backdrop-blur-xl transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+                    <div className="pointer-events-none absolute left-1/2 top-full z-50 w-72 -translate-x-1/2 translate-y-1 pt-3 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+                      <div className="rounded-[1.4rem] bg-white/95 p-3 shadow-lift ring-1 ring-white/70 backdrop-blur-xl">
                       <div className="mb-2 rounded-[1rem] bg-[#f7efe3] px-4 py-3">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Categorias</p>
                         <p className="mt-1 text-xs leading-5 text-on-surface-variant">Todo lo que esta cargado en Fimy.</p>
@@ -106,6 +107,7 @@ export function Header({ navLinks }: HeaderProps) {
                             {child.label}
                           </Link>
                         ))}
+                      </div>
                       </div>
                     </div>
                   </div>
@@ -187,7 +189,7 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
 
           <div
-            className={`absolute left-6 right-6 top-[calc(100%+0.75rem)] z-40 overflow-hidden rounded-[1.5rem] bg-white/94 shadow-lift backdrop-blur-md transition-all duration-300 md:left-auto md:right-6 md:w-[420px] ${
+            className={`absolute left-6 right-6 top-full z-40 overflow-hidden rounded-[1.5rem] bg-white/94 shadow-lift backdrop-blur-md transition-all duration-300 md:left-auto md:right-6 md:w-[420px] ${
               searchOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
             }`}
           >

@@ -54,13 +54,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const [siteSettings, storeCategories] = await Promise.all([getSiteSettings(), getStoreCategories()]);
-  const categoryLinks = storeCategories.map((category) => ({
+  const automaticFeaturedMenu = storeCategories.slice(0, 3).map((category) => ({
     href: `/catalogo/${category.slug}`,
     label: category.name,
   }));
+  const featuredMenu = siteSettings.featuredMenuItems.length > 0 ? siteSettings.featuredMenuItems.slice(0, 3) : automaticFeaturedMenu;
   const categoryMenu = [
-    { href: "/catalogo", label: "Catalogo", children: categoryLinks },
-    ...siteSettings.featuredMenuItems.slice(0, 3),
+    { href: "/catalogo", label: "Catalogo" },
+    ...featuredMenu,
   ];
   const mainMenu = siteSettings.menusFromWordPress && siteSettings.mainMenu.length > 0 ? siteSettings.mainMenu : categoryMenu;
 

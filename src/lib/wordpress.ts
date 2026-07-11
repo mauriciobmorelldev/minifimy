@@ -128,12 +128,7 @@ export const fallbackHomeContent: HomeContent = {
 
 
 export const fallbackSiteSettings: SiteSettings = {
-  mainMenu: [
-    { href: "/catalogo", label: "Catalogo" },
-    { href: "/catalogo/recien-nacido", label: "Recien nacido" },
-    { href: "/catalogo/aventura", label: "Mini aventuras" },
-    { href: "/catalogo/accesorios", label: "Accesorios" },
-  ],
+  mainMenu: [{ href: "/catalogo", label: "Catalogo" }],
   footerExploreMenu: [
     { href: "/catalogo", label: "Catalogo" },
     { href: "/contacto", label: "Guia de talles" },
