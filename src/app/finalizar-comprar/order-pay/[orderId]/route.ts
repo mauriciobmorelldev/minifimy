@@ -32,6 +32,7 @@ function buildWooOrderPayUrl(orderId: string, request: NextRequest) {
 
 function getCheckoutEnhancement(request: NextRequest) {
   const requestOrigin = getRequestOrigin(request);
+  const preferredPaymentMethod = request.nextUrl.searchParams.get("fimy_payment_method") ?? "";
   return `
 <style id="minifimy-checkout-style">
   :root { color-scheme: light; }
@@ -49,7 +50,7 @@ function getCheckoutEnhancement(request: NextRequest) {
   #payment, .woocommerce-checkout-payment { margin-top: 22px !important; background: #f7efe3 !important; border-radius: 28px !important; padding: 20px !important; }
   #payment ul.payment_methods { margin: 0 !important; padding: 0 !important; list-style: none !important; }
   #payment li { list-style: none !important; margin: 10px 0 !important; padding: 16px !important; border-radius: 20px !important; background: rgba(255,255,255,.72) !important; }
-  #payment li:not(.payment_method_selected):has(input[name="payment_method"]:not(:checked)) { display: none !important; }
+  #payment li.payment_method_hidden { display: none !important; }
   #payment label { font-weight: 800 !important; color: #30291f !important; }
   .payment_box { display: block !important; background: transparent !important; color: #6d6254 !important; padding: 8px 0 0 !important; }
   button, .button, #place_order { border: 0 !important; border-radius: 999px !important; background: #50683d !important; color: #fffaf1 !important; padding: 15px 24px !important; font-weight: 900 !important; box-shadow: 0 16px 34px rgba(80,104,61,.22) !important; cursor: pointer !important; }
@@ -61,6 +62,7 @@ function getCheckoutEnhancement(request: NextRequest) {
 (() => {
   const storeOrigin = ${JSON.stringify(storeOrigin ?? "")};
   const requestOrigin = ${JSON.stringify(requestOrigin)};
+  const preferredPaymentMethod = ${JSON.stringify(preferredPaymentMethod)};
   const rewriteUrl = (value) => {
     if (!value || !storeOrigin) return value;
     try {
@@ -76,24 +78,43 @@ function getCheckoutEnhancement(request: NextRequest) {
     const rewritten = rewriteUrl(value);
     if (rewritten) node.setAttribute(attr, rewritten);
   });
-  document.querySelectorAll('input[name="payment_method"]').forEach((input) => {
+  const paymentInputs = Array.from(document.querySelectorAll('input[name="payment_method"]'));
+  const preferredInput = preferredPaymentMethod
+    ? paymentInputs.find((input) => input.value === preferredPaymentMethod)
+    : null;
+  const checkedInput = paymentInputs.find((input) => input.checked);
+  const activePaymentInput = preferredInput || checkedInput || paymentInputs[0] || null;
+  if (activePaymentInput) {
+    activePaymentInput.disabled = false;
+    activePaymentInput.checked = true;
+    activePaymentInput.dispatchEvent(new Event("change", { bubbles: true }));
+    activePaymentInput.dispatchEvent(new Event("click", { bubbles: true }));
+  }
+  paymentInputs.forEach((input) => {
     const item = input.closest("li");
-    if (item && input.checked) item.classList.add("payment_method_selected");
+    if (!item) return;
+    const isActive = Boolean(activePaymentInput && input.value === activePaymentInput.value);
+    input.disabled = !isActive;
+    input.checked = isActive;
+    item.hidden = !isActive;
+    item.classList.toggle("payment_method_selected", isActive);
+    item.classList.toggle("payment_method_hidden", !isActive);
   });
   const form = document.querySelector('form#order_review, form.woocommerce-order-pay, form.checkout');
-  const selectedPayment = document.querySelector('input[name="payment_method"]:checked');
+  const selectedPayment = activePaymentInput || document.querySelector('input[name="payment_method"]:checked');
   const submitButton = document.querySelector('#place_order, button[name="woocommerce_pay"], button[type="submit"]');
-  const canAutoSubmit = form && selectedPayment && submitButton && !sessionStorage.getItem("minifimy-order-pay-submitted");
+  const storageKey = "minifimy-order-pay-submitted:" + location.pathname + ":" + (selectedPayment?.value ?? preferredPaymentMethod);
+  const canAutoSubmit = form && selectedPayment && submitButton;
   if (!canAutoSubmit) return;
   const overlay = document.createElement("div");
   overlay.id = "minifimy-autopay";
-  overlay.innerHTML = "<div><strong>Estamos abriendo tu pago</strong><p>Ya tomamos el método que elegiste en Minifimy. Te llevamos al paso seguro para completar la compra.</p></div>";
+  overlay.innerHTML = "<div><strong>Estamos abriendo tu pago</strong><p>Ya usamos el método que elegiste en Minifimy. Te llevamos al paso seguro para completar la compra.</p></div>";
   document.body.appendChild(overlay);
-  sessionStorage.setItem("minifimy-order-pay-submitted", "true");
   window.setTimeout(() => {
+    sessionStorage.setItem(storageKey, String(Date.now()));
     if (typeof form.requestSubmit === "function") form.requestSubmit(submitButton);
     else submitButton.click();
-  }, 900);
+  }, 450);
 })();
 </script>`;
 }

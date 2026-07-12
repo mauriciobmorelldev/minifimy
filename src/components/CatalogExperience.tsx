@@ -55,8 +55,9 @@ function serializePriceRange(min: number, max: number, limitMin: number, limitMa
 export function CatalogExperience({ products, categories, filterOptions }: CatalogExperienceProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const routeCategory = pathname.startsWith("/catalogo/") ? pathname.split("/").filter(Boolean)[1] ?? "all" : "all";
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
-  const [category, setCategory] = useState(searchParams.get("categoria") ?? "all");
+  const [category, setCategory] = useState(searchParams.get("categoria") ?? routeCategory);
   const [size, setSize] = useState(searchParams.get("talle") ?? "all");
   const [color, setColor] = useState(searchParams.get("color") ?? "all");
   const [priceRange, setPriceRange] = useState(searchParams.get("precio") ?? "all");
@@ -66,17 +67,21 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
 
   useEffect(() => {
     setQuery(searchParams.get("q") ?? "");
-    setCategory(searchParams.get("categoria") ?? "all");
+    setCategory(searchParams.get("categoria") ?? routeCategory);
     setSize(searchParams.get("talle") ?? "all");
     setColor(searchParams.get("color") ?? "all");
     setPriceRange(searchParams.get("precio") ?? "all");
     setSort(searchParams.get("orden") ?? "featured");
     setPage(getSafePage(searchParams.get("page")));
-  }, [searchParams]);
+  }, [routeCategory, searchParams]);
 
   const updateUrl = (next: Record<string, string | number | null>) => {
+    const nextCategory = String(next.categoria ?? category);
+    const basePath = nextCategory && nextCategory !== "all" ? `/catalogo/${nextCategory}` : "/catalogo";
     const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : searchParams.toString());
+    params.delete("categoria");
     Object.entries(next).forEach(([key, value]) => {
+      if (key === "categoria") return;
       if (!value || value === "all" || value === "featured" || value === 1) {
         params.delete(key);
       } else {
@@ -85,8 +90,8 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
     });
 
     const queryString = params.toString();
-    const nextUrl = queryString ? `${pathname}?${queryString}` : pathname;
-    window.history.replaceState(null, "", nextUrl);
+    const nextUrl = queryString ? `${basePath}?${queryString}` : basePath;
+    window.location.assign(nextUrl);
   };
 
   const setFilter = (next: Partial<{ q: string; categoria: string; talle: string; color: string; precio: string; orden: string }>) => {
@@ -112,16 +117,29 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
   const hasPriceSlider = priceMaxLimit > priceMinLimit;
   const priceStep = 1;
   const selectedPriceRange = parsePriceRange(priceRange, priceMinLimit, priceMaxLimit);
-  const priceFillLeft = hasPriceSlider ? ((selectedPriceRange.min - priceMinLimit) / (priceMaxLimit - priceMinLimit)) * 100 : 0;
-  const priceFillRight = hasPriceSlider ? 100 - ((selectedPriceRange.max - priceMinLimit) / (priceMaxLimit - priceMinLimit)) * 100 : 0;
+  const [draftPriceRange, setDraftPriceRange] = useState(selectedPriceRange);
+
+  useEffect(() => {
+    setDraftPriceRange(selectedPriceRange);
+  }, [selectedPriceRange.min, selectedPriceRange.max, selectedPriceRange.isDefault]);
+
+  const priceFillLeft = hasPriceSlider ? ((draftPriceRange.min - priceMinLimit) / (priceMaxLimit - priceMinLimit)) * 100 : 0;
+  const priceFillRight = hasPriceSlider ? 100 - ((draftPriceRange.max - priceMinLimit) / (priceMaxLimit - priceMinLimit)) * 100 : 0;
+  const hasDraftPriceChange = draftPriceRange.min !== selectedPriceRange.min || draftPriceRange.max !== selectedPriceRange.max;
 
   const updatePriceSlider = (edge: "min" | "max", value: string) => {
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue)) return;
 
-    const nextMin = edge === "min" ? Math.min(numericValue, selectedPriceRange.max - priceStep) : selectedPriceRange.min;
-    const nextMax = edge === "max" ? Math.max(numericValue, selectedPriceRange.min + priceStep) : selectedPriceRange.max;
-    setFilter({ precio: serializePriceRange(nextMin, nextMax, priceMinLimit, priceMaxLimit) });
+    setDraftPriceRange((current) => {
+      const nextMin = edge === "min" ? Math.min(numericValue, current.max - priceStep) : current.min;
+      const nextMax = edge === "max" ? Math.max(numericValue, current.min + priceStep) : current.max;
+      return { min: nextMin, max: nextMax, isDefault: nextMin === priceMinLimit && nextMax === priceMaxLimit };
+    });
+  };
+
+  const applyPriceFilter = () => {
+    setFilter({ precio: serializePriceRange(draftPriceRange.min, draftPriceRange.max, priceMinLimit, priceMaxLimit) });
   };
 
   const quickFilters = [
@@ -171,9 +189,6 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
     const boundedPage = Math.min(Math.max(nextPage, 1), totalPages);
     setPage(boundedPage);
     updateUrl({ page: boundedPage });
-    window.requestAnimationFrame(() => {
-      document.getElementById("catalog-products")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
   };
 
   const resetFilters = () => {
@@ -203,15 +218,28 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                 </p>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto] md:mt-7">
-                  <label className="relative block">
+                  <form
+                    className="relative block"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      setFilter({ q: query.trim() });
+                    }}
+                  >
                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary">search</span>
                     <input
                       value={query}
-                      onChange={(event) => setFilter({ q: event.target.value })}
+                      onChange={(event) => setQuery(event.target.value)}
                       placeholder="Buscar body, ajuar, manta, regalo..."
-                      className="h-12 w-full rounded-full bg-white/88 pl-11 pr-4 text-sm font-medium text-on-surface shadow-soft outline-none ring-1 ring-white/60 transition focus:ring-2 focus:ring-primary/30 md:h-14 md:pl-12 md:pr-5"
+                      className="h-12 w-full rounded-full bg-white/88 pl-11 pr-24 text-sm font-medium text-on-surface shadow-soft outline-none ring-1 ring-white/60 transition focus:ring-2 focus:ring-primary/30 md:h-14 md:pl-12 md:pr-28"
                     />
-                  </label>
+                    <button
+                      type="submit"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-primary px-4 py-2 text-xs font-extrabold text-on-primary shadow-soft transition hover:bg-secondary md:right-2 md:px-5 md:py-2.5"
+                      aria-label="Buscar productos"
+                    >
+                      Buscar
+                    </button>
+                  </form>
                   <select
                     value={sort}
                     onChange={(event) => setFilter({ orden: event.target.value })}
@@ -391,14 +419,15 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                     </button>
                   </div>
 
-                  <div className="mb-5 grid grid-cols-2 gap-2">
-                    <div className="rounded-[1rem] bg-white/80 px-3 py-2 shadow-soft">
-                      <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-primary/70">Desde</span>
-                      <strong className="mt-1 block text-sm text-on-surface">{formatPrice(selectedPriceRange.min)}</strong>
+                  <div className="mb-5 rounded-[1.15rem] bg-white/86 px-4 py-3 shadow-soft">
+                    <div className="flex items-center justify-between gap-3 text-[10px] font-bold uppercase tracking-[0.16em] text-primary/70">
+                      <span>Desde</span>
+                      <span>Hasta</span>
                     </div>
-                    <div className="rounded-[1rem] bg-white/80 px-3 py-2 text-right shadow-soft">
-                      <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-primary/70">Hasta</span>
-                      <strong className="mt-1 block text-sm text-on-surface">{formatPrice(selectedPriceRange.max)}</strong>
+                    <div className="mt-1 flex items-center justify-between gap-3 font-headline text-[1rem] font-extrabold leading-none text-on-surface">
+                      <strong className="whitespace-nowrap">{formatPrice(draftPriceRange.min)}</strong>
+                      <span className="h-px flex-1 bg-[#eadfcb]" />
+                      <strong className="whitespace-nowrap text-secondary">{formatPrice(draftPriceRange.max)}</strong>
                     </div>
                   </div>
 
@@ -413,9 +442,9 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                       min={priceMinLimit}
                       max={priceMaxLimit}
                       step={priceStep}
-                      value={selectedPriceRange.min}
+                      value={draftPriceRange.min}
                       onChange={(event) => updatePriceSlider("min", event.target.value)}
-                      className={`price-range-thumb absolute inset-x-0 top-1/2 h-2 w-full -translate-y-1/2 appearance-none bg-transparent ${selectedPriceRange.min > priceMaxLimit - (priceMaxLimit - priceMinLimit) * 0.12 ? "z-30" : "z-10"}`}
+                      className={`price-range-thumb absolute inset-x-0 top-1/2 h-2 w-full -translate-y-1/2 appearance-none bg-transparent ${draftPriceRange.min > priceMaxLimit - (priceMaxLimit - priceMinLimit) * 0.12 ? "z-30" : "z-10"}`}
                       aria-label="Precio minimo"
                     />
                     <input
@@ -423,7 +452,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                       min={priceMinLimit}
                       max={priceMaxLimit}
                       step={priceStep}
-                      value={selectedPriceRange.max}
+                      value={draftPriceRange.max}
                       onChange={(event) => updatePriceSlider("max", event.target.value)}
                       className="price-range-thumb absolute inset-x-0 top-1/2 z-20 h-2 w-full -translate-y-1/2 appearance-none bg-transparent"
                       aria-label="Precio maximo"
@@ -434,6 +463,15 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                     <span>{formatPrice(priceMinLimit)}</span>
                     <span>{formatPrice(priceMaxLimit)}</span>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={applyPriceFilter}
+                    disabled={!hasDraftPriceChange}
+                    className="mt-4 w-full rounded-full bg-primary px-4 py-3 text-sm font-extrabold text-on-primary shadow-soft transition hover:bg-secondary disabled:cursor-not-allowed disabled:bg-white disabled:text-primary/45"
+                  >
+                    Aplicar precio
+                  </button>
                 </div>
               )}
 

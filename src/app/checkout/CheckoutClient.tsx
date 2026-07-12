@@ -130,6 +130,7 @@ export default function CheckoutClient() {
       clearCart();
       const params = new URLSearchParams();
       params.set("pay_for_order", "true");
+      if (paymentMethodId) params.set("fimy_payment_method", paymentMethodId);
       if (payload.orderKey) params.set("key", payload.orderKey);
       window.location.href = `/finalizar-comprar/order-pay/${payload.orderId}/${params.toString() ? `?${params.toString()}` : ""}`;
       return;
