@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
 import type { Product, ProductSelection } from "@/models/product";
@@ -10,10 +10,52 @@ interface ProductDetailClientProps {
   categoryName: string;
 }
 
-function variantMatchesSelection(variant: NonNullable<Product["variants"]>[number], selection: ProductSelection) {
-  const matchesSize = !selection.size || !variant.size || variant.size === selection.size;
-  const matchesColor = !selection.color || !variant.color || variant.color === selection.color;
-  return matchesSize && matchesColor;
+type ProductVariant = NonNullable<Product["variants"]>[number];
+
+function normalizeOption(value?: string) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function optionsMatch(selected?: string, actual?: string) {
+  return !selected || !actual || normalizeOption(selected) === normalizeOption(actual);
+}
+
+function variantMatchesSelection(variant: ProductVariant, selection: ProductSelection) {
+  return optionsMatch(selection.size, variant.size) && optionsMatch(selection.color, variant.color);
+}
+
+function scoreVariantForSelection(variant: ProductVariant, selection: ProductSelection) {
+  let score = variant.image ? 1 : 0;
+  const selectedColor = normalizeOption(selection.color);
+  const variantColor = normalizeOption(variant.color);
+  const selectedSize = normalizeOption(selection.size);
+  const variantSize = normalizeOption(variant.size);
+
+  if (selectedColor && variantColor) {
+    if (selectedColor !== variantColor) return -1;
+    score += 10;
+  }
+
+  if (selectedSize && variantSize) {
+    if (selectedSize === variantSize) score += 5;
+    else if (!selectedColor) return -1;
+  }
+
+  return score;
+}
+
+function findBestVariantForSelection(variants: ProductVariant[] | undefined, selection: ProductSelection) {
+  if (!variants?.length) return undefined;
+
+  return variants
+    .map((variant) => ({ variant, score: scoreVariantForSelection(variant, selection) }))
+    .filter(({ score }) => score >= 0)
+    .sort((first, second) => second.score - first.score)[0]?.variant;
 }
 
 export function ProductDetailClient({ product, categoryName }: ProductDetailClientProps) {
@@ -24,20 +66,36 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
 
   const selectedVariant = useMemo(() => {
     return product.variants?.find((variant) => variantMatchesSelection(variant, selection));
-  }, [product.variants, selection]);
+  }, [product.variants, selection.color, selection.size]);
 
-  const selectedPrice = selectedVariant?.price ?? product.price;
-  const selectedStock = selectedVariant?.stock ?? product.stock;
+  const visualVariant = useMemo(() => {
+    return selectedVariant ?? findBestVariantForSelection(product.variants, selection);
+  }, [product.variants, selectedVariant, selection.color, selection.size]);
+
+  useEffect(() => {
+    if (!product.variants?.length || selectedVariant || !visualVariant) return;
+
+    setSelection((current) => {
+      const nextSize = visualVariant.size ?? current.size;
+      const nextColor = visualVariant.color ?? current.color;
+
+      if (nextSize === current.size && nextColor === current.color) return current;
+      return { ...current, size: nextSize, color: nextColor };
+    });
+  }, [product.variants, selectedVariant, visualVariant]);
+
+  const selectedPrice = selectedVariant?.price ?? visualVariant?.price ?? product.price;
+  const selectedStock = selectedVariant?.stock ?? visualVariant?.stock ?? product.stock;
   const galleryImages = useMemo(() => {
-    const selectedImage = selectedVariant?.image;
-    if (!selectedImage) return product.images;
-    return [selectedImage, ...product.images.filter((image) => image !== selectedImage)];
-  }, [product.images, selectedVariant?.image]);
+    const selectedImage = visualVariant?.image;
+    const variantImages = product.variants?.flatMap((variant) => (variant.image ? [variant.image] : [])) ?? [];
+    return Array.from(new Set([selectedImage, ...variantImages, ...product.images].filter(Boolean) as string[]));
+  }, [product.images, product.variants, visualVariant?.image]);
 
   return (
     <>
       <div className="lg:col-span-7">
-        <ProductGallery images={galleryImages} productName={product.name} selectedImage={selectedVariant?.image} />
+        <ProductGallery images={galleryImages} productName={product.name} selectedImage={visualVariant?.image} />
       </div>
 
       <div className="space-y-7 lg:col-span-5">

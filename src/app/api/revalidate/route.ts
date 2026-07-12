@@ -13,7 +13,8 @@ function tagsFromWebhookTopic(topic: string | null) {
 }
 
 export async function POST(request: Request) {
-  const secret = request.headers.get("x-revalidate-secret");
+  const url = new URL(request.url);
+  const secret = request.headers.get("x-revalidate-secret") ?? url.searchParams.get("secret");
 
   if (!process.env.REVALIDATE_SECRET || secret !== process.env.REVALIDATE_SECRET) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });

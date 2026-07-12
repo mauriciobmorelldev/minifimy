@@ -54,8 +54,9 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
             src={activeImage}
             alt={`${productName} vista ${activeIndex + 1}`}
             fill
-            sizes="(min-width: 1024px) 55vw, 92vw"
+            sizes="(min-width: 1280px) 620px, (min-width: 1024px) 52vw, 92vw"
             className="object-cover transition-transform duration-500 ease-soft-spring"
+            quality={78}
             priority
           />
         </div>
@@ -111,7 +112,7 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
             aria-label={`Ver imagen ${index + 1} de ${productName}`}
             aria-current={activeIndex === index ? "true" : undefined}
           >
-            <Image src={image} alt="" fill sizes="96px" className="object-cover" />
+            <Image src={image} alt="" fill sizes="96px" quality={58} className="object-cover" />
           </button>
         ))}
       </div>
@@ -135,7 +136,7 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
                 fill
                 sizes="100vw"
                 className="object-contain"
-                priority
+                quality={82}
               />
               {hasManyImages && (
                 <>
@@ -168,7 +169,7 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
                   className={`relative h-16 min-w-16 overflow-hidden rounded-[0.9rem] transition ${activeIndex === index ? "ring-2 ring-[#fffaf1]" : "opacity-65"}`}
                   aria-label={`Ver imagen ampliada ${index + 1}`}
                 >
-                  <Image src={image} alt="" fill sizes="64px" className="object-cover" />
+                  <Image src={image} alt="" fill sizes="64px" quality={55} className="object-cover" />
                 </button>
               ))}
             </div>

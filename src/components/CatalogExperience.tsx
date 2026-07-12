@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCarousel } from "@/components/ProductCarousel";
 import { ScrollReveal } from "@/components/ScrollReveal";
@@ -55,7 +55,6 @@ function serializePriceRange(min: number, max: number, limitMin: number, limitMa
 export function CatalogExperience({ products, categories, filterOptions }: CatalogExperienceProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const router = useRouter();
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [category, setCategory] = useState(searchParams.get("categoria") ?? "all");
   const [size, setSize] = useState(searchParams.get("talle") ?? "all");
@@ -76,7 +75,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
   }, [searchParams]);
 
   const updateUrl = (next: Record<string, string | number | null>) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : searchParams.toString());
     Object.entries(next).forEach(([key, value]) => {
       if (!value || value === "all" || value === "featured" || value === 1) {
         params.delete(key);
@@ -86,7 +85,8 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
     });
 
     const queryString = params.toString();
-    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+    const nextUrl = queryString ? `${pathname}?${queryString}` : pathname;
+    window.history.replaceState(null, "", nextUrl);
   };
 
   const setFilter = (next: Partial<{ q: string; categoria: string; talle: string; color: string; precio: string; orden: string }>) => {
