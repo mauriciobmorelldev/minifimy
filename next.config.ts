@@ -56,6 +56,18 @@ const nextConfig: NextConfig = {
     deviceSizes: [360, 420, 640, 768, 1024, 1280, 1536],
     imageSizes: [48, 64, 96, 128, 192, 256, 384, 512],
   },
+  async rewrites() {
+    return {
+      beforeFiles: storeOrigin
+        ? [
+            { source: "/wp-content/:path*", destination: `${storeOrigin}/wp-content/:path*` },
+            { source: "/wp-includes/:path*", destination: `${storeOrigin}/wp-includes/:path*` },
+            { source: "/wp-json/:path*", destination: `${storeOrigin}/wp-json/:path*` },
+            { source: "/wc-api/:path*", destination: `${storeOrigin}/wc-api/:path*` },
+          ]
+        : [],
+    };
+  },
   async headers() {
     return [
       {
