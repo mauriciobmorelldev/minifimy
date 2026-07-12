@@ -29,11 +29,12 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
       if (event.key === "ArrowRight") goTo(activeIndex + 1);
     };
 
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [activeIndex, lightboxOpen, galleryImages.length]);
@@ -41,25 +42,16 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
   return (
     <div className="space-y-4 md:space-y-5">
       <div className="relative overflow-hidden rounded-[1.6rem] bg-surface-container-low shadow-soft md:rounded-[2rem]">
-        <button
-          type="button"
-          onClick={() => setLightboxOpen(true)}
-          className="group relative block aspect-[4/5] w-full overflow-hidden text-left md:aspect-[4/4.8]"
-          aria-label={`Ampliar imagen de ${productName}`}
-        >
+        <div className="relative aspect-[4/5] w-full overflow-hidden md:aspect-[4/4.8]">
           <Image
             src={activeImage}
             alt={`${productName} vista ${activeIndex + 1}`}
             fill
             sizes="(min-width: 1024px) 55vw, 92vw"
-            className="object-cover transition-transform duration-500 ease-soft-spring group-hover:scale-[1.018]"
+            className="object-cover transition-transform duration-500 ease-soft-spring"
             priority
           />
-          <span className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full bg-[#fffaf1]/94 px-3 py-2 text-xs font-bold text-primary shadow-soft backdrop-blur">
-            <span className="material-symbols-outlined text-base">open_in_full</span>
-            Ver foto
-          </span>
-        </button>
+        </div>
 
         <div className="pointer-events-none absolute left-4 top-4 rounded-full bg-[#fffaf1]/95 px-3 py-2 shadow-soft backdrop-blur md:left-6 md:top-6 md:px-4">
           <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
@@ -68,12 +60,22 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
           </span>
         </div>
 
+        <button
+          type="button"
+          onClick={() => setLightboxOpen(true)}
+          className="absolute bottom-4 right-4 z-20 inline-flex items-center gap-2 rounded-full bg-[#fffaf1]/96 px-3 py-2 text-xs font-bold text-primary shadow-soft backdrop-blur transition hover:scale-105"
+          aria-label={`Ampliar imagen de ${productName}`}
+        >
+          <span className="material-symbols-outlined text-base">open_in_full</span>
+          Ver foto
+        </button>
+
         {hasManyImages && (
           <>
             <button
               type="button"
               onClick={() => goTo(activeIndex - 1)}
-              className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[#fffaf1]/92 text-primary shadow-soft backdrop-blur transition hover:scale-105 md:left-5"
+              className="absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[#fffaf1]/92 text-primary shadow-soft backdrop-blur transition hover:scale-105 md:left-5"
               aria-label="Ver imagen anterior"
             >
               <span className="material-symbols-outlined">chevron_left</span>
@@ -81,7 +83,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             <button
               type="button"
               onClick={() => goTo(activeIndex + 1)}
-              className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[#fffaf1]/92 text-primary shadow-soft backdrop-blur transition hover:scale-105 md:right-5"
+              className="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[#fffaf1]/92 text-primary shadow-soft backdrop-blur transition hover:scale-105 md:right-5"
               aria-label="Ver imagen siguiente"
             >
               <span className="material-symbols-outlined">chevron_right</span>
@@ -102,13 +104,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             aria-label={`Ver imagen ${index + 1} de ${productName}`}
             aria-current={activeIndex === index ? "true" : undefined}
           >
-            <Image
-              src={image}
-              alt=""
-              fill
-              sizes="96px"
-              className="object-cover"
-            />
+            <Image src={image} alt="" fill sizes="96px" className="object-cover" />
           </button>
         ))}
       </div>

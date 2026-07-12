@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCarousel } from "@/components/ProductCarousel";
@@ -64,6 +64,16 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
   const [sort, setSort] = useState(searchParams.get("orden") ?? "featured");
   const [page, setPage] = useState(getSafePage(searchParams.get("page")));
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  useEffect(() => {
+    setQuery(searchParams.get("q") ?? "");
+    setCategory(searchParams.get("categoria") ?? "all");
+    setSize(searchParams.get("talle") ?? "all");
+    setColor(searchParams.get("color") ?? "all");
+    setPriceRange(searchParams.get("precio") ?? "all");
+    setSort(searchParams.get("orden") ?? "featured");
+    setPage(getSafePage(searchParams.get("page")));
+  }, [searchParams]);
 
   const updateUrl = (next: Record<string, string | number | null>) => {
     const params = new URLSearchParams(searchParams.toString());
