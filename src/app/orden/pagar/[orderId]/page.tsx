@@ -26,7 +26,7 @@ export default async function OrderPayPage({ params, searchParams }: OrderPayPag
   const { orderId } = await params;
   const query = await searchParams;
   const order = await getStoreOrderForPayment(orderId, query.key);
-  const externalPaymentUrl = isExternalPaymentUrl(query.pay) ? query.pay : undefined;
+  const queryPaymentUrl = isExternalPaymentUrl(query.pay) ? query.pay : undefined;
 
   if (!order) {
     return (
@@ -39,6 +39,9 @@ export default async function OrderPayPage({ params, searchParams }: OrderPayPag
       </main>
     );
   }
+
+  const paymentUrl = queryPaymentUrl ?? order.paymentUrl;
+  const isOfflinePayment = ["bacs", "cod", "cheque"].includes(order.paymentMethod);
 
   return (
     <main className="mobile-soft-page mx-auto min-h-screen max-w-5xl px-5 pb-20 pt-28 md:px-6">
@@ -84,13 +87,18 @@ export default async function OrderPayPage({ params, searchParams }: OrderPayPag
 
         <aside className="h-fit rounded-[2rem] bg-white/82 p-5 shadow-soft md:p-7">
           <h2 className="font-headline text-2xl font-extrabold text-on-surface">Pago</h2>
-          {externalPaymentUrl ? (
-            <a href={externalPaymentUrl} className="mt-5 flex w-full items-center justify-center rounded-full bg-primary py-3.5 font-bold text-on-primary shadow-soft">
+          {paymentUrl ? (
+            <a href={paymentUrl} className="mt-5 flex w-full items-center justify-center rounded-full bg-primary py-3.5 font-bold text-on-primary shadow-soft">
               Continuar con {order.paymentMethodTitle}
             </a>
+          ) : isOfflinePayment || order.paymentInstructions ? (
+            <div className="mt-5 space-y-3 rounded-[1.4rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">
+              <p className="font-bold text-on-surface">Tu pedido ya quedo reservado.</p>
+              <p>{order.paymentInstructions || "Te vamos a enviar los datos para completar el pago y preparar tu pedido."}</p>
+            </div>
           ) : (
             <div className="mt-5 rounded-[1.4rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">
-              Tu pedido ya quedo reservado. Todavia no pudimos abrir el pago automatico; escribinos y te ayudamos a completarlo.
+              Tu pedido esta reservado. Si el boton de pago no aparece, escribinos y lo resolvemos en seguida.
             </div>
           )}
           <Link href={`/gracias?order=${order.id}`} className="mt-4 flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-primary shadow-soft">

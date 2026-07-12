@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ProductCarousel } from "@/components/ProductCarousel";
+import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
 import { ProductReviews } from "@/components/ProductReviews";
 import { ScrollReveal } from "@/components/ScrollReveal";
@@ -56,9 +56,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   const category = categories.find((item) => item.slug === product.category);
-  const gallery = product.images.length >= 3
-    ? product.images
-    : [product.images[0], product.images[0], product.images[0]];
   const recommendations = allProducts
     .filter((item) => item.id !== product.id && item.category === product.category)
     .concat(allProducts.filter((item) => item.id !== product.id && item.category !== product.category))
@@ -95,39 +92,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
-        <ScrollReveal className="space-y-6 lg:col-span-7">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[1.6rem] bg-surface-container-low md:rounded-[2rem]">
-            <Image
-              src={product.images[0]}
-              alt={product.name}
-              fill
-              sizes="(min-width: 1024px) 55vw, 90vw"
-              className="object-cover"
-              priority
-            />
-            <div className="absolute left-5 top-5 rounded-full bg-surface/90 px-4 py-2 shadow-sm backdrop-blur md:left-6 md:top-6">
-              <span className="flex items-center gap-2 text-xs font-bold text-primary">
-                <span className="material-symbols-outlined text-sm">eco</span>
-                MINIFIMY
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3 md:gap-6">
-            {gallery.map((image, index) => (
-              <div
-                key={`${image}-${index}`}
-                className="aspect-square overflow-hidden rounded-[1.1rem] bg-surface-container-low md:rounded-[1.4rem]"
-              >
-                <Image
-                  src={image}
-                  alt={`${product.name} vista ${index + 1}`}
-                  width={220}
-                  height={220}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
+        <ScrollReveal className="lg:col-span-7">
+          <ProductGallery images={product.images} productName={product.name} />
         </ScrollReveal>
 
         <ScrollReveal delayMs={120} className="space-y-7 lg:col-span-5">

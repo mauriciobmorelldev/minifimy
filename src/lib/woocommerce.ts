@@ -26,6 +26,7 @@ export interface StorePaymentMethod {
   id: string;
   title: string;
   description: string;
+  instructions?: string;
   enabled: boolean;
 }
 
@@ -102,6 +103,8 @@ export interface StoreOrderPaymentDetails extends StoreOrderSummary {
   orderKey?: string;
   paymentMethod: string;
   paymentMethodTitle: string;
+  paymentInstructions?: string;
+  paymentUrl?: string;
   customerEmail?: string;
   items: { id: number; name: string; quantity: number; total: string }[];
 }
@@ -111,6 +114,7 @@ type WooPaymentGateway = {
   title?: string;
   description?: string;
   enabled?: boolean;
+  settings?: Record<string, { value?: string }>;
 };
 
 type WooShippingZone = {
@@ -200,14 +204,12 @@ type WordPressUserMe = {
   email?: string;
 };
 
-function getExternalPaymentUrl(value?: string) {
+function getSafePaymentUrl(value?: string) {
   if (!value) return undefined;
 
   try {
     const paymentUrl = new URL(value);
-    const storeUrl = STORE_URL ? new URL(STORE_URL) : null;
-    if (storeUrl && paymentUrl.hostname === storeUrl.hostname) return undefined;
-    return value;
+    return ["http:", "https:"].includes(paymentUrl.protocol) ? value : undefined;
   } catch {
     return undefined;
   }
@@ -689,6 +691,7 @@ export async function getStorePaymentMethods(): Promise<StorePaymentMethod[]> {
       id: method.id,
       title: cleanText(method.title) || method.id,
       description: cleanText(method.description),
+      instructions: cleanText(method.settings?.instructions?.value || method.settings?.account_details?.value),
       enabled: Boolean(method.enabled),
     }));
 }
@@ -742,11 +745,16 @@ export async function getStoreOrderForPayment(orderId: string, orderKey?: string
   if (!order) return null;
   if (orderKey && order.order_key && order.order_key !== orderKey) return null;
 
+  const paymentMethods = await getStorePaymentMethods();
+  const selectedPaymentMethod = paymentMethods.find((method) => method.id === order.payment_method);
+
   return {
     ...mapWooOrderSummary(order),
     orderKey: order.order_key,
     paymentMethod: order.payment_method ?? "",
     paymentMethodTitle: cleanText(order.payment_method_title) || order.payment_method || "Pago pendiente",
+    paymentInstructions: selectedPaymentMethod?.instructions || selectedPaymentMethod?.description,
+    paymentUrl: getSafePaymentUrl(order.payment_url ?? order.checkout_payment_url),
     customerEmail: order.billing?.email,
     items: (order.line_items ?? []).map((item) => ({
       id: item.id,
@@ -811,6 +819,6 @@ export async function createStoreOrder(input: CreateStoreOrderInput) {
   return {
     id: order.id,
     orderKey: order.order_key,
-    paymentUrl: getExternalPaymentUrl(order.payment_url ?? order.checkout_payment_url),
+    paymentUrl: getSafePaymentUrl(order.payment_url ?? order.checkout_payment_url),
   };
 }

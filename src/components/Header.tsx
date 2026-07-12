@@ -44,7 +44,7 @@ export function Header({ navLinks }: HeaderProps) {
   return (
     <>
       <nav
-        className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5"
+        className="fixed inset-x-0 top-0 z-[80] px-3 pt-3 md:px-5"
         aria-label="Principal"
       >
         <div className="liquid-header relative mx-auto flex max-w-7xl items-center justify-between rounded-[1.35rem] px-4 py-3 md:rounded-[1.7rem] md:px-6 md:py-3.5">
@@ -52,7 +52,7 @@ export function Header({ navLinks }: HeaderProps) {
             <button
               type="button"
               onClick={() => setMobileOpen((prev) => !prev)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/82 text-primary shadow-soft ring-1 ring-white/70"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fffaf1] text-primary shadow-soft ring-1 ring-primary/10"
               aria-expanded={mobileOpen}
               aria-label="Abrir menú"
             >
@@ -145,7 +145,7 @@ export function Header({ navLinks }: HeaderProps) {
             <button
               type="button"
               onClick={() => setMiniCartOpen(true)}
-              className="relative scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
+              className="relative flex h-10 w-10 scale-95 items-center justify-center rounded-full bg-[#fffaf1] shadow-soft transition-transform duration-200 ease-soft-spring active:scale-90"
               aria-label="Abrir carrito"
             >
               <span className="material-symbols-outlined">shopping_basket</span>
@@ -168,7 +168,7 @@ export function Header({ navLinks }: HeaderProps) {
             <button
               type="button"
               onClick={() => setSearchOpen((prev) => !prev)}
-              className="relative scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
+              className="relative flex h-10 w-10 scale-95 items-center justify-center rounded-full bg-[#fffaf1] shadow-soft transition-transform duration-200 ease-soft-spring active:scale-90"
               aria-label="Buscar"
             >
               <span className="material-symbols-outlined">search</span>
@@ -176,7 +176,7 @@ export function Header({ navLinks }: HeaderProps) {
             <button
               type="button"
               onClick={() => setMiniCartOpen(true)}
-              className="relative scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
+              className="relative flex h-10 w-10 scale-95 items-center justify-center rounded-full bg-[#fffaf1] shadow-soft transition-transform duration-200 ease-soft-spring active:scale-90"
               aria-label="Abrir carrito"
             >
               <span className="material-symbols-outlined">shopping_basket</span>
@@ -215,25 +215,30 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
 
           <div
-            className={`absolute left-3 right-3 top-[calc(100%+0.65rem)] z-30 overflow-hidden rounded-[1.6rem] border border-white/70 bg-[#fffaf1]/98 shadow-lift backdrop-blur-xl transition-all duration-300 md:hidden ${
-              mobileOpen ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0"
+            className={`absolute left-2 right-2 top-[calc(100%+0.75rem)] z-[90] overflow-hidden rounded-[1.6rem] border border-primary/10 bg-[#fffaf1] shadow-lift ring-1 ring-white/80 transition-all duration-300 md:hidden ${
+              mobileOpen ? "max-h-[calc(100vh-6rem)] opacity-100" : "pointer-events-none max-h-0 opacity-0"
             }`}
           >
-            <div className="space-y-5 px-5 py-5">
-              <div className="flex flex-col gap-4 font-headline text-base font-semibold text-primary">
+            <div className="max-h-[calc(100vh-7rem)] space-y-5 overflow-y-auto px-4 py-4">
+              <div className="rounded-[1.25rem] bg-[#f7efe3] px-4 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Menu Minifimy</p>
+                <p className="mt-1 text-xs leading-5 text-on-surface-variant">Categorias y accesos de la tienda.</p>
+              </div>
+              <div className="flex flex-col gap-2 font-headline text-base font-semibold text-primary">
                 {navLinks.map((link) => (
                   <div key={link.href} className="space-y-2">
                     <Link
                       href={link.href}
                       onClick={closeMobileMenu}
-                      className={`block pb-2 transition-colors ${pathname === link.href ? "text-secondary" : "text-primary"}`}
+                      className={`flex items-center justify-between rounded-[1.15rem] px-4 py-3 shadow-soft transition-colors ${pathname === link.href ? "bg-primary text-on-primary" : "bg-white text-primary"}`}
                     >
                       {link.label}
+                      <span className="material-symbols-outlined text-lg">chevron_right</span>
                     </Link>
                     {link.children?.length ? (
-                      <div className="grid gap-2 rounded-[1.2rem] bg-white/70 p-3">
+                      <div className="ml-3 grid gap-2 rounded-[1.2rem] bg-white/85 p-3 shadow-soft">
                         {link.children.map((child) => (
-                          <Link key={`${child.href}-${child.label}`} href={child.href} onClick={closeMobileMenu} className="text-sm font-bold text-primary/80">
+                          <Link key={`${child.href}-${child.label}`} href={child.href} onClick={closeMobileMenu} className="rounded-full bg-[#f7efe3] px-3 py-2 text-sm font-bold text-primary/90">
                             {child.label}
                           </Link>
                         ))}

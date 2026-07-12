@@ -203,6 +203,44 @@
     transform: translateY(0) scale(1);
   }
 
+
+  .price-range-thumb::-webkit-slider-thumb {
+    appearance: none;
+    height: 1.35rem;
+    width: 1.35rem;
+    border-radius: 9999px;
+    border: 3px solid #fff8ef;
+    background: rgb(var(--color-primary));
+    box-shadow: 0 10px 22px rgba(79, 103, 62, 0.24);
+    cursor: pointer;
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+
+  .price-range-thumb::-webkit-slider-thumb:hover {
+    transform: scale(1.08);
+    box-shadow: 0 12px 26px rgba(79, 103, 62, 0.32);
+  }
+
+  .price-range-thumb::-moz-range-thumb {
+    height: 1.35rem;
+    width: 1.35rem;
+    border-radius: 9999px;
+    border: 3px solid #fff8ef;
+    background: rgb(var(--color-primary));
+    box-shadow: 0 10px 22px rgba(79, 103, 62, 0.24);
+    cursor: pointer;
+  }
+
+  .price-range-thumb:focus-visible::-webkit-slider-thumb {
+    outline: 3px solid rgba(var(--color-secondary), 0.35);
+    outline-offset: 3px;
+  }
+
+  .price-range-thumb:focus-visible::-moz-range-thumb {
+    outline: 3px solid rgba(var(--color-secondary), 0.35);
+    outline-offset: 3px;
+  }
+
   .pattern-surface {
     position: relative;
     overflow: hidden;

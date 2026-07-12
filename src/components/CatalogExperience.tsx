@@ -28,6 +28,30 @@ function getSafePage(value: string | null) {
   return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
 }
 
+function formatPrice(value: number) {
+  return `AR$ ${Math.round(value).toLocaleString("es-AR")}`;
+}
+
+function clampPrice(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function parsePriceRange(value: string, min: number, max: number) {
+  if (!max || min >= max || value === "all") return { min, max, isDefault: true };
+
+  const [rawMin, rawMax] = value.split("-").map(Number);
+  const nextMin = clampPrice(Number.isFinite(rawMin) ? rawMin : min, min, max);
+  const nextMax = clampPrice(Number.isFinite(rawMax) ? rawMax : max, min, max);
+  const sortedMin = Math.min(nextMin, nextMax);
+  const sortedMax = Math.max(nextMin, nextMax);
+
+  return { min: sortedMin, max: sortedMax, isDefault: sortedMin === min && sortedMax === max };
+}
+
+function serializePriceRange(min: number, max: number, limitMin: number, limitMax: number) {
+  return min <= limitMin && max >= limitMax ? "all" : `${Math.round(min)}-${Math.round(max)}`;
+}
+
 export function CatalogExperience({ products, categories, filterOptions }: CatalogExperienceProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -73,17 +97,22 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
     updateUrl({ q: nextQuery, categoria: nextCategory, talle: nextSize, color: nextColor, precio: nextPriceRange, orden: nextSort, page: 1 });
   };
 
-  const priceRanges = useMemo(() => {
-    const { min, max } = filterOptions.price;
-    if (!max || min === max) return [];
+  const priceMinLimit = Math.floor((filterOptions.price.min || 0) / 100) * 100;
+  const priceMaxLimit = Math.ceil((filterOptions.price.max || 0) / 100) * 100;
+  const hasPriceSlider = priceMaxLimit > priceMinLimit;
+  const priceStep = Math.max(100, Math.round((priceMaxLimit - priceMinLimit) / 24 / 100) * 100 || 100);
+  const selectedPriceRange = parsePriceRange(priceRange, priceMinLimit, priceMaxLimit);
+  const priceFillLeft = hasPriceSlider ? ((selectedPriceRange.min - priceMinLimit) / (priceMaxLimit - priceMinLimit)) * 100 : 0;
+  const priceFillRight = hasPriceSlider ? 100 - ((selectedPriceRange.max - priceMinLimit) / (priceMaxLimit - priceMinLimit)) * 100 : 0;
 
-    const middle = Math.round((min + max) / 2 / 100) * 100;
-    return [
-      { id: `0-${middle}`, label: `Hasta AR$ ${middle.toLocaleString("es-AR")}`, min: 0, max: middle },
-      { id: `${middle}-${max}`, label: `AR$ ${middle.toLocaleString("es-AR")} a ${max.toLocaleString("es-AR")}`, min: middle, max },
-      { id: `${max}+`, label: `Desde AR$ ${max.toLocaleString("es-AR")}`, min: max, max: Number.POSITIVE_INFINITY },
-    ];
-  }, [filterOptions.price]);
+  const updatePriceSlider = (edge: "min" | "max", value: string) => {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return;
+
+    const nextMin = edge === "min" ? Math.min(numericValue, selectedPriceRange.max) : selectedPriceRange.min;
+    const nextMax = edge === "max" ? Math.max(numericValue, selectedPriceRange.min) : selectedPriceRange.max;
+    setFilter({ precio: serializePriceRange(nextMin, nextMax, priceMinLimit, priceMaxLimit) });
+  };
 
   const quickFilters = [
     ...filterOptions.categories.slice(0, 3).map((item) => ({
@@ -98,7 +127,6 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
 
   const filteredProducts = useMemo(() => {
     const normalizedQuery = normalize(query.trim());
-    const selectedPriceRange = priceRanges.find((item) => item.id === priceRange);
     const filtered = products.filter((product) => {
       const haystack = normalize(
         [product.name, product.description, product.category, product.badge, ...(product.sizes ?? []), ...(product.colors ?? [])]
@@ -109,7 +137,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
       const matchesCategory = category === "all" || product.category === category;
       const matchesSize = size === "all" || product.sizes?.includes(size);
       const matchesColor = color === "all" || product.colors?.includes(color);
-      const matchesPrice = !selectedPriceRange || (product.price >= selectedPriceRange.min && product.price <= selectedPriceRange.max);
+      const matchesPrice = !hasPriceSlider || (product.price >= selectedPriceRange.min && product.price <= selectedPriceRange.max);
       return matchesQuery && matchesCategory && matchesSize && matchesColor && matchesPrice;
     });
 
@@ -119,15 +147,15 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
       if (sort === "newest") return String(b.id).localeCompare(String(a.id));
       return 0;
     });
-  }, [category, color, priceRange, priceRanges, products, query, size, sort]);
+  }, [category, color, hasPriceSlider, products, query, selectedPriceRange.max, selectedPriceRange.min, size, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
   const currentPage = Math.min(page, totalPages);
   const pageStart = (currentPage - 1) * PRODUCTS_PER_PAGE;
   const paginatedProducts = filteredProducts.slice(pageStart, pageStart + PRODUCTS_PER_PAGE);
   const selectedCategoryName = categories.find((item) => item.slug === category)?.name ?? category;
-  const selectedPriceName = priceRanges.find((item) => item.id === priceRange)?.label ?? priceRange;
-  const activeFilters = [query, category !== "all" ? selectedCategoryName : "", size !== "all" ? size : "", color !== "all" ? color : "", priceRange !== "all" ? selectedPriceName : ""].filter(Boolean);
+  const selectedPriceName = !selectedPriceRange.isDefault ? `${formatPrice(selectedPriceRange.min)} - ${formatPrice(selectedPriceRange.max)}` : "";
+  const activeFilters = [query, category !== "all" ? selectedCategoryName : "", size !== "all" ? size : "", color !== "all" ? color : "", selectedPriceName].filter(Boolean);
 
   const goToPage = (nextPage: number) => {
     const boundedPage = Math.min(Math.max(nextPage, 1), totalPages);
@@ -339,27 +367,62 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                 </div>
               )}
 
-              {priceRanges.length > 0 && (
-                <div>
-                  <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">Precio</h3>
-                  <div className="space-y-2">
+              {hasPriceSlider && (
+                <div className="rounded-[1.4rem] bg-[#f7efe3] p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">Precio</h3>
                     <button
                       type="button"
                       onClick={() => setFilter({ precio: "all" })}
-                      className={`w-full rounded-full px-4 py-2 text-left text-sm font-bold transition ${priceRange === "all" ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
+                      className="text-xs font-bold text-secondary disabled:opacity-40"
+                      disabled={selectedPriceRange.isDefault}
                     >
-                      Todos los precios
+                      Reiniciar
                     </button>
-                    {priceRanges.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setFilter({ precio: item.id })}
-                        className={`w-full rounded-full px-4 py-2 text-left text-sm font-bold transition ${priceRange === item.id ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
+                  </div>
+
+                  <div className="mb-5 grid grid-cols-2 gap-2">
+                    <div className="rounded-[1rem] bg-white/80 px-3 py-2 shadow-soft">
+                      <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-primary/70">Desde</span>
+                      <strong className="mt-1 block text-sm text-on-surface">{formatPrice(selectedPriceRange.min)}</strong>
+                    </div>
+                    <div className="rounded-[1rem] bg-white/80 px-3 py-2 text-right shadow-soft">
+                      <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-primary/70">Hasta</span>
+                      <strong className="mt-1 block text-sm text-on-surface">{formatPrice(selectedPriceRange.max)}</strong>
+                    </div>
+                  </div>
+
+                  <div className="relative h-9 px-1" aria-label="Rango de precio">
+                    <div className="absolute left-1 right-1 top-1/2 h-2 -translate-y-1/2 rounded-full bg-white shadow-inner" />
+                    <div
+                      className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary/80"
+                      style={{ left: `${priceFillLeft}%`, right: `${priceFillRight}%` }}
+                    />
+                    <input
+                      type="range"
+                      min={priceMinLimit}
+                      max={priceMaxLimit}
+                      step={priceStep}
+                      value={selectedPriceRange.min}
+                      onChange={(event) => updatePriceSlider("min", event.target.value)}
+                      className="price-range-thumb absolute inset-x-0 top-1/2 z-10 h-2 w-full -translate-y-1/2 appearance-none bg-transparent"
+                      aria-label="Precio minimo"
+                    />
+                    <input
+                      type="range"
+                      min={priceMinLimit}
+                      max={priceMaxLimit}
+                      step={priceStep}
+                      value={selectedPriceRange.max}
+                      onChange={(event) => updatePriceSlider("max", event.target.value)}
+                      className="price-range-thumb absolute inset-x-0 top-1/2 z-20 h-2 w-full -translate-y-1/2 appearance-none bg-transparent"
+                      aria-label="Precio maximo"
+                    />
+                  </div>
+
+                  <div className="mt-2 flex justify-between text-[11px] font-bold text-primary/70">
+                    <span>{formatPrice(priceMinLimit)}</span>
+                    <span>{formatPrice(priceMaxLimit)}</span>
                   </div>
                 </div>
               )}
