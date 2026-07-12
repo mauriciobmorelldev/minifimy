@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
@@ -196,10 +196,10 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                   Fimy te ayuda a encontrar
                 </span>
                 <h1 className="mt-5 max-w-3xl font-headline text-[2.15rem] font-extrabold leading-[1.02] tracking-tight text-on-surface md:mt-6 md:text-6xl">
-                  EncontrÃ¡ esa prenda que se siente elegida con amor.
+                  Encontrá esa prenda que se siente elegida con amor.
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-on-surface-variant md:mt-5 md:text-lg md:leading-8">
-                  BuscÃ¡ por momento, talle o tipo de regalo. El catÃ¡logo se acomoda para que comprar sea mÃ¡s simple, mÃ¡s cÃ¡lido y menos abrumador.
+                  Buscá por momento, talle o tipo de regalo. El catálogo se acomoda para que comprar sea más simple, más cálido y menos abrumador.
                 </p>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto] md:mt-7">
@@ -219,7 +219,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                     aria-label="Ordenar productos"
                   >
                     <option value="featured">Elegidos por Fimy</option>
-                    <option value="newest">MÃ¡s nuevos</option>
+                    <option value="newest">Más nuevos</option>
                     <option value="price-asc">Menor precio</option>
                     <option value="price-desc">Mayor precio</option>
                   </select>
@@ -238,11 +238,11 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                     priority
                   />
                   <p className="mt-3 px-2 pb-2 font-headline text-lg font-extrabold text-on-surface">
-                    {products[0]?.name ?? "PequeÃ±a joyita"}
+                    {products[0]?.name ?? "Pequeña joyita"}
                   </p>
                 </div>
                 <div className="absolute bottom-2 right-0 max-w-[230px] rounded-[1.7rem] bg-white/82 px-5 py-4 text-sm font-semibold leading-6 text-on-surface-variant shadow-soft">
-                  â€œSi es para regalar, empezarÃ­a por acÃ¡.â€
+                  “Si es para regalar, empezaría por acá.”
                 </div>
                 <Image
                   src="/brand/illustrations/jirafa.svg"
@@ -277,7 +277,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
         </ScrollReveal>
 
         <div className="relative z-10 mt-8 grid gap-6 lg:mt-12 lg:grid-cols-[300px_1fr] lg:gap-8">
-          <aside className="h-fit rounded-[1.6rem] bg-white/82 p-4 shadow-soft ring-1 ring-white/70 lg:sticky lg:top-28 lg:rounded-[2rem] lg:p-5" aria-label="Filtros de catÃ¡logo">
+          <aside className="h-fit rounded-[1.6rem] bg-white/82 p-4 shadow-soft ring-1 ring-white/70 lg:sticky lg:top-28 lg:rounded-[2rem] lg:p-5" aria-label="Filtros de catálogo">
             <div className="mb-4 flex items-center justify-between gap-4 lg:mb-6">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Fimy filtra por vos</span>
@@ -456,7 +456,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                   {filteredProducts.length} {filteredProducts.length === 1 ? "producto encontrado" : "productos encontrados"}
                 </p>
                 <p className="text-xs text-on-surface-variant">
-                  PÃ¡gina {currentPage} de {totalPages}. Mostrando {paginatedProducts.length} por tanda para cuidar performance.
+                  Página {currentPage} de {totalPages}. Mostrando {paginatedProducts.length} por tanda para cuidar performance.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -479,7 +479,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                 </div>
 
                 {totalPages > 1 && (
-                  <nav className="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="PaginaciÃ³n de productos">
+                  <nav className="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Paginación de productos">
                     <button
                       type="button"
                       onClick={() => goToPage(currentPage - 1)}
@@ -521,7 +521,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                 />
                 <h3 className="font-headline text-xl font-extrabold text-on-surface md:text-2xl">Fimy no encontro algo exacto.</h3>
                 <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-on-surface-variant">
-Proba con â€œregaloâ€, â€œrecien nacidoâ€, â€œbodyâ€ o limpia filtros para volver a ver toda la coleccion.
+Probá con “regalo”, “recién nacido”, “body” o limpiá filtros para volver a ver toda la colección.
                 </p>
               </div>
             )}
@@ -530,8 +530,8 @@ Proba con â€œregaloâ€, â€œrecien nacidoâ€, â€œbodyâ€ 
 
         <div className="mt-10 md:mt-14">
           <ProductCarousel
-            title="TambiÃ©n puede gustarte"
-            description="Una selecciÃ³n suave para seguir mirando sin perder el hilo."
+            title="También puede gustarte"
+            description="Una selección suave para seguir mirando sin perder el hilo."
             products={products.slice(0, 8)}
           />
         </div>

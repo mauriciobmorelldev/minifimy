@@ -350,7 +350,7 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                       {(item.selection?.size || item.selection?.color) && (
                         <p className="mt-1 text-xs text-on-surface-variant">
                           {item.selection?.size ? `Talle ${item.selection.size}` : ""}
-                          {item.selection?.color ? ` Â· ${item.selection.color}` : ""}
+                          {item.selection?.color ? ` · ${item.selection.color}` : ""}
                         </p>
                       )}
                       <p className="mt-2 text-sm font-extrabold text-secondary">

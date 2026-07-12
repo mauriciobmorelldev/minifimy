@@ -20,6 +20,11 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
   }
 
   const isOfflinePayment = ["bacs", "cod", "cheque"].includes(order.paymentMethod);
+  const hasGatewayLink = Boolean(paymentUrl);
+  const paymentHelpText = order.paymentInstructions ||
+    (hasGatewayLink
+      ? "Tomamos los datos del pedido generado por Fimy y dejamos el pago preparado desde esta pantalla. Si necesitás un cupón o medio específico, escribinos y lo terminamos juntos."
+      : "Te vamos a enviar los datos para completar el pago y preparar tu pedido.");
 
   return (
     <main className="mobile-soft-page mx-auto min-h-screen max-w-5xl px-5 pb-20 pt-28 md:px-6">
@@ -65,21 +70,25 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
 
         <aside className="h-fit rounded-[2rem] bg-white/82 p-5 shadow-soft md:p-7">
           <h2 className="font-headline text-2xl font-extrabold text-on-surface">Pago</h2>
-          {paymentUrl ? (
-            <a href={paymentUrl} className="mt-5 flex w-full items-center justify-center rounded-full bg-primary py-3.5 font-bold text-on-primary shadow-soft">
-              Continuar con {order.paymentMethodTitle}
-            </a>
-          ) : isOfflinePayment || order.paymentInstructions ? (
-            <div className="mt-5 space-y-3 rounded-[1.4rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">
-              <p className="font-bold text-on-surface">Tu pedido ya quedó reservado.</p>
-              <p>{order.paymentInstructions || "Te vamos a enviar los datos para completar el pago y preparar tu pedido."}</p>
+          <div className="mt-5 space-y-4 rounded-[1.4rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined mt-0.5 text-primary">payments</span>
+              <div>
+                <p className="font-bold text-on-surface">Tu pedido ya quedó reservado.</p>
+                <p>{paymentHelpText}</p>
+              </div>
             </div>
-          ) : (
-            <div className="mt-5 space-y-3 rounded-[1.4rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">
-              <p className="font-bold text-on-surface">Tu pedido está reservado en Minifimy.</p>
-              <p>Este método todavía no devolvió un link de pago. Revisamos tu pedido y te ayudamos a completarlo.</p>
+
+            <div className="rounded-[1.1rem] bg-white/72 p-4 text-on-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Método elegido</p>
+              <p className="mt-1 font-headline text-xl font-extrabold">{order.paymentMethodTitle}</p>
+              {isOfflinePayment && (
+                <p className="mt-2 text-sm leading-6 text-on-surface-variant">
+                  Conservamos la orden en Fimy para que puedas completar el pago con calma.
+                </p>
+              )}
             </div>
-          )}
+          </div>
           <Link href={`/gracias?order=${order.id}`} className="mt-4 flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-primary shadow-soft">
             Ver confirmación
           </Link>

@@ -29,15 +29,15 @@ const plusJakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL("https://minifimy.com"),
   title: {
-    default: "MINIFIMY | Ropa para bebÃ©s",
+    default: "MINIFIMY | Ropa para bebés",
     template: "%s | MINIFIMY",
   },
   description:
-    "Ropita suave, cÃ³moda y con mucho amor. DescubrÃ­ colecciones para bebÃ©s en MINIFIMY.",
+    "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MINIFIMY.",
   openGraph: {
-    title: "MINIFIMY | Ropa para bebÃ©s",
+    title: "MINIFIMY | Ropa para bebés",
     description:
-      "Ropita suave, cÃ³moda y con mucho amor. DescubrÃ­ colecciones para bebÃ©s en MINIFIMY.",
+      "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MINIFIMY.",
     type: "website",
     locale: "es_AR",
   },
