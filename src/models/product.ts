@@ -1,3 +1,12 @@
+export interface ProductVariant {
+  id: string;
+  size?: string;
+  color?: string;
+  image?: string;
+  price?: number;
+  stock?: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -11,6 +20,7 @@ export interface Product {
   badge?: string;
   sizes?: string[];
   colors?: string[];
+  variants?: ProductVariant[];
 }
 
 export interface Category {
@@ -33,6 +43,7 @@ export interface ProductFilterOptions {
 export interface ProductSelection {
   size?: string;
   color?: string;
+  variationId?: string;
 }
 
 export interface CartItem {

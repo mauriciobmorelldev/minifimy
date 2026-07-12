@@ -1,10 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ProductCarousel } from "@/components/ProductCarousel";
-import { ProductGallery } from "@/components/ProductGallery";
-import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
+import { ProductDetailClient } from "@/components/ProductDetailClient";
 import { ProductReviews } from "@/components/ProductReviews";
-import { ScrollReveal } from "@/components/ScrollReveal";
 import { getStoreCategories, getStoreProductBySlug, getStoreProductReviews, getStoreProducts } from "@/lib/woocommerce";
 
 interface ProductPageProps {
@@ -92,56 +90,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
-        <ScrollReveal className="lg:col-span-7">
-          <ProductGallery images={product.images} productName={product.name} />
-        </ScrollReveal>
-
-        <ScrollReveal delayMs={120} className="space-y-7 lg:col-span-5">
-          <header>
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{category?.name ?? product.category}</p>
-            <h1 className="font-headline text-[2.15rem] font-bold leading-tight text-on-surface md:text-4xl">
-              {product.name}
-            </h1>
-            <div className="mt-4 flex items-center justify-between gap-4">
-              <span className="font-headline text-2xl font-semibold text-secondary md:text-3xl">
-                AR$ {product.price.toLocaleString("es-AR")}
-              </span>
-              <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-bold text-on-primary-container">
-                Stock {product.stock > 0 ? "disponible" : "a consultar"}
-              </span>
-            </div>
-          </header>
-
-          <ProductPurchasePanel product={product} />
-
-          <div className="space-y-4 rounded-[1.5rem] bg-surface-container-low p-5 md:p-6">
-            <div className="flex items-start gap-4">
-              <span className="material-symbols-outlined text-primary">local_shipping</span>
-              <div>
-                <h4 className="text-sm font-bold">Envio cuidado</h4>
-                <p className="text-sm text-on-surface-variant">
-                  Preparado en packaging Minifimy y despachado con seguimiento.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4 border-t border-outline-variant/10 pt-4">
-              <span className="material-symbols-outlined text-primary">verified_user</span>
-              <div>
-                <h4 className="text-sm font-bold">Cambios simples</h4>
-                <p className="text-sm text-on-surface-variant">
-                  Acompanamiento para elegir talle o cambiar con tranquilidad.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="font-headline text-xl font-bold">La historia detras</h3>
-            <p className="leading-relaxed text-on-surface-variant">
-              {product.description}
-            </p>
-          </div>
-        </ScrollReveal>
+        <ProductDetailClient product={product} categoryName={category?.name ?? product.category} />
       </div>
 
       <ProductReviews productSlug={product.slug} initialReviews={productReviews} />

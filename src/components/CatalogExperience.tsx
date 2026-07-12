@@ -110,7 +110,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
   const priceMinLimit = Math.floor((filterOptions.price.min || 0) / 100) * 100;
   const priceMaxLimit = Math.ceil((filterOptions.price.max || 0) / 100) * 100;
   const hasPriceSlider = priceMaxLimit > priceMinLimit;
-  const priceStep = Math.max(100, Math.round((priceMaxLimit - priceMinLimit) / 24 / 100) * 100 || 100);
+  const priceStep = 1;
   const selectedPriceRange = parsePriceRange(priceRange, priceMinLimit, priceMaxLimit);
   const priceFillLeft = hasPriceSlider ? ((selectedPriceRange.min - priceMinLimit) / (priceMaxLimit - priceMinLimit)) * 100 : 0;
   const priceFillRight = hasPriceSlider ? 100 - ((selectedPriceRange.max - priceMinLimit) / (priceMaxLimit - priceMinLimit)) * 100 : 0;
@@ -119,8 +119,8 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue)) return;
 
-    const nextMin = edge === "min" ? Math.min(numericValue, selectedPriceRange.max) : selectedPriceRange.min;
-    const nextMax = edge === "max" ? Math.max(numericValue, selectedPriceRange.min) : selectedPriceRange.max;
+    const nextMin = edge === "min" ? Math.min(numericValue, selectedPriceRange.max - priceStep) : selectedPriceRange.min;
+    const nextMax = edge === "max" ? Math.max(numericValue, selectedPriceRange.min + priceStep) : selectedPriceRange.max;
     setFilter({ precio: serializePriceRange(nextMin, nextMax, priceMinLimit, priceMaxLimit) });
   };
 
@@ -415,7 +415,7 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
                       step={priceStep}
                       value={selectedPriceRange.min}
                       onChange={(event) => updatePriceSlider("min", event.target.value)}
-                      className="price-range-thumb absolute inset-x-0 top-1/2 z-10 h-2 w-full -translate-y-1/2 appearance-none bg-transparent"
+                      className={`price-range-thumb absolute inset-x-0 top-1/2 h-2 w-full -translate-y-1/2 appearance-none bg-transparent ${selectedPriceRange.min > priceMaxLimit - (priceMaxLimit - priceMinLimit) * 0.12 ? "z-30" : "z-10"}`}
                       aria-label="Precio minimo"
                     />
                     <input

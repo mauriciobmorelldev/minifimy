@@ -128,9 +128,13 @@ export default function CheckoutClient() {
     const payload = await response.json() as { message?: string; paymentUrl?: string; orderId?: number; orderKey?: string };
     if (payload.orderId) {
       clearCart();
+      if (payload.paymentUrl) {
+        window.location.href = payload.paymentUrl;
+        return;
+      }
+
       const params = new URLSearchParams();
       if (payload.orderKey) params.set("key", payload.orderKey);
-      if (payload.paymentUrl) params.set("pay", payload.paymentUrl);
       window.location.href = `/orden/pagar/${payload.orderId}${params.toString() ? `?${params.toString()}` : ""}`;
       return;
     }

@@ -12,13 +12,13 @@ export const metadata: Metadata = {
   description: "Resumen de pedido Minifimy.",
 };
 
-function isExternalPaymentUrl(value?: string) {
-  if (!value) return false;
+function getPaymentUrl(value?: string) {
+  if (!value) return undefined;
   try {
     const url = new URL(value);
-    return ["http:", "https:"].includes(url.protocol);
+    return ["http:", "https:"].includes(url.protocol) ? value : undefined;
   } catch {
-    return false;
+    return undefined;
   }
 }
 
@@ -26,7 +26,7 @@ export default async function OrderPayPage({ params, searchParams }: OrderPayPag
   const { orderId } = await params;
   const query = await searchParams;
   const order = await getStoreOrderForPayment(orderId, query.key);
-  const queryPaymentUrl = isExternalPaymentUrl(query.pay) ? query.pay : undefined;
+  const queryPaymentUrl = getPaymentUrl(query.pay);
 
   if (!order) {
     return (
@@ -97,8 +97,9 @@ export default async function OrderPayPage({ params, searchParams }: OrderPayPag
               <p>{order.paymentInstructions || "Te vamos a enviar los datos para completar el pago y preparar tu pedido."}</p>
             </div>
           ) : (
-            <div className="mt-5 rounded-[1.4rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">
-              Tu pedido esta reservado. Si el boton de pago no aparece, escribinos y lo resolvemos en seguida.
+            <div className="mt-5 space-y-3 rounded-[1.4rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">
+              <p className="font-bold text-on-surface">Tu pedido esta reservado en Minifimy.</p>
+              <p>Este metodo todavia no devolvio un link de pago. Revisamos tu pedido y te ayudamos a completarlo.</p>
             </div>
           )}
           <Link href={`/gracias?order=${order.id}`} className="mt-4 flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-primary shadow-soft">

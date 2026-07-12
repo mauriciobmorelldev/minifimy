@@ -18,6 +18,7 @@ interface ProductReviewsProps {
 export function ProductReviews({ productSlug, initialReviews }: ProductReviewsProps) {
   const [reviews, setReviews] = useState(initialReviews);
   const [status, setStatus] = useState<string | null>(null);
+  const [rating, setRating] = useState(5);
   const average = reviews.length
     ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
     : 0;
@@ -33,7 +34,7 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
       body: JSON.stringify({
         reviewer: form.get("reviewer"),
         email: form.get("email"),
-        rating: Number(form.get("rating")),
+        rating,
         review: form.get("review"),
       }),
     });
@@ -43,6 +44,7 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
     if (response.ok && payload.review) {
       setReviews((current) => [payload.review!, ...current]);
       event.currentTarget.reset();
+      setRating(5);
     }
   };
 
@@ -89,13 +91,29 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
           <div className="mt-5 space-y-3">
             <input name="reviewer" required placeholder="Tu nombre" className="w-full rounded-full bg-white/82 px-5 py-3 text-sm outline-none" />
             <input name="email" type="email" required placeholder="Email" className="w-full rounded-full bg-white/82 px-5 py-3 text-sm outline-none" />
-            <select name="rating" defaultValue="5" className="w-full rounded-full bg-white/82 px-5 py-3 text-sm font-bold text-primary outline-none">
-              <option value="5">5 estrellas</option>
-              <option value="4">4 estrellas</option>
-              <option value="3">3 estrellas</option>
-              <option value="2">2 estrellas</option>
-              <option value="1">1 estrella</option>
-            </select>
+            <div className="rounded-[1.3rem] bg-white/82 px-5 py-4">
+              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-on-surface-variant">Tu puntuacion</span>
+              <div className="flex items-center gap-1" role="radiogroup" aria-label="Puntuacion de la resena">
+                {Array.from({ length: 5 }).map((_, index) => {
+                  const value = index + 1;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setRating(value)}
+                      className="rounded-full p-1 text-secondary transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      role="radio"
+                      aria-checked={rating === value}
+                      aria-label={`${value} ${value === 1 ? "estrella" : "estrellas"}`}
+                    >
+                      <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: value <= rating ? "'FILL' 1" : "'FILL' 0" }}>
+                        star
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <textarea name="review" required minLength={8} placeholder="Contanos como fue la experiencia" className="min-h-28 w-full rounded-[1.3rem] bg-white/82 px-5 py-4 text-sm outline-none" />
           </div>
           <button className="mt-4 w-full rounded-full bg-primary py-3 font-bold text-on-primary">Enviar resena</button>

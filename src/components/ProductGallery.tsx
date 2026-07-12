@@ -6,9 +6,10 @@ import { useEffect, useState } from "react";
 interface ProductGalleryProps {
   images: string[];
   productName: string;
+  selectedImage?: string;
 }
 
-export function ProductGallery({ images, productName }: ProductGalleryProps) {
+export function ProductGallery({ images, productName, selectedImage }: ProductGalleryProps) {
   const galleryImages = images.length > 0 ? images : ["/products/flatlay-01.jpg"];
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -19,6 +20,12 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
     const nextIndex = (index + galleryImages.length) % galleryImages.length;
     setActiveIndex(nextIndex);
   };
+
+  useEffect(() => {
+    if (!selectedImage) return;
+    const imageIndex = galleryImages.findIndex((image) => image === selectedImage);
+    if (imageIndex >= 0) setActiveIndex(imageIndex);
+  }, [galleryImages, selectedImage]);
 
   useEffect(() => {
     if (!lightboxOpen) return;

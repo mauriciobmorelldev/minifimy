@@ -1,4 +1,4 @@
-import type { Category, Product, ProductFilterOptions } from "@/models/product";
+import type { Category, Product, ProductFilterOptions, ProductVariant } from "@/models/product";
 import { CACHE_SECONDS, CACHE_TAGS, normalizeBaseUrl } from "@/lib/cache";
 import { categories as fallbackCategories, products as fallbackProducts } from "@/lib/products";
 
@@ -20,6 +20,7 @@ const WOO_PRODUCT_FIELDS = [
 ].join(",");
 
 const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description"].join(",");
+const WOO_VARIATION_FIELDS = ["id", "price", "regular_price", "stock_quantity", "stock_status", "image", "attributes"].join(",");
 
 
 export interface StorePaymentMethod {
@@ -46,6 +47,7 @@ export interface StoreCheckoutItem {
   selection?: {
     size?: string;
     color?: string;
+    variationId?: string;
   };
 }
 
@@ -273,6 +275,16 @@ type WooProduct = {
   featured?: boolean;
 };
 
+type WooVariation = {
+  id: number;
+  price?: string;
+  regular_price?: string;
+  stock_quantity?: number | null;
+  stock_status?: string;
+  image?: WooImage;
+  attributes?: { name?: string; option?: string }[];
+};
+
 const STORE_URL = normalizeBaseUrl(process.env.WOOCOMMERCE_URL ?? process.env.WORDPRESS_URL);
 const CONSUMER_KEY = process.env.WOOCOMMERCE_CONSUMER_KEY;
 const CONSUMER_SECRET = process.env.WOOCOMMERCE_CONSUMER_SECRET;
@@ -370,6 +382,54 @@ function mapWooProduct(product: WooProduct): Product {
     sizes,
     colors,
   };
+}
+
+function getVariationOption(variation: WooVariation, names: string[]) {
+  return variation.attributes?.find((attribute) => {
+    const name = normalizeFilterName(attribute.name);
+    return names.some((item) => name.includes(item));
+  })?.option;
+}
+
+function mapWooVariation(variation: WooVariation): ProductVariant {
+  return {
+    id: String(variation.id),
+    size: cleanText(getVariationOption(variation, ["talle", "size", "edad"])),
+    color: cleanText(getVariationOption(variation, ["color", "tono"])),
+    image: getSafeImage(variation.image?.src) ?? undefined,
+    price: Number(variation.price || variation.regular_price || 0) || undefined,
+    stock: variation.stock_quantity ?? (variation.stock_status === "instock" ? 1 : 0),
+  };
+}
+
+function mergeProductVariants(product: Product, variants: ProductVariant[]): Product {
+  if (variants.length === 0) return product;
+
+  const variantImages = variants.map((variant) => variant.image).filter(Boolean) as string[];
+  const images = Array.from(new Set([...product.images, ...variantImages]));
+  const sizes = getUniqueSortedValues([...(product.sizes ?? []), ...variants.map((variant) => variant.size)]);
+  const colors = getUniqueSortedValues([...(product.colors ?? []), ...variants.map((variant) => variant.color)]);
+
+  return {
+    ...product,
+    images,
+    sizes: sizes.length > 0 ? sizes : product.sizes,
+    colors: colors.length > 0 ? colors : product.colors,
+    variants,
+  };
+}
+
+async function getStoreProductVariations(productId: string) {
+  if (!canUseWooCommerce()) return [];
+
+  const data = await fetchWoo<WooVariation[]>(
+    `products/${productId}/variations`,
+    { per_page: 100, _fields: WOO_VARIATION_FIELDS },
+    CACHE_SECONDS.products,
+    [CACHE_TAGS.products]
+  );
+
+  return (data ?? []).map(mapWooVariation);
 }
 
 function mapWooCategory(category: WooCategory): Category {
@@ -568,7 +628,11 @@ export async function getStoreProductBySlug(slug: string) {
     [CACHE_TAGS.products]
   );
 
-  return data?.[0] ? mapWooProduct(data[0]) : undefined;
+  if (!data?.[0]) return undefined;
+
+  const product = mapWooProduct(data[0]);
+  const variants = await getStoreProductVariations(product.id);
+  return mergeProductVariants(product, variants);
 }
 
 export async function getStoreProductsByCategory(slug: string) {
@@ -799,6 +863,7 @@ export async function createStoreOrder(input: CreateStoreOrderInput) {
     },
     line_items: input.items.map((item) => ({
       product_id: Number(item.productId),
+      ...(item.selection?.variationId ? { variation_id: Number(item.selection.variationId) } : {}),
       quantity: item.quantity,
       meta_data: [
         ...(item.selection?.size ? [{ key: "Talle", value: item.selection.size }] : []),

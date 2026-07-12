@@ -24,7 +24,7 @@ const CartContext = createContext<CartContextValue | undefined>(undefined);
 const STORAGE_KEY = "minifimy-cart";
 
 function buildItemId(product: Product, selection?: ProductSelection) {
-  return [product.id, selection?.size ?? "", selection?.color ?? ""].join("::");
+  return [product.id, selection?.variationId ?? "", selection?.size ?? "", selection?.color ?? ""].join("::");
 }
 
 function normalizeCartItems(items: CartItem[]) {

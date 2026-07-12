@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AddToCartButton } from "@/components/AddToCartButton";
-import type { Product, ProductSelection } from "@/models/product";
+import type { Product, ProductSelection, ProductVariant } from "@/models/product";
 
 interface ProductPurchasePanelProps {
   product: Product;
+  selection?: ProductSelection;
+  onSelectionChange?: (selection: ProductSelection) => void;
+  selectedVariant?: ProductVariant;
 }
 
 function colorValue(color: string) {
@@ -26,14 +29,27 @@ function colorValue(color: string) {
   return Object.entries(palette).find(([name]) => normalized.includes(name))?.[1] ?? "#d8c7aa";
 }
 
-export function ProductPurchasePanel({ product }: ProductPurchasePanelProps) {
+export function ProductPurchasePanel({ product, selection: controlledSelection, onSelectionChange, selectedVariant }: ProductPurchasePanelProps) {
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] ?? "");
   const [selectedColor, setSelectedColor] = useState(product.colors?.[0] ?? "");
   const [quantity, setQuantity] = useState(1);
   const selection: ProductSelection = {
     size: selectedSize || undefined,
     color: selectedColor || undefined,
+    variationId: selectedVariant?.id,
   };
+
+  useEffect(() => {
+    if (!controlledSelection) return;
+    setSelectedSize(controlledSelection.size ?? "");
+    setSelectedColor(controlledSelection.color ?? "");
+  }, [controlledSelection?.size, controlledSelection?.color]);
+
+  useEffect(() => {
+    onSelectionChange?.(selection);
+  }, [selectedSize, selectedColor, selectedVariant?.id]);
+
+  const selectedPrice = selectedVariant?.price ?? product.price;
 
   return (
     <div className="space-y-5">
@@ -112,8 +128,14 @@ export function ProductPurchasePanel({ product }: ProductPurchasePanelProps) {
         </div>
       </div>
 
+      {selectedVariant?.price && selectedVariant.price !== product.price && (
+        <div className="rounded-[1.3rem] bg-[#f7efe3] px-4 py-3 text-sm font-bold text-secondary">
+          Precio para esta opcion: AR$ {selectedPrice.toLocaleString("es-AR")}
+        </div>
+      )}
+
       <AddToCartButton
-        product={product}
+        product={{ ...product, price: selectedPrice, images: selectedVariant?.image ? [selectedVariant.image, ...product.images.filter((image) => image !== selectedVariant.image)] : product.images }}
         quantity={quantity}
         selection={selection}
         className="w-full gap-3 rounded-full bg-primary py-4 font-headline text-base text-on-primary shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95 md:py-5 md:text-lg"

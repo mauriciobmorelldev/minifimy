@@ -8,7 +8,7 @@ import {
 
 interface CheckoutItem {
   product?: { id?: string };
-  selection?: { size?: string; color?: string };
+  selection?: { size?: string; color?: string; variationId?: string };
   quantity?: number;
 }
 
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     const product = productId ? storeProductsById.get(productId) : null;
     const quantity = Math.min(Math.max(Number(item.quantity) || 1, 1), MAX_QUANTITY_PER_ITEM);
     return product ? { productId: product.id, quantity, selection: item.selection } : null;
-  }).filter(Boolean) as { productId: string; quantity: number; selection?: { size?: string; color?: string } }[];
+  }).filter(Boolean) as { productId: string; quantity: number; selection?: { size?: string; color?: string; variationId?: string } }[];
 
   if (safeItems.length === 0) {
     return NextResponse.json({ message: "No encontramos productos validos para cobrar." }, { status: 400 });
