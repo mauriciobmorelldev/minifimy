@@ -128,14 +128,9 @@ export default function CheckoutClient() {
     const payload = await response.json() as { message?: string; paymentUrl?: string; orderId?: number; orderKey?: string };
     if (payload.orderId) {
       clearCart();
-      if (payload.paymentUrl) {
-        window.location.href = payload.paymentUrl;
-        return;
-      }
-
       const params = new URLSearchParams();
       if (payload.orderKey) params.set("key", payload.orderKey);
-      window.location.href = `/orden/pagar/${payload.orderId}${params.toString() ? `?${params.toString()}` : ""}`;
+      window.location.href = `/finalizar-comprar/order-pay/${payload.orderId}/${params.toString() ? `?${params.toString()}` : ""}`;
       return;
     }
 
@@ -355,7 +350,7 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                       {(item.selection?.size || item.selection?.color) && (
                         <p className="mt-1 text-xs text-on-surface-variant">
                           {item.selection?.size ? `Talle ${item.selection.size}` : ""}
-                          {item.selection?.color ? ` · ${item.selection.color}` : ""}
+                          {item.selection?.color ? ` Â· ${item.selection.color}` : ""}
                         </p>
                       )}
                       <p className="mt-2 text-sm font-extrabold text-secondary">

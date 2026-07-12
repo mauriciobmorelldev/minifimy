@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import type { Product, ProductSelection, ProductVariant } from "@/models/product";
 
@@ -29,25 +29,67 @@ function colorValue(color: string) {
   return Object.entries(palette).find(([name]) => normalized.includes(name))?.[1] ?? "#d8c7aa";
 }
 
+function normalizeOption(value?: string) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function optionEquals(first?: string, second?: string) {
+  return normalizeOption(first) === normalizeOption(second);
+}
+
+function variantMatchesSelection(variant: ProductVariant, selection: ProductSelection) {
+  const sizeMatches = !selection.size || !variant.size || optionEquals(selection.size, variant.size);
+  const colorMatches = !selection.color || !variant.color || optionEquals(selection.color, variant.color);
+  return sizeMatches && colorMatches;
+}
+
+function findCompatibleVariant(
+  variants: ProductVariant[] | undefined,
+  selection: ProductSelection,
+  changedField: "size" | "color",
+) {
+  if (!variants?.length) return undefined;
+
+  const exactVariant = variants.find((variant) => variantMatchesSelection(variant, selection));
+  if (exactVariant) return exactVariant;
+
+  if (changedField === "color" && selection.color) {
+    return variants.find((variant) => optionEquals(variant.color, selection.color));
+  }
+
+  if (changedField === "size" && selection.size) {
+    return variants.find((variant) => optionEquals(variant.size, selection.size));
+  }
+
+  return undefined;
+}
+
 export function ProductPurchasePanel({ product, selection: controlledSelection, onSelectionChange, selectedVariant }: ProductPurchasePanelProps) {
-  const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] ?? "");
-  const [selectedColor, setSelectedColor] = useState(product.colors?.[0] ?? "");
   const [quantity, setQuantity] = useState(1);
+  const selectedSize = controlledSelection?.size ?? product.sizes?.[0] ?? "";
+  const selectedColor = controlledSelection?.color ?? product.colors?.[0] ?? "";
   const selection: ProductSelection = {
     size: selectedSize || undefined,
     color: selectedColor || undefined,
     variationId: selectedVariant?.id,
   };
 
-  useEffect(() => {
-    if (!controlledSelection) return;
-    setSelectedSize(controlledSelection.size ?? "");
-    setSelectedColor(controlledSelection.color ?? "");
-  }, [controlledSelection?.size, controlledSelection?.color]);
+  const updateSelection = (nextSelection: ProductSelection, changedField: "size" | "color") => {
+    const mergedSelection = { ...selection, ...nextSelection, variationId: undefined };
+    const compatibleVariant = findCompatibleVariant(product.variants, mergedSelection, changedField);
 
-  useEffect(() => {
-    onSelectionChange?.(selection);
-  }, [selectedSize, selectedColor, selectedVariant?.id]);
+    onSelectionChange?.({
+      ...mergedSelection,
+      size: compatibleVariant?.size ?? mergedSelection.size,
+      color: compatibleVariant?.color ?? mergedSelection.color,
+      variationId: undefined,
+    });
+  };
 
   const selectedPrice = selectedVariant?.price ?? product.price;
 
@@ -63,7 +105,7 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
               <button
                 key={size}
                 type="button"
-                onClick={() => setSelectedSize(size)}
+                onClick={() => updateSelection({ size }, "size")}
                 className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${
                   selectedSize === size
                     ? "border-primary bg-primary text-on-primary"
@@ -87,7 +129,7 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
               <button
                 key={color}
                 type="button"
-                onClick={() => setSelectedColor(color)}
+                onClick={() => updateSelection({ color }, "color")}
                 className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition-all ${
                   selectedColor === color
                     ? "border-primary bg-primary text-on-primary"

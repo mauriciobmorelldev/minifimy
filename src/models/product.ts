@@ -1,4 +1,4 @@
-export interface ProductVariant {
+﻿export interface ProductVariant {
   id: string;
   size?: string;
   color?: string;
@@ -16,6 +16,8 @@ export interface Product {
   images: string[];
   category: string;
   categoryId?: string;
+  categorySlugs?: string[];
+  categoryIds?: string[];
   stock: number;
   badge?: string;
   sizes?: string[];

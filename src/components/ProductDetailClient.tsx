@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
 import type { Product, ProductSelection } from "@/models/product";
@@ -72,17 +72,6 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
     return selectedVariant ?? findBestVariantForSelection(product.variants, selection);
   }, [product.variants, selectedVariant, selection.color, selection.size]);
 
-  useEffect(() => {
-    if (!product.variants?.length || selectedVariant || !visualVariant) return;
-
-    setSelection((current) => {
-      const nextSize = visualVariant.size ?? current.size;
-      const nextColor = visualVariant.color ?? current.color;
-
-      if (nextSize === current.size && nextColor === current.color) return current;
-      return { ...current, size: nextSize, color: nextColor };
-    });
-  }, [product.variants, selectedVariant, visualVariant]);
 
   const selectedPrice = selectedVariant?.price ?? visualVariant?.price ?? product.price;
   const selectedStock = selectedVariant?.stock ?? visualVariant?.stock ?? product.stock;

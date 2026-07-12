@@ -1,4 +1,4 @@
-import type { Category, Product, ProductFilterOptions, ProductVariant } from "@/models/product";
+﻿import type { Category, Product, ProductFilterOptions, ProductVariant } from "@/models/product";
 import { CACHE_SECONDS, CACHE_TAGS, normalizeBaseUrl } from "@/lib/cache";
 import { categories as fallbackCategories, products as fallbackProducts } from "@/lib/products";
 
@@ -310,7 +310,7 @@ function normalizeFilterName(value?: string) {
   return cleanText(value)
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function getUniqueSortedValues(values: Array<string | undefined>) {
@@ -359,7 +359,9 @@ function buildWooUrl(path: string, params: Record<string, string | number | bool
 }
 
 function mapWooProduct(product: WooProduct): Product {
-  const category = product.categories?.[0]?.slug ?? "catalogo";
+  const categorySlugs = product.categories?.map((category) => category.slug).filter(Boolean) ?? [];
+  const categoryIds = product.categories?.map((category) => String(category.id)).filter(Boolean) ?? [];
+  const category = categorySlugs[0] ?? "catalogo";
   const images = product.images?.map((image) => getSafeImage(image.src)).filter(Boolean) as string[] | undefined;
   const sizes = product.attributes?.find((attribute) =>
     attribute.name?.toLowerCase().includes("talle") || attribute.name?.toLowerCase().includes("size")
@@ -376,7 +378,9 @@ function mapWooProduct(product: WooProduct): Product {
     price: Number(product.price || product.regular_price || 0),
     images: images && images.length > 0 ? images : ["/products/flatlay-01.jpg"],
     category,
-    categoryId: product.categories?.[0]?.id ? String(product.categories[0].id) : undefined,
+    categoryId: categoryIds[0],
+    categorySlugs,
+    categoryIds,
     stock: product.stock_quantity ?? (product.stock_status === "instock" ? 1 : 0),
     badge: product.tags?.[0]?.name,
     sizes,
@@ -640,12 +644,26 @@ export async function getStoreProductsByCategory(slug: string) {
   const category = categories.find((item) => item.slug === slug);
 
   if (!category) return [];
+
+  const matchesCategory = (product: Product) => {
+    return (
+      product.category === slug ||
+      product.categoryId === category.id ||
+      product.categorySlugs?.includes(slug) ||
+      product.categoryIds?.includes(category.id)
+    );
+  };
+
   if (!canUseWooCommerce()) {
     const allProducts = await getStoreProducts({ perPage: 100 });
-    return allProducts.filter((product) => product.category === slug);
+    return allProducts.filter(matchesCategory);
   }
 
-  return getStoreProducts({ category: category.id, perPage: 100 });
+  const productsByWooCategory = await getStoreProducts({ category: category.id, perPage: 100 });
+  if (productsByWooCategory.length > 0) return productsByWooCategory;
+
+  const allProducts = await getStoreProducts({ perPage: 100 });
+  return allProducts.filter(matchesCategory);
 }
 
 export async function createStoreCustomer(input: StoreCustomerInput) {
