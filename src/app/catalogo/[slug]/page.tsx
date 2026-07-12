@@ -7,7 +7,7 @@ import { ScrollReveal } from "@/components/ScrollReveal";
 import { getStoreCategories, getStoreProductsByCategory } from "@/lib/woocommerce";
 
 interface CategoryPageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export const revalidate = 300;
@@ -18,8 +18,9 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const { slug } = await params;
   const categories = await getStoreCategories();
-  const category = categories.find((item) => item.slug === params.slug);
+  const category = categories.find((item) => item.slug === slug);
   return {
     title: category ? category.name : "Categoria",
     description: category?.description ?? "Productos para cada etapa del bebe.",
@@ -27,9 +28,10 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
+  const { slug } = await params;
   const categories = await getStoreCategories();
-  const category = categories.find((item) => item.slug === params.slug);
-  const items = await getStoreProductsByCategory(params.slug);
+  const category = categories.find((item) => item.slug === slug);
+  const items = await getStoreProductsByCategory(slug);
 
   if (!category) {
     return (
