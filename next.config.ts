@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 
 const remoteUrls = [process.env.WORDPRESS_URL, process.env.WOOCOMMERCE_URL].filter(Boolean) as string[];
+const storeOrigin = (() => {
+  const storeUrl = process.env.WOOCOMMERCE_URL ?? process.env.WORDPRESS_URL;
+  if (!storeUrl) return null;
+
+  try {
+    return new URL(storeUrl).origin;
+  } catch {
+    return null;
+  }
+})();
+
 const remotePatterns = remoteUrls.flatMap((url) => {
   try {
     const parsed = new URL(url);
@@ -44,6 +55,18 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 31,
     deviceSizes: [360, 420, 640, 768, 1024, 1280, 1536],
     imageSizes: [48, 64, 96, 128, 192, 256, 384, 512],
+  },
+  async rewrites() {
+    return {
+      beforeFiles: storeOrigin
+        ? [
+            {
+              source: "/finalizar-comprar/order-pay/:path*",
+              destination: `${storeOrigin}/finalizar-comprar/order-pay/:path*`,
+            },
+          ]
+        : [],
+    };
   },
   async headers() {
     return [
