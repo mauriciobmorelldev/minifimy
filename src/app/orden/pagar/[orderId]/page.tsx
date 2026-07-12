@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { OrderPaymentView } from "@/components/order/OrderPaymentView";
 import { getStoreOrderForPayment } from "@/lib/woocommerce";
 
@@ -27,6 +28,10 @@ export default async function OrderPayPage({ params, searchParams }: OrderPayPag
   const query = await searchParams;
   const order = await getStoreOrderForPayment(orderId, query.key);
   const paymentUrl = getPaymentUrl(query.pay) ?? order?.paymentUrl;
+
+  if (paymentUrl) {
+    redirect(paymentUrl);
+  }
 
   return <OrderPaymentView order={order} paymentUrl={paymentUrl} />;
 }
