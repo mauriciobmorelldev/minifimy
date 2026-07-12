@@ -56,18 +56,6 @@ const nextConfig: NextConfig = {
     deviceSizes: [360, 420, 640, 768, 1024, 1280, 1536],
     imageSizes: [48, 64, 96, 128, 192, 256, 384, 512],
   },
-  async rewrites() {
-    return {
-      beforeFiles: storeOrigin
-        ? [
-            {
-              source: "/finalizar-comprar/order-pay/:path*",
-              destination: `${storeOrigin}/finalizar-comprar/order-pay/:path*`,
-            },
-          ]
-        : [],
-    };
-  },
   async headers() {
     return [
       {
