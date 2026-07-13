@@ -99,6 +99,16 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
     updateUrl({ q: nextQuery, categoria: nextCategory, talle: nextSize, color: nextColor, precio: nextPriceRange, orden: nextSort, page: 1 });
   };
 
+  const setCategoryFilter = (nextCategory: string) => {
+    setQuery("");
+    setCategory(nextCategory);
+    setSize("all");
+    setColor("all");
+    setPriceRange("all");
+    setSort("featured");
+    updateUrl({ q: "", categoria: nextCategory, talle: "all", color: "all", precio: "all", orden: "featured", page: 1 });
+  };
+
   const priceMinLimit = Math.floor((filterOptions.price.min || 0) / 100) * 100;
   const priceMaxLimit = Math.ceil((filterOptions.price.max || 0) / 100) * 100;
   const hasPriceSlider = priceMaxLimit > priceMinLimit;
@@ -133,7 +143,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
     ...filterOptions.categories.slice(0, 3).map((item) => ({
       label: item.name,
       icon: "category",
-      action: () => setFilter({ categoria: item.slug }),
+      action: () => setCategoryFilter(item.slug),
     })),
     ...(filterOptions.sizes[0]
       ? [{ label: `Talle ${filterOptions.sizes[0]}`, icon: "straighten", action: () => setFilter({ talle: filterOptions.sizes[0] }) }]
@@ -298,7 +308,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => setFilter({ categoria: "all" })}
+                    onClick={() => setCategoryFilter("all")}
                     className={`rounded-full px-4 py-2 text-sm font-bold transition ${category === "all" ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
                   >
                     Todo Minifimy
@@ -307,7 +317,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                     <button
                       key={item.id}
                       type="button"
-                      onClick={() => setFilter({ categoria: item.slug })}
+                      onClick={() => setCategoryFilter(item.slug)}
                       className={`rounded-full px-4 py-2 text-sm font-bold transition ${category === item.slug ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
                     >
                       {item.name}

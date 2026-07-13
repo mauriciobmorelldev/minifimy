@@ -18,6 +18,7 @@ const WOO_PRODUCT_FIELDS = [
   "tags",
   "attributes",
   "featured",
+  "type",
 ].join(",");
 
 const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description"].join(",");
@@ -297,6 +298,7 @@ type WooProduct = {
   tags?: { name?: string; slug?: string }[];
   attributes?: { name?: string; options?: string[] }[];
   featured?: boolean;
+  type?: string;
 };
 
 type WooMinifimyPrices = {
@@ -401,9 +403,10 @@ function getMinifimyPrices(source: { price?: string; regular_price?: string; min
   const list = getPriceNumber(source.minifimy_prices?.list_price) || getPriceNumber(source.regular_price) || base;
   const discount = getPriceNumber(source.minifimy_prices?.discount_price);
   const validDiscount = discount > 0 && list > 0 && discount < list ? discount : undefined;
+  const displayBase = validDiscount ?? (list > 1 ? list : base);
 
   return {
-    base: validDiscount ?? base ?? list,
+    base: displayBase,
     list: list > 0 ? list : undefined,
     discount: validDiscount,
     discountGatewayIds: Array.isArray(source.minifimy_prices?.discount_gateway_ids)
@@ -488,6 +491,21 @@ function mergeProductVariants(product: Product, variants: ProductVariant[]): Pro
     prices: bestPrices ?? product.prices,
     variants,
   };
+}
+
+function shouldLoadVariationsForCatalog(product: Product, source?: WooProduct) {
+  return product.price <= 1 || source?.type === "variable" || Boolean(product.sizes?.length || product.colors?.length);
+}
+
+async function enrichCatalogProducts(products: Product[], sources: WooProduct[]) {
+  const sourceById = new Map(sources.map((source) => [String(source.id), source]));
+  return Promise.all(
+    products.map(async (product) => {
+      if (!shouldLoadVariationsForCatalog(product, sourceById.get(product.id))) return product;
+      const variants = await getStoreProductVariations(product.id);
+      return mergeProductVariants(product, variants);
+    })
+  );
 }
 
 async function getStoreProductVariations(productId: string) {
@@ -648,18 +666,7 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
 
   const data = (await response.json().catch(() => [])) as WooProduct[];
   let products = data.map(mapWooProduct).filter((product) => product.price > 0);
-
-  const productsWithPlaceholderPrice = products.filter((product) => product.price <= 1);
-  if (productsWithPlaceholderPrice.length > 0) {
-    const patchedProducts = await Promise.all(
-      products.map(async (product) => {
-        if (product.price > 1) return product;
-        const variants = await getStoreProductVariations(product.id);
-        return mergeProductVariants(product, variants);
-      })
-    );
-    products = patchedProducts.filter((product) => product.price > 1);
-  }
+  products = (await enrichCatalogProducts(products, data)).filter((product) => product.price > 1);
 
   if (options.size) {
     products = products.filter((product) => product.sizes?.includes(options.size!));

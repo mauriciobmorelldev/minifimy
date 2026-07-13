@@ -145,12 +145,12 @@ export default function CheckoutClient() {
   const onSubmit = async (data: CheckoutFormValues) => {
     setStatus("Estamos preparando tu pedido...");
 
-    await refreshCart().catch(() => null);
+    const latestItems = await refreshCart().catch(() => items);
 
-    const stockIssues = getStockIssues(items);
+    const stockIssues = getStockIssues(latestItems);
     if (stockIssues.length > 0) {
       await Promise.all(stockIssues.map((item) => updateQuantity(item.id, item.product.stock)));
-      await refreshCart().catch(() => null);
+      await refreshCart().catch(() => items);
       setStatus(`Ajustamos la cantidad disponible de ${stockIssues[0].product.name}. Revisá el resumen y volvé a intentar.`);
       return;
     }
@@ -170,7 +170,13 @@ export default function CheckoutClient() {
     });
 
     if (!response.ok) {
-      setStatus(await getCheckoutErrorMessage(response));
+      const message = await getCheckoutErrorMessage(response);
+      if (response.status === 409) {
+        await refreshCart().catch(() => items);
+        setStatus(`${message} Actualizamos tu carrito; revisá cantidades y volvé a intentar.`);
+        return;
+      }
+      setStatus(message);
       return;
     }
 

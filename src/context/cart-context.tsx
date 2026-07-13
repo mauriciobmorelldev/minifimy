@@ -19,7 +19,7 @@ interface CartContextValue {
   removeFromCart: (itemId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
-  refreshCart: () => Promise<void>;
+  refreshCart: () => Promise<CartItem[]>;
 }
 
 type StoreApiCart = {
@@ -146,13 +146,19 @@ async function storeFetch(path: string, init?: RequestInit) {
 }
 
 function buildAddItemPayload(product: Product, quantity: number, selection?: ProductSelection) {
-  const productId = Number(selection?.variationId ?? product.id);
+  if (selection?.variationId) {
+    return {
+      id: Number(selection.variationId),
+      quantity,
+    };
+  }
+
   const variation: { attribute: string; value: string }[] = [];
   if (selection?.size) variation.push({ attribute: "Talle", value: selection.size });
   if (selection?.color) variation.push({ attribute: "Color", value: selection.color });
 
   return {
-    id: productId,
+    id: Number(product.id),
     quantity,
     ...(variation.length > 0 ? { variation } : {}),
   };
@@ -169,7 +175,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const refreshCart = useCallback(async () => {
     setLoading(true);
     try {
-      applyCart(await storeFetch("/api/woo/cart"));
+      const nextCart = await storeFetch("/api/woo/cart");
+      applyCart(nextCart);
+      return (nextCart.items ?? []).map(mapStoreItem);
     } finally {
       setLoading(false);
     }
