@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { useCart } from "@/context/cart-context";
+import { productNeedsOptions } from "@/lib/product-options";
 import type { Product, ProductSelection } from "@/models/product";
 
 interface AddToCartButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick" | "type"> {
@@ -40,6 +41,11 @@ export function AddToCartButton({ product, quantity = 1, selection, className, c
       {...buttonProps}
       disabled={buttonProps.disabled || status === "adding"}
       onClick={async () => {
+        if (productNeedsOptions(product) && !selection?.variationId && !selection?.variationAttributes?.length) {
+          window.location.href = `/producto/${product.slug}`;
+          return;
+        }
+
         setStatus("adding");
         try {
           await addToCart(product, quantity, selection);

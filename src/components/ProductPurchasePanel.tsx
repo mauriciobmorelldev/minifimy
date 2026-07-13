@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductPrice } from "@/components/ProductPrice";
+import { productNeedsOptions } from "@/lib/product-options";
 import type { Product, ProductSelection, ProductVariant } from "@/models/product";
 
 interface ProductPurchasePanelProps {
@@ -95,6 +96,7 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
 
   const selectedPrice = selectedVariant?.price ?? product.price;
   const selectedPrices = selectedVariant?.prices ?? product.prices;
+  const missingRequiredOptions = productNeedsOptions(product) && !selectedVariant;
 
   return (
     <div className="space-y-5">
@@ -184,10 +186,11 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
         product={{ ...product, price: selectedPrice, prices: selectedPrices, images: selectedVariant?.image ? [selectedVariant.image, ...product.images.filter((image) => image !== selectedVariant.image)] : product.images }}
         quantity={quantity}
         selection={selection}
-        className="w-full gap-3 rounded-full bg-primary py-4 font-headline text-base text-on-primary shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95 md:py-5 md:text-lg"
+        disabled={missingRequiredOptions}
+        className="w-full gap-3 rounded-full bg-primary py-4 font-headline text-base text-on-primary shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-55 md:py-5 md:text-lg"
       >
         <span className="material-symbols-outlined">shopping_bag</span>
-        Agregar al bolso
+        {missingRequiredOptions ? "Elegí una opción disponible" : "Agregar al bolso"}
       </AddToCartButton>
     </div>
   );

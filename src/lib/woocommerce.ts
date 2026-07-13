@@ -438,6 +438,7 @@ function mapWooProduct(product: WooProduct): Product {
     description: cleanText(product.short_description) || cleanText(product.description),
     price: prices.base,
     prices,
+    type: product.type,
     images: images && images.length > 0 ? images : ["/products/flatlay-01.jpg"],
     category,
     categoryId: categoryIds[0],

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { productNeedsOptions } from "@/lib/product-options";
 import type { Product } from "@/models/product";
 
 type GuideIntent = {
@@ -136,7 +137,7 @@ export function FimiGiftGuide({ products, title, intro }: FimiGiftGuideProps) {
                     <Link href={`/producto/${product.slug}`}>{product.name}</Link>
                   </h4>
                   <p className="mt-2 text-sm font-bold text-secondary">AR$ {product.price.toLocaleString("es-AR")}</p>
-                  {product.variants?.length || product.sizes?.length || product.colors?.length ? (
+                  {productNeedsOptions(product) ? (
                     <Link href={`/producto/${product.slug}`} className="mt-4 inline-flex justify-center rounded-full bg-primary px-4 py-3 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
                       Elegir opciones
                     </Link>

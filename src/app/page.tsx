@@ -5,6 +5,7 @@ import { AddToCartButton } from "@/components/AddToCartButton";
 import { FimiGiftGuide } from "@/components/FimiGiftGuide";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { getFeaturedStoreProducts, getWordPressNewsletterUrl } from "@/lib/woocommerce";
+import { productNeedsOptions } from "@/lib/product-options";
 import { getHomeContent } from "@/lib/wordpress";
 
 export const metadata: Metadata = {
@@ -196,7 +197,7 @@ export default async function HomePage() {
                   </div>
                   <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <p className="font-headline text-2xl font-extrabold text-secondary">AR$ {heroProduct.price.toLocaleString("es-AR")}</p>
-                    {heroProduct.variants?.length || heroProduct.sizes?.length || heroProduct.colors?.length ? (
+                    {productNeedsOptions(heroProduct) ? (
                       <Link href={`/producto/${heroProduct.slug}`} className="rounded-full bg-primary px-7 py-4 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
                         Elegir opciones
                       </Link>
@@ -232,7 +233,7 @@ export default async function HomePage() {
                       </div>
                       <div className="mt-5 flex items-center justify-between gap-3">
                         <p className="font-bold text-secondary">AR$ {product.price.toLocaleString("es-AR")}</p>
-                        {product.variants?.length || product.sizes?.length || product.colors?.length ? (
+                        {productNeedsOptions(product) ? (
                           <Link href={`/producto/${product.slug}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary transition hover:bg-primary-dim" aria-label={`Elegir opciones de ${product.name}`}>
                             <span className="material-symbols-outlined text-lg">tune</span>
                           </Link>

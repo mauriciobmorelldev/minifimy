@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductPrice } from "@/components/ProductPrice";
+import { productNeedsOptions } from "@/lib/product-options";
 import type { Product } from "@/models/product";
 
 interface ProductCardProps {
@@ -31,7 +32,7 @@ function colorValue(color: string) {
 
 export function ProductCard({ product, compact = false }: ProductCardProps) {
   const image = product.images[0] ?? "/brand/illustrations/jirafa.svg";
-  const needsOptions = Boolean(product.variants?.length || product.sizes?.length || product.colors?.length);
+  const needsOptions = productNeedsOptions(product);
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] bg-[#fffaf1] shadow-soft ring-1 ring-[#eadfcb]/80 transition-all duration-500 hover:-translate-y-1 hover:shadow-lift">

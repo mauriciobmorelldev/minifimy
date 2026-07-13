@@ -25,6 +25,7 @@ export interface Product {
   description: string;
   price: number;
   prices?: ProductPriceSet;
+  type?: "simple" | "variable" | "grouped" | "external" | string;
   images: string[];
   category: string;
   categoryId?: string;
