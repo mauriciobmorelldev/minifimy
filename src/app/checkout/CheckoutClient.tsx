@@ -47,7 +47,9 @@ function formatPostalCode(value: string) {
 type CheckoutCartItem = ReturnType<typeof useCart>["items"][number];
 
 function isDiscountPaymentMethod(paymentMethodId: string, gatewayIds?: string[]) {
-  return Boolean(paymentMethodId && gatewayIds?.includes(paymentMethodId));
+  if (!paymentMethodId) return false;
+  if (gatewayIds?.length) return gatewayIds.includes(paymentMethodId);
+  return ["bacs", "cod", "cheque"].includes(paymentMethodId);
 }
 
 function getCheckoutUnitPrice(item: CheckoutCartItem, paymentMethodId: string) {
@@ -56,6 +58,10 @@ function getCheckoutUnitPrice(item: CheckoutCartItem, paymentMethodId: string) {
     return prices.discount;
   }
   return prices?.list ?? prices?.base ?? item.product.price;
+}
+
+function getStockIssues(items: CheckoutCartItem[]) {
+  return items.filter((item) => item.product.stock > 0 && item.product.stock < 999 && item.quantity > item.product.stock);
 }
 
 async function getCheckoutErrorMessage(response: Response) {
@@ -71,7 +77,7 @@ async function getCheckoutErrorMessage(response: Response) {
 }
 
 export default function CheckoutClient() {
-  const { items, total, refreshCart } = useCart();
+  const { items, total, refreshCart, updateQuantity } = useCart();
   const [status, setStatus] = useState<string | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<CheckoutPaymentMethod[]>([]);
   const [shippingMethods, setShippingMethods] = useState<CheckoutShippingMethod[]>([]);
@@ -140,6 +146,14 @@ export default function CheckoutClient() {
     setStatus("Estamos preparando tu pedido...");
 
     await refreshCart().catch(() => null);
+
+    const stockIssues = getStockIssues(items);
+    if (stockIssues.length > 0) {
+      await Promise.all(stockIssues.map((item) => updateQuantity(item.id, item.product.stock)));
+      await refreshCart().catch(() => null);
+      setStatus(`Ajustamos la cantidad disponible de ${stockIssues[0].product.name}. Revisá el resumen y volvé a intentar.`);
+      return;
+    }
 
     const headers = getWooStoreRequestHeaders();
     headers.set("Content-Type", "application/json");

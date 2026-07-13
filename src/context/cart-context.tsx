@@ -37,6 +37,7 @@ type StoreApiCartItem = {
   prices?: { price?: string; regular_price?: string; currency_minor_unit?: number };
   totals?: { line_total?: string; currency_minor_unit?: number };
   variation?: { attribute?: string; value?: string }[];
+  quantity_limits?: { maximum?: number | null };
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -95,6 +96,7 @@ function mapStoreItem(item: StoreApiCartItem): CartItem {
   const price = getMoneyValue(item.prices?.price ?? item.prices?.regular_price, minorUnit);
   const listPrice = getMoneyValue(item.prices?.regular_price, minorUnit);
   const storedPrices = getStoredCartPrices()[String(item.id ?? item.key)];
+  const stock = item.quantity_limits?.maximum && item.quantity_limits.maximum > 0 ? item.quantity_limits.maximum : 999;
   const prices = storedPrices ?? {
     base: price,
     list: listPrice || price,
@@ -114,7 +116,7 @@ function mapStoreItem(item: StoreApiCartItem): CartItem {
       prices,
       images: [image],
       category: "Minifimy",
-      stock: 1,
+      stock,
     },
   };
 }

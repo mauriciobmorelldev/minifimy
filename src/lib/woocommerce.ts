@@ -469,6 +469,11 @@ function mapWooVariation(variation: WooVariation): ProductVariant {
 function mergeProductVariants(product: Product, variants: ProductVariant[]): Product {
   if (variants.length === 0) return product;
 
+  const validPrices = variants
+    .map((variant) => variant.prices)
+    .filter((prices): prices is NonNullable<ProductVariant["prices"]> => Boolean(prices?.base && prices.base > 1));
+  const bestPrices = validPrices.sort((first, second) => first.base - second.base)[0];
+  const bestPrice = bestPrices?.base ?? variants.map((variant) => variant.price).find((price) => price && price > 1) ?? product.price;
   const variantImages = variants.map((variant) => variant.image).filter(Boolean) as string[];
   const images = Array.from(new Set([...product.images, ...variantImages]));
   const sizes = getUniqueSortedValues([...(product.sizes ?? []), ...variants.map((variant) => variant.size)]);
@@ -479,6 +484,8 @@ function mergeProductVariants(product: Product, variants: ProductVariant[]): Pro
     images,
     sizes: sizes.length > 0 ? sizes : product.sizes,
     colors: colors.length > 0 ? colors : product.colors,
+    price: bestPrice,
+    prices: bestPrices ?? product.prices,
     variants,
   };
 }
@@ -641,6 +648,18 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
 
   const data = (await response.json().catch(() => [])) as WooProduct[];
   let products = data.map(mapWooProduct).filter((product) => product.price > 0);
+
+  const productsWithPlaceholderPrice = products.filter((product) => product.price <= 1);
+  if (productsWithPlaceholderPrice.length > 0) {
+    const patchedProducts = await Promise.all(
+      products.map(async (product) => {
+        if (product.price > 1) return product;
+        const variants = await getStoreProductVariations(product.id);
+        return mergeProductVariants(product, variants);
+      })
+    );
+    products = patchedProducts.filter((product) => product.price > 1);
+  }
 
   if (options.size) {
     products = products.filter((product) => product.sizes?.includes(options.size!));
