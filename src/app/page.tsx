@@ -49,9 +49,6 @@ export default async function HomePage() {
                 Descubrir MiniFimi
                 <span className="material-symbols-outlined text-lg">arrow_forward</span>
               </Link>
-              <Link href="/catalogo/seleccion-importada" className="btn-ghost gap-2 rounded-full bg-white/78 px-7">
-                Descubrir importados
-              </Link>
             </div>
           </ScrollReveal>
 
@@ -67,7 +64,7 @@ export default async function HomePage() {
               />
               <div className="relative grid gap-5 md:grid-cols-[1.02fr_0.98fr]">
                 {heroProduct && (
-                  <Link href={`/producto/${heroProduct.slug}`} className="hero-feature-card group overflow-hidden bg-white p-3 shadow-soft">
+                  <Link href={`/producto/${heroProduct.slug}`} className="hero-feature-card order-2 group overflow-hidden bg-white p-3 shadow-soft md:order-1">
                     <div className="relative aspect-[4/5] overflow-hidden rounded-[1.4rem] bg-surface-container">
                       <Image
                         src={heroProduct.images[0]}
@@ -90,8 +87,8 @@ export default async function HomePage() {
                   </Link>
                 )}
 
-                <div className="grid content-between gap-5">
-                  <div className="hero-fimy-note bg-white/78 p-5 shadow-soft">
+                <div className="order-1 grid content-between gap-5 md:order-2">
+                  <div className="hero-fimy-note bg-white/92 p-5 shadow-soft">
                     <div className="flex items-start gap-4">
                       <Image src="/brand/illustrations/jirafa.svg" alt="Fimy" width={74} height={105} className="fimy-float mt-1 w-14 shrink-0" />
                       <div>

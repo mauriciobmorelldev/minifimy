@@ -54,15 +54,19 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const [siteSettings, storeCategories] = await Promise.all([getSiteSettings(), getStoreCategories()]);
-  const catalogChildren = storeCategories.slice(0, 12).map((category) => ({
-    href: `/catalogo/${category.slug}`,
-    label: category.name,
-  }));
   const automaticFeaturedMenu = storeCategories.slice(0, 3).map((category) => ({
     href: `/catalogo/${category.slug}`,
     label: category.name,
   }));
   const featuredMenu = siteSettings.featuredMenuItems.length > 0 ? siteSettings.featuredMenuItems.slice(0, 3) : automaticFeaturedMenu;
+  const featuredHrefs = new Set(featuredMenu.map((item) => item.href));
+  const catalogChildren = storeCategories
+    .map((category) => ({
+      href: `/catalogo/${category.slug}`,
+      label: category.name,
+    }))
+    .filter((category) => !featuredHrefs.has(category.href))
+    .slice(0, 12);
   const baseMenu = [
     { href: "/catalogo", label: "Catalogo", children: catalogChildren },
     ...featuredMenu,

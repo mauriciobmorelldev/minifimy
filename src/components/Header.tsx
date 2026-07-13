@@ -92,7 +92,7 @@ export function Header({ navLinks }: HeaderProps) {
                       <span className="material-symbols-outlined text-base transition-transform group-hover:rotate-180">expand_more</span>
                     </Link>
                     <div className="pointer-events-none absolute left-1/2 top-full z-50 w-72 -translate-x-1/2 translate-y-1 pt-3 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
-                      <div className="rounded-[1.4rem] bg-white/95 p-3 shadow-lift ring-1 ring-white/70 backdrop-blur-xl">
+                      <div className="rounded-[1.4rem] bg-white p-3 shadow-lift ring-1 ring-primary/10">
                       <div className="mb-2 rounded-[1rem] bg-[#f7efe3] px-4 py-3">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Categorias</p>
                         <p className="mt-1 text-xs leading-5 text-on-surface-variant">Todo lo que esta cargado en Fimy.</p>
@@ -189,7 +189,7 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
 
           <div
-            className={`absolute left-6 right-6 top-full z-40 overflow-hidden rounded-[1.5rem] bg-white/94 shadow-lift backdrop-blur-md transition-all duration-300 md:left-auto md:right-6 md:w-[420px] ${
+            className={`absolute left-6 right-6 top-full z-40 overflow-hidden rounded-[1.5rem] bg-white shadow-lift transition-all duration-300 md:left-auto md:right-6 md:w-[420px] ${
               searchOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
             }`}
           >
@@ -215,7 +215,7 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
 
           <div
-            className={`absolute left-2 right-2 top-[calc(100%+0.75rem)] z-[90] overflow-hidden rounded-[1.6rem] border border-primary/10 bg-[#fffaf1] shadow-lift ring-1 ring-white/80 transition-all duration-300 md:hidden ${
+            className={`absolute left-2 right-2 top-[calc(100%+0.75rem)] z-[90] overflow-hidden rounded-[1.6rem] border border-primary/10 bg-[#fffaf1] shadow-lift ring-1 ring-primary/10 transition-all duration-300 md:hidden ${
               mobileOpen ? "max-h-[calc(100vh-6rem)] opacity-100" : "pointer-events-none max-h-0 opacity-0"
             }`}
           >
@@ -236,7 +236,7 @@ export function Header({ navLinks }: HeaderProps) {
                       <span className="material-symbols-outlined text-lg">chevron_right</span>
                     </Link>
                     {link.children?.length ? (
-                      <div className="ml-3 grid gap-2 rounded-[1.2rem] bg-white/85 p-3 shadow-soft">
+                      <div className="ml-3 grid gap-2 rounded-[1.2rem] bg-white p-3 shadow-soft">
                         {link.children.map((child) => (
                           <Link key={`${child.href}-${child.label}`} href={child.href} onClick={closeMobileMenu} className="rounded-full bg-[#f7efe3] px-3 py-2 text-sm font-bold text-primary/90">
                             {child.label}

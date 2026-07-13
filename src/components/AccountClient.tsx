@@ -131,23 +131,23 @@ export function AccountClient() {
       <section className="rounded-[2rem] bg-white/82 p-5 shadow-soft md:p-8">
         {!session && mode === "login" && (
           <form onSubmit={submitLogin} className="space-y-4">
-            <h2 className="font-headline text-2xl font-extrabold text-on-surface">Entrar a mi cuenta</h2>
-            <input name="email" type="email" required placeholder="Email" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
-            <input name="password" type="password" required placeholder="Clave" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
+            <h2 className="font-headline text-2xl font-extrabold text-on-surface">Entrar a mi cuenta Fimy</h2>
+            <input name="email" type="email" required autoComplete="email" placeholder="Email" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
+            <input name="password" type="password" required minLength={8} autoComplete="current-password" placeholder="Clave" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
             <button className="w-full rounded-full bg-primary py-3.5 font-bold text-on-primary">Iniciar sesion</button>
           </form>
         )}
 
         {!session && mode === "register" && (
           <form onSubmit={submitRegister} className="space-y-4">
-            <h2 className="font-headline text-2xl font-extrabold text-on-surface">Crear cuenta</h2>
+            <h2 className="font-headline text-2xl font-extrabold text-on-surface">Crear cuenta Fimy</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <input name="firstName" required placeholder="Nombre" className="rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
-              <input name="lastName" placeholder="Apellido" className="rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
+              <input name="firstName" required minLength={2} autoComplete="given-name" placeholder="Nombre" className="rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
+              <input name="lastName" autoComplete="family-name" placeholder="Apellido" className="rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
             </div>
-            <input name="email" type="email" required placeholder="Email" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
-            <input name="phone" type="tel" placeholder="WhatsApp" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
-            <input name="password" type="password" required minLength={8} placeholder="Clave" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
+            <input name="email" type="email" required autoComplete="email" placeholder="Email" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
+            <input name="phone" type="tel" inputMode="numeric" pattern="[0-9 +()-]{8,}" autoComplete="tel" placeholder="WhatsApp" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
+            <input name="password" type="password" required minLength={8} autoComplete="new-password" placeholder="Clave" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
             <button className="w-full rounded-full bg-primary py-3.5 font-bold text-on-primary">Crear cuenta</button>
           </form>
         )}

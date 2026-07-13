@@ -65,6 +65,10 @@ function formatPostalCode(value: string) {
   return value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
 }
 
+function hasEnoughPhoneDigits(value: string) {
+  return onlyDigits(value).length >= 10 || "Ingresá un WhatsApp válido con código de área.";
+}
+
 type CheckoutCartItem = ReturnType<typeof useCart>["items"][number];
 
 function isDiscountPaymentMethod(paymentMethodId: string, gatewayIds?: string[]) {
@@ -293,31 +297,41 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                 <label className="text-sm font-semibold text-on-surface">
                   Nombre y apellido
                   <input
-                    {...register("name", { required: true })}
+                    {...register("name", {
+                      required: "Ingresá tu nombre y apellido.",
+                      minLength: { value: 3, message: "Ingresá al menos 3 caracteres." },
+                    })}
                     className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                     type="text"
                     autoComplete="name"
                     placeholder="Nombre completo"
                   />
-                  {errors.name && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
+                  {errors.name?.message && <span className="mt-1 block text-xs text-error">{errors.name.message}</span>}
                 </label>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="text-sm font-semibold text-on-surface">
                     Email
                     <input
-                      {...register("email", { required: true })}
+                      {...register("email", {
+                          required: "Ingresá tu email.",
+                          pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Ingresá un email válido." },
+                        })}
                       className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                       type="email"
                       autoComplete="email"
                       placeholder="tu@email.com"
                     />
-                    {errors.email && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
+                    {errors.email?.message && <span className="mt-1 block text-xs text-error">{errors.email.message}</span>}
                   </label>
                   <label className="text-sm font-semibold text-on-surface">
                     WhatsApp
                     <input
-                      {...register("phone", { required: true, onChange: maskPhone })}
+                      {...register("phone", {
+                          required: "Ingresá tu WhatsApp.",
+                          validate: hasEnoughPhoneDigits,
+                          onChange: maskPhone,
+                        })}
                       className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                       type="tel"
                       inputMode="numeric"
@@ -325,38 +339,48 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                       autoComplete="tel"
                       placeholder="11 1234-5678"
                     />
-                    {errors.phone && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
+                    {errors.phone?.message && <span className="mt-1 block text-xs text-error">{errors.phone.message}</span>}
                   </label>
                 </div>
 
                 <label className="text-sm font-semibold text-on-surface">
                   Direccion
                   <input
-                    {...register("address", { required: true })}
+                    {...register("address", {
+                    required: "Ingresá la dirección de entrega.",
+                    minLength: { value: 5, message: "Agregá calle y número." },
+                  })}
                     className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                     type="text"
                     autoComplete="street-address"
                     placeholder="Calle, numero, piso/depto"
                   />
-                  {errors.address && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
+                  {errors.address?.message && <span className="mt-1 block text-xs text-error">{errors.address.message}</span>}
                 </label>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="text-sm font-semibold text-on-surface">
                     Ciudad
                     <input
-                      {...register("city", { required: true })}
+                      {...register("city", {
+                        required: "Ingresá la ciudad.",
+                        minLength: { value: 2, message: "Ingresá una ciudad válida." },
+                      })}
                       className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                       type="text"
                       autoComplete="address-level2"
                       placeholder="Ciudad"
                     />
-                    {errors.city && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
+                    {errors.city?.message && <span className="mt-1 block text-xs text-error">{errors.city.message}</span>}
                   </label>
                   <label className="text-sm font-semibold text-on-surface">
                     Código postal
                     <input
-                      {...register("postalCode", { required: true, onChange: maskPostalCode })}
+                      {...register("postalCode", {
+                          required: "Ingresá el código postal.",
+                          minLength: { value: 4, message: "Ingresá un CP válido." },
+                          onChange: maskPostalCode,
+                        })}
                       className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                       type="text"
                       inputMode="text"
@@ -364,7 +388,7 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                       autoComplete="postal-code"
                       placeholder="CP"
                     />
-                    {errors.postalCode && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
+                    {errors.postalCode?.message && <span className="mt-1 block text-xs text-error">{errors.postalCode.message}</span>}
                   </label>
                 </div>
 

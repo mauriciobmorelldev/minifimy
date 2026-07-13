@@ -37,6 +37,23 @@ function formatOrderAmount(currency: string, value: string | number) {
   })}`;
 }
 
+
+function getManualInstructionRows(instructions?: string) {
+  if (!instructions) return [];
+
+  const normalized = instructions.replace(/\s+/g, " ").trim();
+  const transferMatch = normalized.match(/transferencia/i);
+  const nameMatch = normalized.match(/nombre:\s*(.*?)(?=\s+alias:|$)/i);
+  const aliasMatch = normalized.match(/alias:\s*(.*)$/i);
+  const rows: { label?: string; value: string }[] = [];
+
+  if (transferMatch) rows.push({ value: "Transferencia" });
+  if (nameMatch?.[1]) rows.push({ label: "Nombre", value: nameMatch[1].trim() });
+  if (aliasMatch?.[1]) rows.push({ label: "Alias", value: aliasMatch[1].trim() });
+
+  return rows.length ? rows : [{ value: instructions.trim() }];
+}
+
 function isCustomerPaidShipping(title: string, total: string) {
   const numericValue = Number(total);
   const normalizedTitle = title.toLowerCase();
@@ -72,6 +89,7 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
       ? "Tu pago se completa de forma segura con el medio elegido."
       : "Te vamos a acompañar para completar el pago y preparar tu pedido.";
   const manualInstructions = order.manualPayment?.note || order.paymentInstructions;
+  const manualInstructionRows = getManualInstructionRows(manualInstructions);
 
   return (
     <main className="mobile-soft-page mx-auto min-h-screen max-w-5xl px-5 pb-20 pt-28 md:px-6">
@@ -141,12 +159,17 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
                   ))}
                 </dl>
               )}
-              {isManualPayment && manualRows.length === 0 && manualInstructions && (
-                <p className="mt-3 whitespace-pre-line rounded-2xl bg-[#fbf4ea] px-4 py-3 text-sm font-semibold leading-6 text-on-surface-variant">
-                  {manualInstructions}
-                </p>
+              {isManualPayment && manualRows.length === 0 && manualInstructionRows.length > 0 && (
+                <div className="mt-3 space-y-1 rounded-2xl bg-[#fbf4ea] px-4 py-3 text-sm font-semibold leading-6 text-on-surface-variant">
+                  {manualInstructionRows.map((row, index) => (
+                    <p key={`${row.label ?? "transfer"}-${index}`}>
+                      {row.label ? <span className="text-primary">{row.label}: </span> : null}
+                      {row.value}
+                    </p>
+                  ))}
+                </div>
               )}
-              {isManualPayment && manualRows.length === 0 && !manualInstructions && (
+              {isManualPayment && manualRows.length === 0 && manualInstructionRows.length === 0 && (
                 <p className="mt-3 text-sm leading-6 text-on-surface-variant">
                   Te vamos a enviar los datos para completar el pago por WhatsApp o email.
                 </p>
