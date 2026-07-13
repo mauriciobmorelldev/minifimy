@@ -11,6 +11,7 @@ export interface ProductVariant {
   id: string;
   size?: string;
   color?: string;
+  variationAttributes?: { attribute: string; value: string }[];
   image?: string;
   price?: number;
   prices?: ProductPriceSet;
@@ -57,6 +58,7 @@ export interface ProductSelection {
   size?: string;
   color?: string;
   variationId?: string;
+  variationAttributes?: { attribute: string; value: string }[];
 }
 
 export interface CartItem {

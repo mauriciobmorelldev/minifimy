@@ -146,13 +146,17 @@ async function storeFetch(path: string, init?: RequestInit) {
 }
 
 function buildAddItemPayload(product: Product, quantity: number, selection?: ProductSelection) {
-  const variation: { attribute: string; value: string }[] = [];
-  if (selection?.size) variation.push({ attribute: "Talle", value: selection.size });
-  if (selection?.color) variation.push({ attribute: "Color", value: selection.color });
+  const variation = selection?.variationAttributes?.length
+    ? selection.variationAttributes
+    : [
+        ...(selection?.size ? [{ attribute: "Talle", value: selection.size }] : []),
+        ...(selection?.color ? [{ attribute: "Color", value: selection.color }] : []),
+      ];
 
   return {
     id: Number(product.id),
     quantity,
+    ...(selection?.variationId ? { variationId: Number(selection.variationId) } : {}),
     ...(variation.length > 0 ? { variation } : {}),
   };
 }

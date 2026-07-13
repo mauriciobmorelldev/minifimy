@@ -458,10 +458,18 @@ function getVariationOption(variation: WooVariation, names: string[]) {
 }
 
 function mapWooVariation(variation: WooVariation): ProductVariant {
+  const variationAttributes = variation.attributes
+    ?.map((attribute) => ({
+      attribute: attribute.name ?? "",
+      value: cleanText(attribute.option),
+    }))
+    .filter((attribute) => attribute.attribute && attribute.value);
+
   return {
     id: String(variation.id),
     size: cleanText(getVariationOption(variation, ["talle", "size", "edad"])),
     color: cleanText(getVariationOption(variation, ["color", "tono"])),
+    variationAttributes,
     image: getSafeImage(variation.image?.src) ?? undefined,
     price: getMinifimyPrices(variation).base || undefined,
     prices: getMinifimyPrices(variation),

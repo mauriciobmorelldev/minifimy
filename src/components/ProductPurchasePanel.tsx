@@ -78,6 +78,7 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
     size: selectedSize || undefined,
     color: selectedColor || undefined,
     variationId: selectedVariant?.id,
+    variationAttributes: selectedVariant?.variationAttributes,
   };
 
   const updateSelection = (nextSelection: ProductSelection, changedField: "size" | "color") => {

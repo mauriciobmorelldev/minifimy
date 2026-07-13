@@ -46,7 +46,8 @@ export function AddToCartButton({ product, quantity = 1, selection, className, c
           setStatus("added");
           setBump(true);
           window.setTimeout(() => setBump(false), 350);
-        } catch {
+        } catch (error) {
+          console.error("No se pudo agregar al carrito", error);
           setStatus("error");
         }
         if (resetTimer.current) {
