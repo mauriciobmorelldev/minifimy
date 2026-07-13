@@ -26,6 +26,22 @@ function getWhatsAppHref(phone?: string, orderId?: number) {
   return `https://wa.me/${digits}?text=${text}`;
 }
 
+function formatOrderAmount(currency: string, value: string | number) {
+  const numericValue = typeof value === "number" ? value : Number(value);
+
+  if (!Number.isFinite(numericValue)) return `${currency} ${value}`;
+
+  return `${currency} ${numericValue.toLocaleString("es-AR", {
+    minimumFractionDigits: numericValue % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function isCustomerPaidShipping(total: string) {
+  const numericValue = Number(total);
+  return Number.isFinite(numericValue) && numericValue === 0;
+}
+
 export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
   if (!order) {
     return (
@@ -44,10 +60,11 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
   const manualRows = getManualPaymentRows(order.manualPayment);
   const whatsappHref = getWhatsAppHref(order.manualPayment?.whatsapp, order.id);
   const paymentHelpText = isManualPayment
-    ? order.manualPayment?.note || order.paymentInstructions || "Cuando termines el pago, envianos el comprobante con tu número de pedido."
+    ? "Tu pedido queda reservado mientras esperamos el comprobante. Apenas confirmamos el pago, empezamos a prepararlo."
     : hasGatewayLink
-      ? "Tu pago se abre en el proveedor elegido para completarlo de forma segura."
+      ? "Tu pago se completa de forma segura con el medio elegido."
       : "Te vamos a acompañar para completar el pago y preparar tu pedido.";
+  const manualInstructions = order.manualPayment?.note || order.paymentInstructions;
 
   return (
     <main className="mobile-soft-page mx-auto min-h-screen max-w-5xl px-5 pb-20 pt-28 md:px-6">
@@ -72,7 +89,7 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
             <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-primary">Método</p>
             <p className="mt-2 font-bold text-on-surface">{order.paymentMethodTitle}</p>
             <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-primary">Total</p>
-            <p className="mt-2 font-headline text-3xl font-extrabold text-secondary">{order.currency} {order.total}</p>
+            <p className="mt-2 font-headline text-3xl font-extrabold text-secondary">{formatOrderAmount(order.currency, order.total)}</p>
           </div>
         </div>
       </section>
@@ -87,7 +104,7 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
                   <p className="font-bold text-on-surface">{item.name}</p>
                   <p className="text-sm text-on-surface-variant">Cantidad {item.quantity}</p>
                 </div>
-                <p className="font-bold text-secondary">{order.currency} {item.total}</p>
+                <p className="font-bold text-secondary">{formatOrderAmount(order.currency, item.total)}</p>
               </article>
             ))}
           </div>
@@ -95,16 +112,16 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
 
         <aside className="h-fit rounded-[2rem] bg-white/82 p-5 shadow-soft md:p-7">
           <h2 className="font-headline text-2xl font-extrabold text-on-surface">Pago</h2>
-          <div className="mt-5 space-y-4 rounded-[1.4rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">
-            <div className="flex items-start gap-3">
-              <span className="material-symbols-outlined mt-0.5 text-primary">payments</span>
+          <div className="mt-5 space-y-4 rounded-[1.6rem] border border-secondary/20 bg-[#f7efe3] p-4 text-sm leading-6 text-primary shadow-[0_18px_48px_rgba(166,91,0,0.08)]">
+            <div className="flex items-start gap-3 rounded-[1.25rem] bg-white/72 p-4">
+              <span className="material-symbols-outlined mt-0.5 text-secondary">payments</span>
               <div>
-                <p className="font-bold text-on-surface">{isManualPayment ? "Pago manual pendiente." : "Continuá con el pago."}</p>
-                <p>{paymentHelpText}</p>
+                <p className="font-headline text-lg font-extrabold text-on-surface">{isManualPayment ? "Pago pendiente de confirmación" : "Continuá con el pago"}</p>
+                <p className="mt-1 text-on-surface-variant">{paymentHelpText}</p>
               </div>
             </div>
 
-            <div className="rounded-[1.1rem] bg-white/72 p-4 text-on-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+            <div className="rounded-[1.25rem] bg-white/78 p-4 text-on-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Método elegido</p>
               <p className="mt-1 font-headline text-xl font-extrabold">{order.paymentMethodTitle}</p>
               {isManualPayment && manualRows.length > 0 && (
@@ -117,9 +134,14 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
                   ))}
                 </dl>
               )}
-              {isManualPayment && manualRows.length === 0 && (
+              {isManualPayment && manualRows.length === 0 && manualInstructions && (
+                <p className="mt-3 whitespace-pre-line rounded-2xl bg-[#fbf4ea] px-4 py-3 text-sm font-semibold leading-6 text-on-surface-variant">
+                  {manualInstructions}
+                </p>
+              )}
+              {isManualPayment && manualRows.length === 0 && !manualInstructions && (
                 <p className="mt-3 text-sm leading-6 text-on-surface-variant">
-                  Todavía no hay datos bancarios cargados. Escribinos y te pasamos cómo completar el pago.
+                  Te vamos a enviar los datos para completar el pago por WhatsApp o email.
                 </p>
               )}
             </div>
@@ -133,6 +155,31 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
               Ver confirmación
             </Link>
           )}
+          {order.shippingLines.length > 0 && (
+            <div className="mt-4 rounded-[1.4rem] bg-white/82 p-4 shadow-soft">
+              <h3 className="font-headline text-lg font-extrabold text-on-surface">Envío</h3>
+              <div className="mt-3 space-y-2">
+                {order.shippingLines.map((line) => (
+                  <div key={line.id} className="rounded-[1.1rem] bg-[#fbf4ea] p-3 text-sm">
+                    <p className="font-bold text-on-surface">{line.title}</p>
+                    <p className="mt-1 text-on-surface-variant">
+                      {isCustomerPaidShipping(line.total)
+                        ? "A cargo del cliente. Coordinamos el costo final según destino antes del despacho."
+                        : formatOrderAmount(order.currency, line.total)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4 rounded-[1.4rem] bg-[#efe4d0] p-4 text-sm leading-6 text-primary shadow-soft">
+            <p className="font-bold text-on-surface">Seguí el estado de tu pedido</p>
+            <p className="mt-1 text-on-surface-variant">Creá una cuenta o iniciá sesión con el mismo email de compra para ver tus pedidos y novedades.</p>
+            <Link href="/cuenta" className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-xs font-bold text-primary shadow-soft">
+              Ir a mi cuenta
+            </Link>
+          </div>
         </aside>
       </section>
     </main>

@@ -34,23 +34,23 @@ export default async function HomePage() {
           <ScrollReveal className="relative z-10 max-w-xl space-y-7">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/78 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary shadow-soft">
               <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-              {home.heroKicker}
+              LO QUE EMPEZÓ COMO UNA IDEA, HOY ES REAL
             </span>
             <div className="space-y-5">
               <h1 className="font-headline text-5xl font-extrabold leading-[0.96] text-on-surface sm:text-6xl lg:text-7xl">
-                {home.heroTitle}
+                Mini ropa. Maxi amor.
               </h1>
               <p className="max-w-md text-base leading-8 text-on-surface-variant sm:text-lg">
-                {home.heroSubtitle}
+                Después de meses de imaginar, crear y compartir este camino, MiniFimi ya está acá. Prendas pensadas para acompañar sus primeros momentos.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <Link href={home.heroPrimaryHref} className="btn-primary gap-2 rounded-full px-7">
-                {home.heroPrimaryLabel}
+              <Link href="/catalogo" className="btn-primary gap-2 rounded-full px-7">
+                Descubrir MiniFimi
                 <span className="material-symbols-outlined text-lg">arrow_forward</span>
               </Link>
-              <Link href={home.heroSecondaryHref} className="btn-ghost gap-2 rounded-full bg-white/78 px-7">
-                {home.heroSecondaryLabel}
+              <Link href="/catalogo/importados" className="btn-ghost gap-2 rounded-full bg-white/78 px-7">
+                Descubrir importados
               </Link>
             </div>
           </ScrollReveal>
@@ -80,10 +80,10 @@ export default async function HomePage() {
                     </div>
                     <div className="flex items-center justify-between gap-4 px-2 pb-2 pt-4">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Elegido por Fimy</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">EL PRIMER FAVORITO DE FIMI</p>
                         <h2 className="mt-1 font-headline text-2xl font-extrabold leading-tight text-on-surface">{heroProduct.name}</h2>
                       </div>
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition group-hover:translate-x-1">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition group-hover:translate-x-1" aria-label="Ver producto">
                         <span className="material-symbols-outlined text-lg">arrow_forward</span>
                       </span>
                     </div>
@@ -95,9 +95,9 @@ export default async function HomePage() {
                     <div className="flex items-start gap-4">
                       <Image src="/brand/illustrations/jirafa.svg" alt="Fimy" width={74} height={105} className="fimy-float mt-1 w-14 shrink-0" />
                       <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">{home.fimiNoteTitle}</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">¡Hola! Soy Fimy 💛</p>
                         <p className="mt-2 text-base font-semibold leading-7 text-on-surface-variant">
-                          {home.fimiNoteText}
+                          Mirá esta colección especial que elegí para vos.
                         </p>
                       </div>
                     </div>
@@ -115,7 +115,7 @@ export default async function HomePage() {
                         />
                       </div>
                       <div className="flex flex-col justify-center">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Tambien puede gustarte</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">También puede gustarte</p>
                         <h3 className="mt-2 font-headline text-xl font-extrabold leading-tight text-on-surface">{heroCompanion.name}</h3>
                         <p className="mt-2 text-sm font-bold text-secondary">AR$ {heroCompanion.price.toLocaleString("es-AR")}</p>
                       </div>
@@ -123,7 +123,7 @@ export default async function HomePage() {
                   )}
 
                   <div className="rounded-full bg-white/72 px-5 py-3 text-sm font-bold text-primary shadow-soft">
-                    {home.heroGiftChip}
+                    Para sus primeros días, sus pequeñas aventuras y esos momentos que se quedan para siempre.
                   </div>
                 </div>
               </div>

@@ -144,6 +144,7 @@ export interface StoreOrderPaymentDetails extends StoreOrderSummary {
   manualPayment?: StoreManualPaymentDetails;
   customerEmail?: string;
   items: { id: number; name: string; quantity: number; total: string }[];
+  shippingLines: { id: number; title: string; total: string }[];
 }
 
 type WooPaymentGateway = {
@@ -229,12 +230,19 @@ type WooLineItem = {
   total?: string;
 };
 
+type WooShippingLine = {
+  id: number;
+  method_title?: string;
+  total?: string;
+};
+
 type WooOrderPaymentDetails = WooOrderSummary & {
   order_key?: string;
   payment_method?: string;
   payment_method_title?: string;
   billing?: { email?: string };
   line_items?: WooLineItem[];
+  shipping_lines?: WooShippingLine[];
   payment_url?: string;
   checkout_payment_url?: string;
 };
@@ -1081,6 +1089,11 @@ export async function getStoreOrderForPayment(orderId: string, orderKey?: string
       name: item.name ?? "Producto",
       quantity: item.quantity ?? 1,
       total: item.total ?? "0",
+    })),
+    shippingLines: (order.shipping_lines ?? []).map((line) => ({
+      id: line.id,
+      title: cleanText(line.method_title) || "Envío",
+      total: line.total ?? "0",
     })),
   } satisfies StoreOrderPaymentDetails;
 }

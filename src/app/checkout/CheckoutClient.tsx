@@ -29,6 +29,20 @@ interface CheckoutShippingMethod {
   total: number;
 }
 
+function getShippingDescription(method: CheckoutShippingMethod) {
+  if (method.total === 0) {
+    return "A cargo del cliente. Coordinamos el costo según destino antes del despacho.";
+  }
+
+  return method.description || "Disponible para tu compra";
+}
+
+function getShippingPriceLabel(method: CheckoutShippingMethod) {
+  if (method.total === 0) return "A cargo del cliente";
+
+  return `AR$ ${method.total.toLocaleString("es-AR")}`;
+}
+
 function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
 }
@@ -333,7 +347,7 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                     {errors.city && <span className="mt-1 block text-xs text-error">Campo requerido</span>}
                   </label>
                   <label className="text-sm font-semibold text-on-surface">
-                    Codigo postal
+                    Código postal
                     <input
                       {...register("postalCode", { required: true, onChange: maskPostalCode })}
                       className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
@@ -349,7 +363,7 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <fieldset className="rounded-[1.5rem] bg-[#fbf4ea] p-4">
-                    <legend className="mb-3 text-sm font-bold text-on-surface">Metodo de envio</legend>
+                    <legend className="mb-3 text-sm font-bold text-on-surface">Método de envío</legend>
                     <div className="space-y-2">
                       {shippingMethods.map((method) => (
                         <label key={method.id} className="flex cursor-pointer items-start gap-3 rounded-[1.1rem] bg-white/60 p-3 text-sm">
@@ -362,8 +376,8 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                           />
                           <span>
                             <strong className="block text-on-surface">{method.title}</strong>
-                            <span className="block text-xs text-on-surface-variant">{method.description || "Disponible para tu compra"}</span>
-                            <span className="mt-1 block text-xs font-bold text-secondary">AR$ {method.total.toLocaleString("es-AR")}</span>
+                            <span className="block text-xs text-on-surface-variant">{getShippingDescription(method)}</span>
+                            <span className="mt-1 block text-xs font-bold text-secondary">{getShippingPriceLabel(method)}</span>
                           </span>
                         </label>
                       ))}
@@ -371,7 +385,7 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                   </fieldset>
 
                   <fieldset className="rounded-[1.5rem] bg-[#fbf4ea] p-4">
-                    <legend className="mb-3 text-sm font-bold text-on-surface">Metodo de pago</legend>
+                    <legend className="mb-3 text-sm font-bold text-on-surface">Método de pago</legend>
                     <div className="space-y-2">
                       {paymentMethods.map((method) => (
                         <label key={method.id} className="flex cursor-pointer items-start gap-3 rounded-[1.1rem] bg-white/60 p-3 text-sm">
@@ -384,7 +398,6 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                           />
                           <span>
                             <strong className="block text-on-surface">{method.title}</strong>
-                            <span className="block text-xs text-on-surface-variant">{method.description || "Disponible para tu compra"}</span>
                           </span>
                         </label>
                       ))}
