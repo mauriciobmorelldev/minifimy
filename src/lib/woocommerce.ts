@@ -262,12 +262,30 @@ type WordPressUserMe = {
   email?: string;
 };
 
+function getFrontendOrigin() {
+  const frontendUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
+  if (!frontendUrl) return undefined;
+
+  try {
+    return new URL(frontendUrl).origin;
+  } catch {
+    return undefined;
+  }
+}
+
 function getSafePaymentUrl(value?: string) {
   if (!value) return undefined;
 
   try {
     const paymentUrl = new URL(value);
-    return ["http:", "https:"].includes(paymentUrl.protocol) ? value : undefined;
+    if (!["http:", "https:"].includes(paymentUrl.protocol)) return undefined;
+
+    const frontendOrigin = getFrontendOrigin();
+    if (STORE_URL && frontendOrigin && paymentUrl.origin === new URL(STORE_URL).origin) {
+      return `${frontendOrigin}${paymentUrl.pathname}${paymentUrl.search}${paymentUrl.hash}`;
+    }
+
+    return paymentUrl.toString();
   } catch {
     return undefined;
   }

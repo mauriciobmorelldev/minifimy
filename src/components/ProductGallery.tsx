@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
 interface ProductGalleryProps {
   images: string[];
@@ -12,8 +12,11 @@ interface ProductGalleryProps {
 export function ProductGallery({ images, productName, selectedImage }: ProductGalleryProps) {
   const galleryImages = images.length > 0 ? images : ["/products/flatlay-01.jpg"];
   const [activeIndex, setActiveIndex] = useState(0);
+  const [lastSelectedImage, setLastSelectedImage] = useState(selectedImage);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const activeImage = galleryImages[activeIndex] ?? galleryImages[0];
+  const selectedImageIndex = selectedImage ? galleryImages.findIndex((image) => image === selectedImage) : -1;
+  const displayIndex = selectedImage && selectedImage !== lastSelectedImage && selectedImageIndex >= 0 ? selectedImageIndex : activeIndex;
+  const activeImage = galleryImages[displayIndex] ?? galleryImages[0];
   const hasManyImages = galleryImages.length > 1;
 
   const goTo = (index: number) => {
@@ -21,10 +24,13 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
     setActiveIndex(nextIndex);
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!selectedImage) return;
     const imageIndex = galleryImages.findIndex((image) => image === selectedImage);
-    if (imageIndex >= 0) setActiveIndex(imageIndex);
+    if (imageIndex >= 0) {
+      setActiveIndex(imageIndex);
+      setLastSelectedImage(selectedImage);
+    }
   }, [galleryImages, selectedImage]);
 
   useEffect(() => {
@@ -52,7 +58,7 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
         <div className="relative aspect-[4/5] w-full overflow-hidden md:aspect-[4/4.8]">
           <Image
             src={activeImage}
-            alt={`${productName} vista ${activeIndex + 1}`}
+            alt={`${productName} vista ${displayIndex + 1}`}
             fill
             sizes="(min-width: 1280px) 620px, (min-width: 1024px) 52vw, 92vw"
             className="object-cover transition-transform duration-500 ease-soft-spring"
@@ -107,10 +113,10 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
             type="button"
             onClick={() => setActiveIndex(index)}
             className={`relative h-20 min-w-20 overflow-hidden rounded-[1rem] bg-surface-container-low shadow-soft transition-all duration-300 md:h-24 md:min-w-0 md:rounded-[1.15rem] ${
-              activeIndex === index ? "ring-2 ring-primary ring-offset-2 ring-offset-[#fff8ef]" : "opacity-75 hover:opacity-100"
+              displayIndex === index ? "ring-2 ring-primary ring-offset-2 ring-offset-[#fff8ef]" : "opacity-75 hover:opacity-100"
             }`}
             aria-label={`Ver imagen ${index + 1} de ${productName}`}
-            aria-current={activeIndex === index ? "true" : undefined}
+            aria-current={displayIndex === index ? "true" : undefined}
           >
             <Image src={image} alt="" fill sizes="96px" quality={58} className="object-cover" />
           </button>
@@ -132,7 +138,7 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
             <div className="relative min-h-0 flex-1 overflow-hidden rounded-[1.6rem] bg-black/10 shadow-lift md:rounded-[2rem]">
               <Image
                 src={activeImage}
-                alt={`${productName} vista ampliada ${activeIndex + 1}`}
+                alt={`${productName} vista ampliada ${displayIndex + 1}`}
                 fill
                 sizes="100vw"
                 className="object-contain"
@@ -166,7 +172,7 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
                   key={`lightbox-${image}-${index}`}
                   type="button"
                   onClick={() => setActiveIndex(index)}
-                  className={`relative h-16 min-w-16 overflow-hidden rounded-[0.9rem] transition ${activeIndex === index ? "ring-2 ring-[#fffaf1]" : "opacity-65"}`}
+                  className={`relative h-16 min-w-16 overflow-hidden rounded-[0.9rem] transition ${displayIndex === index ? "ring-2 ring-[#fffaf1]" : "opacity-65"}`}
                   aria-label={`Ver imagen ampliada ${index + 1}`}
                 >
                   <Image src={image} alt="" fill sizes="64px" quality={55} className="object-cover" />

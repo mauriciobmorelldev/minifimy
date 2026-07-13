@@ -17,11 +17,41 @@ function isManualPaymentMethod(paymentMethodId?: string) {
   return ["bacs", "cod", "cheque"].includes(paymentMethodId ?? "");
 }
 
+function getFrontendOrigin() {
+  const frontendUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
+  if (!frontendUrl) return undefined;
+
+  try {
+    return new URL(frontendUrl).origin;
+  } catch {
+    return undefined;
+  }
+}
+
+function getStoreOrigin() {
+  const storeUrl = process.env.WOOCOMMERCE_URL ?? process.env.WORDPRESS_URL;
+  if (!storeUrl) return undefined;
+
+  try {
+    return new URL(storeUrl).origin;
+  } catch {
+    return undefined;
+  }
+}
+
 function getPaymentUrl(value?: string) {
   if (!value) return undefined;
   try {
     const url = new URL(value);
-    return ["http:", "https:"].includes(url.protocol) ? value : undefined;
+    if (!["http:", "https:"].includes(url.protocol)) return undefined;
+
+    const storeOrigin = getStoreOrigin();
+    const frontendOrigin = getFrontendOrigin();
+    if (storeOrigin && frontendOrigin && url.origin === storeOrigin) {
+      return `${frontendOrigin}${url.pathname}${url.search}${url.hash}`;
+    }
+
+    return url.toString();
   } catch {
     return undefined;
   }

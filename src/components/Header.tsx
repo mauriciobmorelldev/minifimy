@@ -21,13 +21,17 @@ export function Header({ navLinks }: HeaderProps) {
   const { items } = useCart();
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [miniCartOpen, setMiniCartOpen] = useState(false);
   const [query, setQuery] = useState("");
   const pathname = usePathname();
   const router = useRouter();
   const hiddenRoutes = ["/cargando-70", "/cargando-99"];
-  const closeMobileMenu = () => setMobileOpen(false);
+  const closeMobileMenu = () => {
+    setMobileOpen(false);
+    setMobileCatalogOpen(false);
+  };
 
   if (hiddenRoutes.includes(pathname)) {
     return null;
@@ -225,27 +229,48 @@ export function Header({ navLinks }: HeaderProps) {
                 <p className="mt-1 text-xs leading-5 text-on-surface-variant">Categorias y accesos de la tienda.</p>
               </div>
               <div className="flex flex-col gap-2 font-headline text-base font-semibold text-primary">
-                {navLinks.map((link) => (
-                  <div key={link.href} className="space-y-2">
-                    <Link
-                      href={link.href}
-                      onClick={closeMobileMenu}
-                      className={`flex items-center justify-between rounded-[1.15rem] px-4 py-3 shadow-soft transition-colors ${pathname === link.href ? "bg-primary text-on-primary" : "bg-white text-primary"}`}
-                    >
-                      {link.label}
-                      <span className="material-symbols-outlined text-lg">chevron_right</span>
-                    </Link>
-                    {link.children?.length ? (
-                      <div className="ml-3 grid gap-2 rounded-[1.2rem] bg-white p-3 shadow-soft">
-                        {link.children.map((child) => (
-                          <Link key={`${child.href}-${child.label}`} href={child.href} onClick={closeMobileMenu} className="rounded-full bg-[#f7efe3] px-3 py-2 text-sm font-bold text-primary/90">
-                            {child.label}
-                          </Link>
-                        ))}
+                {navLinks.map((link) => {
+                  const hasChildren = Boolean(link.children?.length);
+                  const isCatalogOpen = hasChildren && mobileCatalogOpen;
+
+                  if (hasChildren) {
+                    return (
+                      <div key={link.href} className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => setMobileCatalogOpen((prev) => !prev)}
+                          aria-expanded={isCatalogOpen}
+                          className={`flex w-full items-center justify-between rounded-[1.15rem] px-4 py-3 text-left shadow-soft transition-colors ${pathname.startsWith(link.href) ? "bg-primary text-on-primary" : "bg-white text-primary"}`}
+                        >
+                          <span>{link.label}</span>
+                          <span className={`material-symbols-outlined text-lg transition-transform duration-300 ${isCatalogOpen ? "rotate-180" : ""}`}>expand_more</span>
+                        </button>
+                        <div
+                          className={`ml-3 grid overflow-hidden rounded-[1.2rem] bg-white shadow-soft transition-all duration-300 ${isCatalogOpen ? "max-h-[420px] gap-2 p-3 opacity-100" : "max-h-0 gap-0 p-0 opacity-0"}`}
+                        >
+                          {link.children?.map((child) => (
+                            <Link key={`${child.href}-${child.label}`} href={child.href} onClick={closeMobileMenu} className="rounded-full bg-[#f7efe3] px-3 py-2 text-sm font-bold text-primary/90">
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
                       </div>
-                    ) : null}
-                  </div>
-                ))}
+                    );
+                  }
+
+                  return (
+                    <div key={link.href} className="space-y-2">
+                      <Link
+                        href={link.href}
+                        onClick={closeMobileMenu}
+                        className={`flex items-center justify-between rounded-[1.15rem] px-4 py-3 shadow-soft transition-colors ${pathname === link.href ? "bg-primary text-on-primary" : "bg-white text-primary"}`}
+                      >
+                        {link.label}
+                        <span className="material-symbols-outlined text-lg">chevron_right</span>
+                      </Link>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

@@ -42,8 +42,6 @@ export default async function HomePage() {
     : undefined;
   const heroCompanion = configuredCompanion ?? featured.find((product) => product.id !== heroProduct?.id) ?? heroProduct;
   const supportProducts = featured.filter((product) => product.id !== heroProduct?.id);
-  const editorialProductsBySlug = pickProductsBySlugs(featured, home.editorialProductSlugs, []);
-  const editorialProducts = pickProductsByTags(featured, ["home-editorial"], editorialProductsBySlug.length > 0 ? editorialProductsBySlug : supportProducts.slice(0, 3));
   const featuredProductsBySlug = pickProductsBySlugs(featured, home.featuredProductSlugs, []);
   const featuredSectionProducts = pickProductsByTags(featured, ["home-destacados"], featuredProductsBySlug.length > 0 ? featuredProductsBySlug : featured);
   const sectionHeroProduct = featuredSectionProducts[0] ?? heroProduct;
@@ -160,30 +158,40 @@ export default async function HomePage() {
       <FimiGiftGuide products={featured} title={home.guideTitle} intro={home.guideIntro} />
 
       <section className="story-river relative px-5 py-20 sm:px-8 lg:px-10">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.88fr_1.12fr]">
           <ScrollReveal className="space-y-6">
-            <span className="chip bg-white/60">{home.editorialKicker}</span>
+            <span className="chip bg-white/70">Nuestra historia</span>
             <h2 className="max-w-2xl font-headline text-4xl font-extrabold leading-tight text-on-surface sm:text-5xl">
-              {home.editorialTitle}
+              Somos Sofi y May, dos tías babosas detrás de MiniFimy.
             </h2>
-            <div className="space-y-3 pt-2">
-              {home.editorialNotes.map((note) => (
-                <p key={note} className="border-b border-primary/15 pb-3 text-base leading-7 text-on-surface-variant">
-                  {note}
-                </p>
-              ))}
+            <div className="space-y-4 pt-2 text-base leading-8 text-on-surface-variant sm:text-lg">
+              <p>
+                Una idea que nació entre sobrinos, ropitas diminutas y mucho amor por cada detalle. Después de muchos años soñándolo, hoy MiniFimy finalmente es una realidad.
+              </p>
+              <p className="rounded-[1.4rem] bg-white/68 p-5 font-headline text-xl font-extrabold leading-8 text-primary shadow-soft">
+                De dos tías babosas, para todos esos pequeños momentos que se guardan para siempre.
+              </p>
             </div>
           </ScrollReveal>
           <ScrollReveal delayMs={120}>
-            <div className="editorial-product-row grid gap-4 md:grid-cols-3">
-              {editorialProducts.slice(0, 3).map((product) => (
-                <Link key={product.id} href={`/producto/${product.slug}`} className="editorial-mini-product group overflow-hidden bg-white/82 p-3 shadow-soft transition duration-500 hover:-translate-y-1 hover:shadow-lift">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-[1.2rem]">
-                    <Image src={product.images[0]} alt={product.name} fill sizes="260px" className="object-cover transition duration-700 group-hover:scale-105" />
-                  </div>
-                  <p className="px-1 pt-3 font-headline text-base font-extrabold leading-tight text-on-surface">{product.name}</p>
-                </Link>
-              ))}
+            <div className="relative mx-auto max-w-xl">
+              <div className="absolute -left-5 top-8 hidden h-28 w-28 rounded-full bg-[#d8e0c3] opacity-70 blur-2xl sm:block" />
+              <div className="absolute -right-4 bottom-10 h-32 w-32 rounded-full bg-[#f1cdbd] opacity-60 blur-2xl" />
+              <figure className="relative overflow-hidden rounded-[2.2rem] bg-white p-3 shadow-lift ring-1 ring-primary/10">
+                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.7rem] bg-surface-container sm:aspect-[5/6]">
+                  <Image
+                    src="/brand/story/sofi-may.jpeg"
+                    alt="Sofi y May, creadoras de MiniFimy"
+                    fill
+                    sizes="(min-width: 1024px) 520px, 92vw"
+                    className="object-cover"
+                  />
+                </div>
+                <figcaption className="flex items-center justify-between gap-4 px-3 py-4 text-sm font-bold text-primary">
+                  <span>Sofi & May</span>
+                  <span className="rounded-full bg-[#f7efe3] px-3 py-1 text-xs uppercase tracking-[0.18em]">Mini ropa, maxi amor</span>
+                </figcaption>
+              </figure>
             </div>
           </ScrollReveal>
         </div>
