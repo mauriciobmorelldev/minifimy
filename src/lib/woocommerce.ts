@@ -665,8 +665,8 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
   }
 
   const data = (await response.json().catch(() => [])) as WooProduct[];
-  let products = data.map(mapWooProduct).filter((product) => product.price > 0);
-  products = (await enrichCatalogProducts(products, data)).filter((product) => product.price > 1);
+  let products = await enrichCatalogProducts(data.map(mapWooProduct), data);
+  products = products.filter((product) => product.price > 1 || Boolean(product.prices?.list || product.prices?.discount));
 
   if (options.size) {
     products = products.filter((product) => product.sizes?.includes(options.size!));
@@ -696,15 +696,22 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
 
 export async function getStoreProducts(options: StoreProductQuery = {}) {
   const collection = await getStoreProductCollection(options);
-  return collection.products.length > 0 ? collection.products : fallbackProducts.slice(0, options.perPage ?? 24);
+
+  if (!canUseWooCommerce() && collection.products.length === 0) {
+    return fallbackProducts.slice(0, options.perPage ?? 24);
+  }
+
+  return collection.products;
 }
 
 export async function getFeaturedStoreProducts() {
-  const featured = await getStoreProducts({ featured: true, perPage: 8 });
-  if (featured.length > 0 && featured !== fallbackProducts) return featured.slice(0, 6);
+  const featuredCollection = await getStoreProductCollection({ featured: true, perPage: 8 });
+  if (featuredCollection.products.length > 0) return featuredCollection.products.slice(0, 6);
 
-  const products = await getStoreProducts({ perPage: 8 });
-  return products.slice(0, 6);
+  const collection = await getStoreProductCollection({ perPage: 8 });
+  if (collection.products.length > 0) return collection.products.slice(0, 6);
+
+  return canUseWooCommerce() ? [] : fallbackProducts.slice(0, 6);
 }
 
 async function getWooAttributeTerms(attribute: WooProductAttribute | undefined) {
