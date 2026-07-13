@@ -49,7 +49,7 @@ export default async function HomePage() {
                 Descubrir MiniFimi
                 <span className="material-symbols-outlined text-lg">arrow_forward</span>
               </Link>
-              <Link href="/catalogo/importados" className="btn-ghost gap-2 rounded-full bg-white/78 px-7">
+              <Link href="/catalogo/seleccion-importada" className="btn-ghost gap-2 rounded-full bg-white/78 px-7">
                 Descubrir importados
               </Link>
             </div>
@@ -99,6 +99,12 @@ export default async function HomePage() {
                         <p className="mt-2 text-base font-semibold leading-7 text-on-surface-variant">
                           Mirá esta colección especial que elegí para vos.
                         </p>
+                        <Link
+                          href="/catalogo/seleccion-importada"
+                          className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-bold text-primary shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+                        >
+                          Descubrir importados
+                        </Link>
                       </div>
                     </div>
                   </div>

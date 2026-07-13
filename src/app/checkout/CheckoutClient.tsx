@@ -29,8 +29,14 @@ interface CheckoutShippingMethod {
   total: number;
 }
 
+function isCustomerPaidShippingMethod(method: CheckoutShippingMethod) {
+  const label = `${method.title} ${method.description}`.toLowerCase();
+
+  return method.total === 0 && (label.includes("nacional") || label.includes("argentina")) && !label.includes("corrientes");
+}
+
 function getShippingDescription(method: CheckoutShippingMethod) {
-  if (method.total === 0) {
+  if (isCustomerPaidShippingMethod(method)) {
     return "A cargo del cliente. Coordinamos el costo según destino antes del despacho.";
   }
 
@@ -38,7 +44,8 @@ function getShippingDescription(method: CheckoutShippingMethod) {
 }
 
 function getShippingPriceLabel(method: CheckoutShippingMethod) {
-  if (method.total === 0) return "A cargo del cliente";
+  if (isCustomerPaidShippingMethod(method)) return "A cargo del cliente";
+  if (method.total === 0) return "Gratis";
 
   return `AR$ ${method.total.toLocaleString("es-AR")}`;
 }

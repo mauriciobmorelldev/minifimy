@@ -37,9 +37,16 @@ function formatOrderAmount(currency: string, value: string | number) {
   })}`;
 }
 
-function isCustomerPaidShipping(total: string) {
+function isCustomerPaidShipping(title: string, total: string) {
   const numericValue = Number(total);
-  return Number.isFinite(numericValue) && numericValue === 0;
+  const normalizedTitle = title.toLowerCase();
+
+  return (
+    Number.isFinite(numericValue) &&
+    numericValue === 0 &&
+    (normalizedTitle.includes("nacional") || normalizedTitle.includes("argentina")) &&
+    !normalizedTitle.includes("corrientes")
+  );
 }
 
 export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
@@ -163,9 +170,11 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
                   <div key={line.id} className="rounded-[1.1rem] bg-[#fbf4ea] p-3 text-sm">
                     <p className="font-bold text-on-surface">{line.title}</p>
                     <p className="mt-1 text-on-surface-variant">
-                      {isCustomerPaidShipping(line.total)
+                      {isCustomerPaidShipping(line.title, line.total)
                         ? "A cargo del cliente. Coordinamos el costo final según destino antes del despacho."
-                        : formatOrderAmount(order.currency, line.total)}
+                        : Number(line.total) === 0
+                          ? "Gratis"
+                          : formatOrderAmount(order.currency, line.total)}
                     </p>
                   </div>
                 ))}
