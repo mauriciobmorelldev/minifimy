@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { ProductPrice } from "@/components/ProductPrice";
 import type { Product } from "@/models/product";
 
 interface ProductCardProps {
@@ -59,9 +60,7 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
 
         <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.15rem] bg-white/72 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
           <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-on-surface-variant">Precio</span>
-          <span className="font-headline text-lg font-extrabold text-secondary">
-            AR$ {product.price.toLocaleString("es-AR")}
-          </span>
+          <ProductPrice price={product.price} prices={product.prices} compact />
         </div>
 
         {!compact && (

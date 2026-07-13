@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { ProductPrice } from "@/components/ProductPrice";
 import type { Product, ProductSelection, ProductVariant } from "@/models/product";
 
 interface ProductPurchasePanelProps {
@@ -92,6 +93,7 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
   };
 
   const selectedPrice = selectedVariant?.price ?? product.price;
+  const selectedPrices = selectedVariant?.prices ?? product.prices;
 
   return (
     <div className="space-y-5">
@@ -171,13 +173,14 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
       </div>
 
       {selectedVariant?.price && selectedVariant.price !== product.price && (
-        <div className="rounded-[1.3rem] bg-[#f7efe3] px-4 py-3 text-sm font-bold text-secondary">
-          Precio para esta opcion: AR$ {selectedPrice.toLocaleString("es-AR")}
+        <div className="rounded-[1.3rem] bg-[#f7efe3] px-4 py-3">
+          <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Precio para esta opción</span>
+          <ProductPrice price={selectedPrice} prices={selectedPrices} compact />
         </div>
       )}
 
       <AddToCartButton
-        product={{ ...product, price: selectedPrice, images: selectedVariant?.image ? [selectedVariant.image, ...product.images.filter((image) => image !== selectedVariant.image)] : product.images }}
+        product={{ ...product, price: selectedPrice, prices: selectedPrices, images: selectedVariant?.image ? [selectedVariant.image, ...product.images.filter((image) => image !== selectedVariant.image)] : product.images }}
         quantity={quantity}
         selection={selection}
         className="w-full gap-3 rounded-full bg-primary py-4 font-headline text-base text-on-primary shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95 md:py-5 md:text-lg"

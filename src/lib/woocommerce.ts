@@ -1,4 +1,4 @@
-﻿import type { Category, Product, ProductFilterOptions, ProductVariant } from "@/models/product";
+import type { Category, Product, ProductFilterOptions, ProductVariant } from "@/models/product";
 import { CACHE_SECONDS, CACHE_TAGS, normalizeBaseUrl } from "@/lib/cache";
 import { categories as fallbackCategories, products as fallbackProducts } from "@/lib/products";
 
@@ -10,6 +10,7 @@ const WOO_PRODUCT_FIELDS = [
   "short_description",
   "price",
   "regular_price",
+  "minifimy_prices",
   "stock_quantity",
   "stock_status",
   "images",
@@ -20,7 +21,7 @@ const WOO_PRODUCT_FIELDS = [
 ].join(",");
 
 const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description"].join(",");
-const WOO_VARIATION_FIELDS = ["id", "price", "regular_price", "stock_quantity", "stock_status", "image", "attributes"].join(",");
+const WOO_VARIATION_FIELDS = ["id", "price", "regular_price", "minifimy_prices", "stock_quantity", "stock_status", "image", "attributes"].join(",");
 
 
 export interface StorePaymentMethod {
@@ -39,6 +40,28 @@ export interface StoreShippingMethod {
   total: number;
   zoneId?: number;
   instanceId?: number;
+}
+
+export interface StoreProductQuery {
+  featured?: boolean;
+  category?: string;
+  perPage?: number;
+  page?: number;
+  search?: string;
+  size?: string;
+  color?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  order?: "asc" | "desc";
+  orderby?: "date" | "price" | "title" | "menu_order";
+}
+
+export interface StoreProductCollection {
+  products: Product[];
+  total: number;
+  totalPages: number;
+  page: number;
+  perPage: number;
 }
 
 export interface StoreCheckoutItem {
@@ -266,6 +289,7 @@ type WooProduct = {
   short_description?: string;
   price?: string;
   regular_price?: string;
+  minifimy_prices?: WooMinifimyPrices;
   stock_quantity?: number | null;
   stock_status?: string;
   images?: WooImage[];
@@ -275,10 +299,16 @@ type WooProduct = {
   featured?: boolean;
 };
 
+type WooMinifimyPrices = {
+  list_price?: number | string;
+  discount_price?: number | string;
+};
+
 type WooVariation = {
   id: number;
   price?: string;
   regular_price?: string;
+  minifimy_prices?: WooMinifimyPrices;
   stock_quantity?: number | null;
   stock_status?: string;
   image?: WooImage;
@@ -358,6 +388,24 @@ function buildWooUrl(path: string, params: Record<string, string | number | bool
   return url;
 }
 
+function getPriceNumber(value?: string | number | null) {
+  const price = Number(value ?? 0);
+  return Number.isFinite(price) && price > 0 ? price : 0;
+}
+
+function getMinifimyPrices(source: { price?: string; regular_price?: string; minifimy_prices?: WooMinifimyPrices }) {
+  const base = getPriceNumber(source.price) || getPriceNumber(source.regular_price);
+  const list = getPriceNumber(source.minifimy_prices?.list_price) || getPriceNumber(source.regular_price) || base;
+  const discount = getPriceNumber(source.minifimy_prices?.discount_price);
+  const validDiscount = discount > 0 && list > 0 && discount < list ? discount : undefined;
+
+  return {
+    base: validDiscount ?? base ?? list,
+    list: list > 0 ? list : undefined,
+    discount: validDiscount,
+  };
+}
+
 function mapWooProduct(product: WooProduct): Product {
   const categorySlugs = product.categories?.map((category) => category.slug).filter(Boolean) ?? [];
   const categoryIds = product.categories?.map((category) => String(category.id)).filter(Boolean) ?? [];
@@ -370,12 +418,15 @@ function mapWooProduct(product: WooProduct): Product {
     attribute.name?.toLowerCase().includes("color")
   )?.options;
 
+  const prices = getMinifimyPrices(product);
+
   return {
     id: String(product.id),
     name: product.name,
     slug: product.slug,
     description: cleanText(product.short_description) || cleanText(product.description),
-    price: Number(product.price || product.regular_price || 0),
+    price: prices.base,
+    prices,
     images: images && images.length > 0 ? images : ["/products/flatlay-01.jpg"],
     category,
     categoryId: categoryIds[0],
@@ -401,7 +452,8 @@ function mapWooVariation(variation: WooVariation): ProductVariant {
     size: cleanText(getVariationOption(variation, ["talle", "size", "edad"])),
     color: cleanText(getVariationOption(variation, ["color", "tono"])),
     image: getSafeImage(variation.image?.src) ?? undefined,
-    price: Number(variation.price || variation.regular_price || 0) || undefined,
+    price: getMinifimyPrices(variation).base || undefined,
+    prices: getMinifimyPrices(variation),
     stock: variation.stock_quantity ?? (variation.stock_status === "instock" ? 1 : 0),
   };
 }
@@ -466,7 +518,7 @@ function mapWooOrderSummary(order: WooOrderSummary): StoreOrderSummary {
   };
 }
 
-async function fetchWoo<T>(path: string, params: Record<string, string | number | boolean>, revalidate: number, tags: string[]) {
+async function fetchWooResponse(path: string, params: Record<string, string | number | boolean>, revalidate: number, tags: string[]) {
   const url = buildWooUrl(path, params);
   if (!url) return null;
 
@@ -477,10 +529,21 @@ async function fetchWoo<T>(path: string, params: Record<string, string | number 
 
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
-      console.error(`WooCommerce POST ${path} failed`, response.status, detail);
+      console.error(`WooCommerce ${path} failed`, response.status, detail);
       return null;
     }
 
+    return response;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchWoo<T>(path: string, params: Record<string, string | number | boolean>, revalidate: number, tags: string[]) {
+  const response = await fetchWooResponse(path, params, revalidate, tags);
+  if (!response) return null;
+
+  try {
     return (await response.json()) as T;
   } catch {
     return null;
@@ -521,24 +584,85 @@ async function postWordPressJson<T>(path: string, body: unknown) {
   }
 }
 
-export async function getStoreProducts(options: { featured?: boolean; category?: string; perPage?: number } = {}) {
-  if (!canUseWooCommerce()) return fallbackProducts;
+function getProductQueryParams(options: StoreProductQuery = {}) {
+  return {
+    per_page: options.perPage ?? 24,
+    page: options.page ?? 1,
+    status: "publish",
+    stock_status: "instock",
+    _fields: WOO_PRODUCT_FIELDS,
+    ...(options.featured ? { featured: true } : {}),
+    ...(options.category ? { category: options.category } : {}),
+    ...(options.search ? { search: options.search } : {}),
+    ...(options.minPrice ? { min_price: options.minPrice } : {}),
+    ...(options.maxPrice ? { max_price: options.maxPrice } : {}),
+    ...(options.order ? { order: options.order } : {}),
+    ...(options.orderby ? { orderby: options.orderby } : {}),
+  };
+}
 
-  const data = await fetchWoo<WooProduct[]>(
+export async function getStoreProductCollection(options: StoreProductQuery = {}): Promise<StoreProductCollection> {
+  const page = Math.max(1, Math.floor(options.page ?? 1));
+  const perPage = Math.min(Math.max(Math.floor(options.perPage ?? 12), 1), 24);
+
+  if (!canUseWooCommerce()) {
+    const total = fallbackProducts.length;
+    const start = (page - 1) * perPage;
+    return {
+      products: fallbackProducts.slice(start, start + perPage),
+      total,
+      totalPages: Math.max(1, Math.ceil(total / perPage)),
+      page,
+      perPage,
+    };
+  }
+
+  const needsAttributeFilter = Boolean(options.size || options.color);
+  const requestPage = needsAttributeFilter ? 1 : page;
+  const requestPerPage = needsAttributeFilter ? 100 : perPage;
+  const response = await fetchWooResponse(
     "products",
-    {
-      per_page: options.perPage ?? 24,
-      status: "publish",
-      stock_status: "instock",
-      _fields: WOO_PRODUCT_FIELDS,
-      ...(options.featured ? { featured: true } : {}),
-      ...(options.category ? { category: options.category } : {}),
-    },
+    getProductQueryParams({ ...options, page: requestPage, perPage: requestPerPage }),
     CACHE_SECONDS.products,
     [CACHE_TAGS.products]
   );
 
-  return data?.map(mapWooProduct).filter((product) => product.price > 0) ?? fallbackProducts;
+  if (!response) {
+    return { products: [], total: 0, totalPages: 1, page, perPage };
+  }
+
+  const data = (await response.json().catch(() => [])) as WooProduct[];
+  let products = data.map(mapWooProduct).filter((product) => product.price > 0);
+
+  if (options.size) {
+    products = products.filter((product) => product.sizes?.includes(options.size!));
+  }
+
+  if (options.color) {
+    products = products.filter((product) => product.colors?.includes(options.color!));
+  }
+
+  if (needsAttributeFilter) {
+    const total = products.length;
+    const start = (page - 1) * perPage;
+    return {
+      products: products.slice(start, start + perPage),
+      total,
+      totalPages: Math.max(1, Math.ceil(total / perPage)),
+      page,
+      perPage,
+    };
+  }
+
+  const total = Number(response.headers.get("x-wp-total") ?? products.length);
+  const totalPages = Number(response.headers.get("x-wp-totalpages") ?? Math.max(1, Math.ceil(total / perPage)));
+
+  return { products, total, totalPages: Math.max(1, totalPages), page, perPage };
+}
+
+export async function getStoreProducts(options: StoreProductQuery = {}) {
+  const collection = await getStoreProductCollection(options);
+  return collection.products.length > 0 ? collection.products : fallbackProducts.slice(0, options.perPage ?? 24);
 }
 
 export async function getFeaturedStoreProducts() {

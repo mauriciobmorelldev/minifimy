@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCarousel } from "@/components/ProductCarousel";
@@ -12,20 +12,10 @@ interface CatalogExperienceProps {
   products: Product[];
   categories: Category[];
   filterOptions: ProductFilterOptions;
-}
-
-const PRODUCTS_PER_PAGE = 12;
-
-function normalize(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function getSafePage(value: string | null) {
-  const page = Number(value);
-  return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+  totalProducts: number;
+  totalPages: number;
+  currentPage: number;
+  perPage: number;
 }
 
 function formatPrice(value: number) {
@@ -52,7 +42,7 @@ function serializePriceRange(min: number, max: number, limitMin: number, limitMa
   return min <= limitMin && max >= limitMax ? "all" : `${Math.round(min)}-${Math.round(max)}`;
 }
 
-export function CatalogExperience({ products, categories, filterOptions }: CatalogExperienceProps) {
+export function CatalogExperience({ products, categories, filterOptions, totalProducts, totalPages, currentPage, perPage }: CatalogExperienceProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const routeCategory = pathname.startsWith("/catalogo/") ? pathname.split("/").filter(Boolean)[1] ?? "all" : "all";
@@ -62,7 +52,6 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
   const [color, setColor] = useState(searchParams.get("color") ?? "all");
   const [priceRange, setPriceRange] = useState(searchParams.get("precio") ?? "all");
   const [sort, setSort] = useState(searchParams.get("orden") ?? "featured");
-  const [page, setPage] = useState(getSafePage(searchParams.get("page")));
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
@@ -72,7 +61,6 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
     setColor(searchParams.get("color") ?? "all");
     setPriceRange(searchParams.get("precio") ?? "all");
     setSort(searchParams.get("orden") ?? "featured");
-    setPage(getSafePage(searchParams.get("page")));
   }, [routeCategory, searchParams]);
 
   const updateUrl = (next: Record<string, string | number | null>) => {
@@ -108,7 +96,6 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
     setColor(nextColor);
     setPriceRange(nextPriceRange);
     setSort(nextSort);
-    setPage(1);
     updateUrl({ q: nextQuery, categoria: nextCategory, talle: nextSize, color: nextColor, precio: nextPriceRange, orden: nextSort, page: 1 });
   };
 
@@ -153,41 +140,13 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
       : []),
   ].slice(0, 4);
 
-  const filteredProducts = useMemo(() => {
-    const normalizedQuery = normalize(query.trim());
-    const filtered = products.filter((product) => {
-      const haystack = normalize(
-        [product.name, product.description, product.category, product.badge, ...(product.sizes ?? []), ...(product.colors ?? [])]
-          .filter(Boolean)
-          .join(" "),
-      );
-      const matchesQuery = !normalizedQuery || haystack.includes(normalizedQuery);
-      const matchesCategory = category === "all" || product.category === category || product.categorySlugs?.includes(category);
-      const matchesSize = size === "all" || product.sizes?.includes(size);
-      const matchesColor = color === "all" || product.colors?.includes(color);
-      const matchesPrice = !hasPriceSlider || (product.price >= selectedPriceRange.min && product.price <= selectedPriceRange.max);
-      return matchesQuery && matchesCategory && matchesSize && matchesColor && matchesPrice;
-    });
-
-    return [...filtered].sort((a, b) => {
-      if (sort === "price-asc") return a.price - b.price;
-      if (sort === "price-desc") return b.price - a.price;
-      if (sort === "newest") return String(b.id).localeCompare(String(a.id));
-      return 0;
-    });
-  }, [category, color, hasPriceSlider, products, query, selectedPriceRange.max, selectedPriceRange.min, size, sort]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
-  const currentPage = Math.min(page, totalPages);
-  const pageStart = (currentPage - 1) * PRODUCTS_PER_PAGE;
-  const paginatedProducts = filteredProducts.slice(pageStart, pageStart + PRODUCTS_PER_PAGE);
   const selectedCategoryName = categories.find((item) => item.slug === category)?.name ?? category;
   const selectedPriceName = !selectedPriceRange.isDefault ? `${formatPrice(selectedPriceRange.min)} - ${formatPrice(selectedPriceRange.max)}` : "";
   const activeFilters = [query, category !== "all" ? selectedCategoryName : "", size !== "all" ? size : "", color !== "all" ? color : "", selectedPriceName].filter(Boolean);
+  const paginatedProducts = products;
 
   const goToPage = (nextPage: number) => {
     const boundedPage = Math.min(Math.max(nextPage, 1), totalPages);
-    setPage(boundedPage);
     updateUrl({ page: boundedPage });
   };
 
@@ -491,10 +450,10 @@ export function CatalogExperience({ products, categories, filterOptions }: Catal
             <div className="mb-5 flex flex-col justify-between gap-3 rounded-[1.35rem] bg-white/66 px-4 py-3 shadow-soft sm:flex-row sm:items-center md:mb-6 md:rounded-[1.6rem] md:px-5 md:py-4">
               <div>
                 <p className="text-sm font-bold text-on-surface">
-                  {filteredProducts.length} {filteredProducts.length === 1 ? "producto encontrado" : "productos encontrados"}
+                  {totalProducts} {totalProducts === 1 ? "producto encontrado" : "productos encontrados"}
                 </p>
                 <p className="text-xs text-on-surface-variant">
-                  Página {currentPage} de {totalPages}. Mostrando {paginatedProducts.length} por tanda para cuidar performance.
+                  Página {currentPage} de {totalPages}. Mostrando hasta {perPage} por página para cuidar performance.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">

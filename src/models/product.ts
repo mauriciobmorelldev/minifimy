@@ -1,9 +1,16 @@
-﻿export interface ProductVariant {
+﻿export interface ProductPriceSet {
+  base: number;
+  list?: number;
+  discount?: number;
+}
+
+export interface ProductVariant {
   id: string;
   size?: string;
   color?: string;
   image?: string;
   price?: number;
+  prices?: ProductPriceSet;
   stock?: number;
 }
 
@@ -13,6 +20,7 @@ export interface Product {
   slug: string;
   description: string;
   price: number;
+  prices?: ProductPriceSet;
   images: string[];
   category: string;
   categoryId?: string;

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ProductGallery } from "@/components/ProductGallery";
+import { ProductPrice } from "@/components/ProductPrice";
 import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
 import type { Product, ProductSelection } from "@/models/product";
 
@@ -74,6 +75,7 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
 
 
   const selectedPrice = selectedVariant?.price ?? visualVariant?.price ?? product.price;
+  const selectedPrices = selectedVariant?.prices ?? visualVariant?.prices ?? product.prices;
   const selectedStock = selectedVariant?.stock ?? visualVariant?.stock ?? product.stock;
   const galleryImages = useMemo(() => {
     const selectedImage = visualVariant?.image;
@@ -94,9 +96,7 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
             {product.name}
           </h1>
           <div className="mt-4 flex items-center justify-between gap-4">
-            <span className="font-headline text-2xl font-semibold text-secondary md:text-3xl">
-              AR$ {selectedPrice.toLocaleString("es-AR")}
-            </span>
+            <ProductPrice price={selectedPrice} prices={selectedPrices} />
             <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-bold text-on-primary-container">
               Stock {selectedStock > 0 ? "disponible" : "a consultar"}
             </span>
