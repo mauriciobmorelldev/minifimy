@@ -8,6 +8,11 @@ export async function POST(request: NextRequest) {
   const response = await proxyWooStoreRequest({ path: "/cart/add-item", method: "POST", body: storeBody, request });
   if (response.status !== 400 || !variationId) return response;
 
+  const message = await response.clone().text().catch(() => "");
+  if (message.includes("no está disponible") || message.includes("not available")) {
+    return response;
+  }
+
   return proxyWooStoreRequest({
     path: "/cart/add-item",
     method: "POST",
