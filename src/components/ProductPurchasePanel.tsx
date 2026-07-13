@@ -45,6 +45,7 @@ function optionEquals(first?: string, second?: string) {
 }
 
 function variantMatchesSelection(variant: ProductVariant, selection: ProductSelection) {
+  if (selection.variationId && selection.variationId === variant.id) return true;
   const sizeMatches = !selection.size || !variant.size || optionEquals(selection.size, variant.size);
   const colorMatches = !selection.color || !variant.color || optionEquals(selection.color, variant.color);
   return sizeMatches && colorMatches;

@@ -27,6 +27,7 @@ function optionsMatch(selected?: string, actual?: string) {
 }
 
 function variantMatchesSelection(variant: ProductVariant, selection: ProductSelection) {
+  if (selection.variationId && selection.variationId === variant.id) return true;
   return optionsMatch(selection.size, variant.size) && optionsMatch(selection.color, variant.color);
 }
 
@@ -59,11 +60,19 @@ function findBestVariantForSelection(variants: ProductVariant[] | undefined, sel
     .sort((first, second) => second.score - first.score)[0]?.variant;
 }
 
+function getInitialSelection(product: Product): ProductSelection {
+  const firstVariant = product.variants?.find((variant) => variant.stock === undefined || variant.stock > 0) ?? product.variants?.[0];
+
+  return {
+    size: firstVariant?.size ?? product.sizes?.[0],
+    color: firstVariant?.color ?? product.colors?.[0],
+    variationId: firstVariant?.id,
+    variationAttributes: firstVariant?.variationAttributes,
+  };
+}
+
 export function ProductDetailClient({ product, categoryName }: ProductDetailClientProps) {
-  const [selection, setSelection] = useState<ProductSelection>({
-    size: product.sizes?.[0],
-    color: product.colors?.[0],
-  });
+  const [selection, setSelection] = useState<ProductSelection>(() => getInitialSelection(product));
 
   const selectedVariant = useMemo(() => {
     return product.variants?.find((variant) => variantMatchesSelection(variant, selection));
