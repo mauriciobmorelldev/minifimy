@@ -136,9 +136,15 @@ export function FimiGiftGuide({ products, title, intro }: FimiGiftGuideProps) {
                     <Link href={`/producto/${product.slug}`}>{product.name}</Link>
                   </h4>
                   <p className="mt-2 text-sm font-bold text-secondary">AR$ {product.price.toLocaleString("es-AR")}</p>
-                  <AddToCartButton product={product} className="mt-4 rounded-full bg-primary px-4 py-3 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
-                    Agregar
-                  </AddToCartButton>
+                  {product.variants?.length || product.sizes?.length || product.colors?.length ? (
+                    <Link href={`/producto/${product.slug}`} className="mt-4 inline-flex justify-center rounded-full bg-primary px-4 py-3 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
+                      Elegir opciones
+                    </Link>
+                  ) : (
+                    <AddToCartButton product={product} className="mt-4 rounded-full bg-primary px-4 py-3 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
+                      Agregar
+                    </AddToCartButton>
+                  )}
                 </div>
               </article>
             ))}

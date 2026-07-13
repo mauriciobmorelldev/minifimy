@@ -146,13 +146,6 @@ async function storeFetch(path: string, init?: RequestInit) {
 }
 
 function buildAddItemPayload(product: Product, quantity: number, selection?: ProductSelection) {
-  if (selection?.variationId) {
-    return {
-      id: Number(selection.variationId),
-      quantity,
-    };
-  }
-
   const variation: { attribute: string; value: string }[] = [];
   if (selection?.size) variation.push({ attribute: "Talle", value: selection.size });
   if (selection?.color) variation.push({ attribute: "Color", value: selection.color });

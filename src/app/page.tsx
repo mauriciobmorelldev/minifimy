@@ -196,9 +196,15 @@ export default async function HomePage() {
                   </div>
                   <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <p className="font-headline text-2xl font-extrabold text-secondary">AR$ {heroProduct.price.toLocaleString("es-AR")}</p>
-                    <AddToCartButton product={heroProduct} className="rounded-full bg-primary px-7 py-4 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
-                      Agregar al carrito
-                    </AddToCartButton>
+                    {heroProduct.variants?.length || heroProduct.sizes?.length || heroProduct.colors?.length ? (
+                      <Link href={`/producto/${heroProduct.slug}`} className="rounded-full bg-primary px-7 py-4 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
+                        Elegir opciones
+                      </Link>
+                    ) : (
+                      <AddToCartButton product={heroProduct} className="rounded-full bg-primary px-7 py-4 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
+                        Agregar al carrito
+                      </AddToCartButton>
+                    )}
                   </div>
                 </div>
               </article>
@@ -226,9 +232,15 @@ export default async function HomePage() {
                       </div>
                       <div className="mt-5 flex items-center justify-between gap-3">
                         <p className="font-bold text-secondary">AR$ {product.price.toLocaleString("es-AR")}</p>
-                        <AddToCartButton product={product} className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary transition hover:bg-primary-dim" aria-label={`Agregar ${product.name} al carrito`}>
-                          <span className="material-symbols-outlined text-lg">shopping_basket</span>
-                        </AddToCartButton>
+                        {product.variants?.length || product.sizes?.length || product.colors?.length ? (
+                          <Link href={`/producto/${product.slug}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary transition hover:bg-primary-dim" aria-label={`Elegir opciones de ${product.name}`}>
+                            <span className="material-symbols-outlined text-lg">tune</span>
+                          </Link>
+                        ) : (
+                          <AddToCartButton product={product} className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary transition hover:bg-primary-dim" aria-label={`Agregar ${product.name} al carrito`}>
+                            <span className="material-symbols-outlined text-lg">shopping_basket</span>
+                          </AddToCartButton>
+                        )}
                       </div>
                     </div>
                   </article>
