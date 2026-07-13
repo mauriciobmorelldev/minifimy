@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { ProductPrice } from "@/components/ProductPrice";
 import { productNeedsOptions } from "@/lib/product-options";
 import type { Product } from "@/models/product";
 
@@ -55,13 +56,26 @@ type FimiGiftGuideProps = {
   products: Product[];
   title: string;
   intro: string;
+  featuredProductSlugs?: Record<string, string[]>;
 };
 
-export function FimiGiftGuide({ products, title, intro }: FimiGiftGuideProps) {
+function findProductsBySlugs(products: Product[], slugs: string[] = []) {
+  return slugs
+    .map((slug) => products.find((product) => product.slug === slug))
+    .filter((product): product is Product => Boolean(product));
+}
+
+export function FimiGiftGuide({ products, title, intro, featuredProductSlugs }: FimiGiftGuideProps) {
   const [selectedIntent, setSelectedIntent] = useState(intents[0].id);
   const activeIntent = intents.find((intent) => intent.id === selectedIntent) ?? intents[0];
 
   const recommended = useMemo(() => {
+    const configuredProducts = findProductsBySlugs(products, featuredProductSlugs?.[activeIntent.id]);
+
+    if (configuredProducts.length > 0) {
+      return configuredProducts.slice(0, 3);
+    }
+
     const matches = products.filter((product) => {
       const byCategory = activeIntent.categories.includes(product.category);
       const searchable = `${product.name} ${product.description} ${product.badge ?? ""}`.toLowerCase();
@@ -70,7 +84,7 @@ export function FimiGiftGuide({ products, title, intro }: FimiGiftGuideProps) {
     });
 
     return (matches.length > 0 ? matches : products).slice(0, 3);
-  }, [activeIntent, products]);
+  }, [activeIntent, featuredProductSlugs, products]);
 
   return (
     <section className="fimy-guide px-5 py-20 sm:px-8 lg:px-10" aria-labelledby="fimy-guide-title">
@@ -136,7 +150,7 @@ export function FimiGiftGuide({ products, title, intro }: FimiGiftGuideProps) {
                   <h4 className="mt-2 font-headline text-lg font-extrabold leading-tight text-on-surface">
                     <Link href={`/producto/${product.slug}`}>{product.name}</Link>
                   </h4>
-                  <p className="mt-2 text-sm font-bold text-secondary">AR$ {product.price.toLocaleString("es-AR")}</p>
+                  <ProductPrice price={product.price} prices={product.prices} compact className="mt-3 text-left" />
                   {productNeedsOptions(product) ? (
                     <Link href={`/producto/${product.slug}`} className="mt-4 inline-flex justify-center rounded-full bg-primary px-4 py-3 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
                       Elegir opciones

@@ -33,12 +33,21 @@ export function ProductPrice({ price, prices, compact = false, className = "" }:
   if (compact) {
     return (
       <div className={`text-right leading-tight ${className}`}>
-        <div className="font-headline text-lg font-extrabold text-secondary">{formatPrice(listPrice)}</div>
         {hasDiscount && (
-          <div className="mt-1 text-[11px] font-extrabold text-primary">
-            {formatPrice(finalPrice)} transferencia
+          <div className="font-headline text-sm font-bold text-primary/80">
+            {formatPrice(listPrice)}
           </div>
         )}
+        <div className={`font-headline font-extrabold text-secondary ${hasDiscount ? "mt-1 text-xl" : "text-lg"}`}>
+          {hasDiscount ? (
+            <>
+              {formatPrice(finalPrice)}
+              <span className="ml-1 text-[11px] font-bold text-secondary/80">transferencia</span>
+            </>
+          ) : (
+            formatPrice(listPrice)
+          )}
+        </div>
         <div className="mt-1 text-[10px] font-semibold text-primary/75">3x {formatInstallment(installmentAmount)}</div>
       </div>
     );
@@ -46,15 +55,22 @@ export function ProductPrice({ price, prices, compact = false, className = "" }:
 
   return (
     <section className={`space-y-2 ${className}`} aria-label="Precios y formas de pago">
-      <div className="font-headline text-[1.95rem] font-extrabold leading-none text-secondary md:text-[2.35rem]">
-        {formatPrice(listPrice)}
-      </div>
-
       {hasDiscount && (
-        <div className="font-headline text-xl font-extrabold text-primary md:text-2xl">
-          {formatPrice(transferPrice!)} con Transferencia
+        <div className="font-headline text-lg font-bold leading-none text-primary/80 md:text-xl">
+          {formatPrice(listPrice)}
         </div>
       )}
+
+      <div className={`font-headline font-extrabold leading-none text-secondary ${hasDiscount ? "text-[2.25rem] md:text-[2.7rem]" : "text-[1.95rem] md:text-[2.35rem]"}`}>
+        {hasDiscount ? (
+          <>
+            {formatPrice(transferPrice!)}
+            <span className="ml-2 align-middle text-base font-extrabold text-secondary/80 md:text-lg">con Transferencia</span>
+          </>
+        ) : (
+          formatPrice(listPrice)
+        )}
+      </div>
 
       <div className="space-y-1 pt-1 text-sm text-on-surface-variant">
         <p className="font-medium">3 x {formatInstallment(installmentAmount)} sin interés</p>

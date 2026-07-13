@@ -3,10 +3,19 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { FimiGiftGuide } from "@/components/FimiGiftGuide";
+import { ProductPrice } from "@/components/ProductPrice";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { getFeaturedStoreProducts, getWordPressNewsletterUrl } from "@/lib/woocommerce";
 import { productNeedsOptions } from "@/lib/product-options";
 import { getHomeContent } from "@/lib/wordpress";
+
+function pickProductsBySlugs(products: Awaited<ReturnType<typeof getFeaturedStoreProducts>>, slugs: string[], fallback: typeof products) {
+  const picked = slugs
+    .map((slug) => products.find((product) => product.slug === slug))
+    .filter((product): product is (typeof products)[number] => Boolean(product));
+
+  return picked.length > 0 ? picked : fallback;
+}
 
 export const metadata: Metadata = {
   title: "Inicio",
@@ -26,6 +35,10 @@ export default async function HomePage() {
     : undefined;
   const heroCompanion = configuredCompanion ?? featured.find((product) => product.id !== heroProduct?.id) ?? heroProduct;
   const supportProducts = featured.filter((product) => product.id !== heroProduct?.id);
+  const editorialProducts = pickProductsBySlugs(featured, home.editorialProductSlugs, supportProducts.slice(0, 3));
+  const featuredSectionProducts = pickProductsBySlugs(featured, home.featuredProductSlugs, featured);
+  const sectionHeroProduct = featuredSectionProducts[0] ?? heroProduct;
+  const sectionSupportProducts = featuredSectionProducts.filter((product) => product.id !== sectionHeroProduct?.id);
 
   return (
     <main className="minifimy-story overflow-hidden bg-background pt-20">
@@ -120,7 +133,7 @@ export default async function HomePage() {
                       <div className="flex flex-col justify-center">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">También puede gustarte</p>
                         <h3 className="mt-2 font-headline text-xl font-extrabold leading-tight text-on-surface">{heroCompanion.name}</h3>
-                        <p className="mt-2 text-sm font-bold text-secondary">AR$ {heroCompanion.price.toLocaleString("es-AR")}</p>
+                        <ProductPrice price={heroCompanion.price} prices={heroCompanion.prices} compact className="mt-3 text-left" />
                       </div>
                     </Link>
                   )}
@@ -135,7 +148,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <FimiGiftGuide products={featured} title={home.guideTitle} intro={home.guideIntro} />
+      <FimiGiftGuide products={featured} title={home.guideTitle} intro={home.guideIntro} featuredProductSlugs={home.guideProductSlugs} />
 
       <section className="story-river relative px-5 py-20 sm:px-8 lg:px-10">
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
@@ -154,7 +167,7 @@ export default async function HomePage() {
           </ScrollReveal>
           <ScrollReveal delayMs={120}>
             <div className="editorial-product-row grid gap-4 md:grid-cols-3">
-              {supportProducts.slice(0, 3).map((product) => (
+              {editorialProducts.slice(0, 3).map((product) => (
                 <Link key={product.id} href={`/producto/${product.slug}`} className="editorial-mini-product group overflow-hidden bg-white/82 p-3 shadow-soft transition duration-500 hover:-translate-y-1 hover:shadow-lift">
                   <div className="relative aspect-[4/5] overflow-hidden rounded-[1.2rem]">
                     <Image src={product.images[0]} alt={product.name} fill sizes="260px" className="object-cover transition duration-700 group-hover:scale-105" />
@@ -179,14 +192,14 @@ export default async function HomePage() {
           </Link>
         </ScrollReveal>
 
-        {heroProduct && (
+        {sectionHeroProduct && (
           <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
             <ScrollReveal>
               <article className="product-editorial-card grid min-h-[560px] overflow-hidden bg-[#f0dfc8] shadow-soft md:grid-cols-[0.95fr_1.05fr]">
-                <Link href={`/producto/${heroProduct.slug}`} className="relative min-h-[320px] overflow-hidden md:min-h-full">
+                <Link href={`/producto/${sectionHeroProduct.slug}`} className="relative min-h-[320px] overflow-hidden md:min-h-full">
                   <Image
-                    src={heroProduct.images[0]}
-                    alt={heroProduct.name}
+                    src={sectionHeroProduct.images[0]}
+                    alt={sectionHeroProduct.name}
                     fill
                     sizes="(min-width: 1024px) 42vw, 95vw"
                     className="object-cover transition duration-700 hover:scale-105"
@@ -195,17 +208,17 @@ export default async function HomePage() {
                 <div className="flex flex-col justify-between p-8 sm:p-10">
                   <div className="space-y-5">
                     <span className="text-xs font-bold uppercase tracking-[0.22em] text-secondary">Elegido por Fimy</span>
-                    <h3 className="font-headline text-4xl font-extrabold leading-tight text-on-surface">{heroProduct.name}</h3>
-                    <p className="max-w-sm text-base leading-8 text-on-surface-variant">{heroProduct.description}</p>
+                    <h3 className="font-headline text-4xl font-extrabold leading-tight text-on-surface">{sectionHeroProduct.name}</h3>
+                    <p className="max-w-sm text-base leading-8 text-on-surface-variant">{sectionHeroProduct.description}</p>
                   </div>
                   <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="font-headline text-2xl font-extrabold text-secondary">AR$ {heroProduct.price.toLocaleString("es-AR")}</p>
-                    {productNeedsOptions(heroProduct) ? (
-                      <Link href={`/producto/${heroProduct.slug}`} className="rounded-full bg-primary px-7 py-4 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
+                    <ProductPrice price={sectionHeroProduct.price} prices={sectionHeroProduct.prices} compact className="text-left" />
+                    {productNeedsOptions(sectionHeroProduct) ? (
+                      <Link href={`/producto/${sectionHeroProduct.slug}`} className="rounded-full bg-primary px-7 py-4 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
                         Elegir opciones
                       </Link>
                     ) : (
-                      <AddToCartButton product={heroProduct} className="rounded-full bg-primary px-7 py-4 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
+                      <AddToCartButton product={sectionHeroProduct} className="rounded-full bg-primary px-7 py-4 text-sm font-bold text-on-primary transition hover:bg-primary-dim">
                         Agregar al carrito
                       </AddToCartButton>
                     )}
@@ -215,7 +228,7 @@ export default async function HomePage() {
             </ScrollReveal>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1">
-              {supportProducts.slice(0, 3).map((product, index) => (
+              {sectionSupportProducts.slice(0, 3).map((product, index) => (
                 <ScrollReveal key={product.id} delayMs={index * 80}>
                   <article className="product-note-card grid grid-cols-[120px_1fr] gap-5 bg-white/72 p-4 shadow-soft transition duration-500 hover:-translate-y-1 hover:shadow-lift sm:grid-cols-[150px_1fr]">
                     <Link href={`/producto/${product.slug}`} className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-surface-container">
@@ -235,7 +248,7 @@ export default async function HomePage() {
                         </h3>
                       </div>
                       <div className="mt-5 flex items-center justify-between gap-3">
-                        <p className="font-bold text-secondary">AR$ {product.price.toLocaleString("es-AR")}</p>
+                        <ProductPrice price={product.price} prices={product.prices} compact className="text-left" />
                         {productNeedsOptions(product) ? (
                           <Link href={`/producto/${product.slug}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary transition hover:bg-primary-dim" aria-label={`Elegir opciones de ${product.name}`}>
                             <span className="material-symbols-outlined text-lg">tune</span>

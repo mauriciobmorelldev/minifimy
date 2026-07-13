@@ -7,6 +7,8 @@ export type ACFImage =
     }
   | null;
 
+type SlugListField = string | { slug?: string; product_slug?: string }[] | undefined;
+
 export type HomeACF = {
   hero_kicker?: string;
   hero_title?: string;
@@ -17,6 +19,12 @@ export type HomeACF = {
   hero_secondary_href?: string;
   hero_featured_product_slug?: string;
   hero_companion_product_slug?: string;
+  fimi_newborn_product_slugs?: SlugListField;
+  fimi_baby_shower_product_slugs?: SlugListField;
+  fimi_cozy_product_slugs?: SlugListField;
+  fimi_surprise_product_slugs?: SlugListField;
+  editorial_product_slugs?: SlugListField;
+  featured_product_slugs?: SlugListField;
   fimi_note_title?: string;
   fimi_note_text?: string;
   hero_gift_chip?: string;
@@ -53,6 +61,9 @@ export type HomeContent = {
   heroSecondaryHref: string;
   heroFeaturedProductSlug?: string;
   heroCompanionProductSlug?: string;
+  guideProductSlugs: Record<string, string[]>;
+  editorialProductSlugs: string[];
+  featuredProductSlugs: string[];
   fimiNoteTitle: string;
   fimiNoteText: string;
   heroGiftChip: string;
@@ -98,6 +109,9 @@ export const fallbackHomeContent: HomeContent = {
   heroPrimaryHref: "/catalogo",
   heroSecondaryLabel: "Es para recien nacido",
   heroSecondaryHref: "/catalogo/recien-nacido",
+  guideProductSlugs: { newborn: [], "baby-shower": [], cozy: [], fimy: [] },
+  editorialProductSlugs: [],
+  featuredProductSlugs: [],
   fimiNoteTitle: "Fimy dice",
   fimiNoteText:
     "Si es un regalo, empeza por una pieza suave, facil de combinar y lista para usar.",
@@ -176,6 +190,22 @@ function normalizeSiteSettings(acf?: HomeACF | null): SiteSettings {
   };
 }
 
+function normalizeSlugList(value: SlugListField): string[] {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => item.slug ?? item.product_slug ?? "")
+      .map((slug) => slug.trim())
+      .filter(Boolean);
+  }
+
+  return value
+    .split(/[\n,]/)
+    .map((slug) => slug.trim())
+    .filter(Boolean);
+}
+
 function firstText(value: string | undefined, fallback: string) {
   return value?.trim() || fallback;
 }
@@ -193,6 +223,14 @@ function normalizeHomeContent(acf?: HomeACF | null): HomeContent {
     heroSecondaryHref: firstText(acf.hero_secondary_href, fallbackHomeContent.heroSecondaryHref),
     heroFeaturedProductSlug: acf.hero_featured_product_slug,
     heroCompanionProductSlug: acf.hero_companion_product_slug,
+    guideProductSlugs: {
+      newborn: normalizeSlugList(acf.fimi_newborn_product_slugs),
+      "baby-shower": normalizeSlugList(acf.fimi_baby_shower_product_slugs),
+      cozy: normalizeSlugList(acf.fimi_cozy_product_slugs),
+      fimy: normalizeSlugList(acf.fimi_surprise_product_slugs),
+    },
+    editorialProductSlugs: normalizeSlugList(acf.editorial_product_slugs),
+    featuredProductSlugs: normalizeSlugList(acf.featured_product_slugs),
     fimiNoteTitle: firstText(acf.fimi_note_title, fallbackHomeContent.fimiNoteTitle),
     fimiNoteText: firstText(acf.fimi_note_text, fallbackHomeContent.fimiNoteText),
     heroGiftChip: firstText(acf.hero_gift_chip, fallbackHomeContent.heroGiftChip),
