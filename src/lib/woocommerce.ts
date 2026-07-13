@@ -221,6 +221,7 @@ type WooOrderSummary = {
   total?: string;
   currency?: string;
   date_created?: string;
+  billing?: { email?: string };
 };
 
 type WooLineItem = {
@@ -251,10 +252,12 @@ type WordPressAuthResponse = {
   token?: string;
   user_email?: string;
   user_display_name?: string;
+  email?: string;
+  name?: string;
 };
 
 type WordPressUserMe = {
-  id: number;
+  id?: number;
   name?: string;
   email?: string;
 };
@@ -914,21 +917,30 @@ export async function createStoreCustomer(input: StoreCustomerInput) {
 }
 
 export async function loginStoreCustomer(email: string, password: string) {
-  const endpoint = process.env.WORDPRESS_AUTH_TOKEN_ENDPOINT || "wp-json/jwt-auth/v1/token";
-  const session = await postWordPressJson<WordPressAuthResponse>(endpoint, {
-    username: email,
+  const session = await postWordPressJson<WordPressAuthResponse>("wp-json/minifimy/v1/auth/login", {
+    email,
     password,
   });
+  const jwtEndpoint = process.env.WORDPRESS_AUTH_TOKEN_ENDPOINT || "wp-json/jwt-auth/v1/token";
+  const jwtSession = session?.token
+    ? session
+    : await postWordPressJson<WordPressAuthResponse>(jwtEndpoint, {
+        username: email,
+        password,
+      });
 
-  if (!session?.token) return null;
+  if (!jwtSession?.token) return null;
   return {
-    token: session.token,
-    email: session.user_email ?? email,
-    name: session.user_display_name,
+    token: jwtSession.token,
+    email: jwtSession.email ?? jwtSession.user_email ?? email,
+    name: jwtSession.name ?? jwtSession.user_display_name,
   };
 }
 
 export async function verifyWordPressCustomerToken(token: string) {
+  const minifimyUser = await getWordPressJson<WordPressUserMe>("wp-json/minifimy/v1/auth/me", token);
+  if (minifimyUser?.email) return minifimyUser;
+
   const user = await getWordPressJson<WordPressUserMe>("wp-json/wp/v2/users/me", token);
   if (!user?.email) return null;
   return user;
@@ -946,16 +958,22 @@ export async function getStoreCustomerByEmail(email: string) {
 
 export async function getStoreOrdersForCustomerEmail(email: string) {
   const customer = await getStoreCustomerByEmail(email);
-  if (!customer?.id) return [];
+  const [customerOrders, recentOrders] = await Promise.all([
+    customer?.id
+      ? fetchWoo<WooOrderSummary[]>("orders", { customer: customer.id, per_page: 20 }, 0, [CACHE_TAGS.checkout])
+      : Promise.resolve([]),
+    fetchWoo<WooOrderSummary[]>("orders", { per_page: 50, orderby: "date", order: "desc" }, 0, [CACHE_TAGS.checkout]),
+  ]);
 
-  const orders = await fetchWoo<WooOrderSummary[]>(
-    "orders",
-    { customer: customer.id, per_page: 20 },
-    0,
-    [CACHE_TAGS.checkout]
+  const normalizedEmail = email.trim().toLowerCase();
+  const emailOrders = (recentOrders ?? []).filter(
+    (order) => order.billing?.email?.trim().toLowerCase() === normalizedEmail
+  );
+  const mergedOrders = [...(customerOrders ?? []), ...emailOrders].filter(
+    (order, index, orders) => orders.findIndex((item) => item.id === order.id) === index
   );
 
-  return (orders ?? []).map(mapWooOrderSummary);
+  return mergedOrders.map(mapWooOrderSummary);
 }
 
 export async function getStoreProductReviews(productId: string) {
