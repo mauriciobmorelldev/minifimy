@@ -71,6 +71,41 @@ function appendStoreHeaders(source: Response, target: NextResponse) {
   if (cartToken) target.headers.set("cart-token", cartToken);
 }
 
+function getCookiePairsFromResponse(response: Response | null) {
+  const setCookie = response?.headers.get("set-cookie");
+  if (!setCookie) return [];
+
+  return setCookie
+    .split(/,(?=\s*[^;,=]+=[^;,]+)/)
+    .map((cookie) => cookie.trim().split(";")[0])
+    .filter(Boolean);
+}
+
+function mergeCookieHeader(headers: Headers, cookiePairs: string[]) {
+  if (cookiePairs.length === 0) return;
+  const current = headers.get("cookie");
+  headers.set("cookie", [current, ...cookiePairs].filter(Boolean).join("; "));
+}
+
+async function refreshStoreSession(headers: Headers) {
+  const cartUrl = getStoreUrl("/cart");
+  if (!cartUrl) return null;
+
+  const response = await fetch(cartUrl, {
+    method: "GET",
+    headers,
+    cache: "no-store",
+  }).catch(() => null);
+
+  const nonce = response?.headers.get("nonce");
+  const cartToken = response?.headers.get("cart-token");
+  if (nonce) headers.set("nonce", nonce);
+  if (cartToken) headers.set("cart-token", cartToken);
+  mergeCookieHeader(headers, getCookiePairsFromResponse(response));
+
+  return response;
+}
+
 export async function proxyWooStoreRequest({ path, method = "GET", body, request }: WooStoreRequestOptions) {
   const url = getStoreUrl(path);
   if (!url) {
@@ -78,29 +113,31 @@ export async function proxyWooStoreRequest({ path, method = "GET", body, request
   }
 
   const headers = getForwardHeaders(request);
+  const requestBody = body === undefined ? undefined : JSON.stringify(body);
+  const isMutation = method.toUpperCase() !== "GET";
 
-  if (method.toUpperCase() !== "GET" && !headers.has("nonce")) {
-    const cartUrl = getStoreUrl("/cart");
-    if (cartUrl) {
-      const cartResponse = await fetch(cartUrl, {
-        method: "GET",
-        headers,
-        cache: "no-store",
-      }).catch(() => null);
-      const nonce = cartResponse?.headers.get("nonce");
-      const cartToken = cartResponse?.headers.get("cart-token");
-      if (nonce) headers.set("nonce", nonce);
-      if (cartToken && !headers.has("cart-token")) headers.set("cart-token", cartToken);
-    }
+  if (isMutation && !headers.has("nonce")) {
+    await refreshStoreSession(headers);
   }
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     method,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: requestBody,
     cache: "no-store",
     redirect: "manual",
   });
+
+  if (isMutation && response.status === 403) {
+    await refreshStoreSession(headers);
+    response = await fetch(url, {
+      method,
+      headers,
+      body: requestBody,
+      cache: "no-store",
+      redirect: "manual",
+    });
+  }
 
   const contentType = response.headers.get("content-type") ?? "application/json; charset=utf-8";
   const responseBody = await response.text();
