@@ -45,7 +45,7 @@ function formatPostalCode(value: string) {
 }
 
 export default function CheckoutClient() {
-  const { items, total, clearCart } = useCart();
+  const { items, total, refreshCart } = useCart();
   const [status, setStatus] = useState<string | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<CheckoutPaymentMethod[]>([]);
   const [shippingMethods, setShippingMethods] = useState<CheckoutShippingMethod[]>([]);
@@ -125,14 +125,33 @@ export default function CheckoutClient() {
       return;
     }
 
-    const payload = await response.json() as { message?: string; paymentUrl?: string; orderId?: number; orderKey?: string };
-    if (payload.orderId) {
-      clearCart();
+    const payload = await response.json() as {
+      message?: string;
+      order_id?: number;
+      order_key?: string;
+      payment_result?: { redirect_url?: string; payment_status?: string };
+    };
+    const redirectUrl = payload.payment_result?.redirect_url;
+
+    await refreshCart();
+
+    if (redirectUrl) {
+      const url = new URL(redirectUrl, window.location.origin);
+      if (url.pathname.includes("/finalizar-comprar/order-pay/")) {
+        url.protocol = window.location.protocol;
+        url.host = window.location.host;
+        if (paymentMethodId) url.searchParams.set("fimy_payment_method", paymentMethodId);
+      }
+      window.location.href = url.toString();
+      return;
+    }
+
+    if (payload.order_id) {
       const params = new URLSearchParams();
       params.set("pay_for_order", "true");
       if (paymentMethodId) params.set("fimy_payment_method", paymentMethodId);
-      if (payload.orderKey) params.set("key", payload.orderKey);
-      window.location.href = `/finalizar-comprar/order-pay/${payload.orderId}/${params.toString() ? `?${params.toString()}` : ""}`;
+      if (payload.order_key) params.set("key", payload.order_key);
+      window.location.href = `/finalizar-comprar/order-pay/${payload.order_id}/${params.toString() ? `?${params.toString()}` : ""}`;
       return;
     }
 

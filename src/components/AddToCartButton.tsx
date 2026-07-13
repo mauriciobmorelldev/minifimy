@@ -14,7 +14,7 @@ interface AddToCartButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEleme
 
 export function AddToCartButton({ product, quantity = 1, selection, className, children, ...buttonProps }: AddToCartButtonProps) {
   const { addToCart } = useCart();
-  const [status, setStatus] = useState<"idle" | "added">("idle");
+  const [status, setStatus] = useState<"idle" | "adding" | "added" | "error">("idle");
   const [bump, setBump] = useState(false);
   const resetTimer = useRef<number | null>(null);
   const classes = [
@@ -38,18 +38,29 @@ export function AddToCartButton({ product, quantity = 1, selection, className, c
       type="button"
       className={classes}
       {...buttonProps}
-      onClick={() => {
-        addToCart(product, quantity, selection);
-        setStatus("added");
-        setBump(true);
-        window.setTimeout(() => setBump(false), 350);
+      disabled={buttonProps.disabled || status === "adding"}
+      onClick={async () => {
+        setStatus("adding");
+        try {
+          await addToCart(product, quantity, selection);
+          setStatus("added");
+          setBump(true);
+          window.setTimeout(() => setBump(false), 350);
+        } catch {
+          setStatus("error");
+        }
         if (resetTimer.current) {
           window.clearTimeout(resetTimer.current);
         }
-        resetTimer.current = window.setTimeout(() => setStatus("idle"), 1400);
+        resetTimer.current = window.setTimeout(() => setStatus("idle"), 1800);
       }}
     >
-      {status === "added" ? (
+      {status === "adding" ? (
+        <span className="flex items-center gap-2" aria-live="polite">
+          <span className="material-symbols-outlined text-lg">progress_activity</span>
+          Agregando
+        </span>
+      ) : status === "added" ? (
         <span className="flex items-center gap-2" aria-live="polite">
           <span
             className="material-symbols-outlined text-lg"
@@ -58,6 +69,11 @@ export function AddToCartButton({ product, quantity = 1, selection, className, c
             check_circle
           </span>
           Agregado
+        </span>
+      ) : status === "error" ? (
+        <span className="flex items-center gap-2" aria-live="polite">
+          <span className="material-symbols-outlined text-lg">error</span>
+          No se pudo agregar
         </span>
       ) : (
         children ?? "Agregar al carrito"
