@@ -33,9 +33,9 @@ export function ProductPrice({ price, prices, compact = false, className = "" }:
   if (compact) {
     return (
       <div className={`text-right leading-tight ${className}`}>
-        <div className="font-headline text-lg font-extrabold text-[#0f4261]">{formatPrice(listPrice)}</div>
+        <div className="font-headline text-lg font-extrabold text-secondary">{formatPrice(listPrice)}</div>
         {hasDiscount && (
-          <div className="mt-1 text-[11px] font-extrabold text-[#2aa6ac]">
+          <div className="mt-1 text-[11px] font-extrabold text-primary">
             {formatPrice(finalPrice)} transferencia
           </div>
         )}
@@ -46,34 +46,27 @@ export function ProductPrice({ price, prices, compact = false, className = "" }:
 
   return (
     <section className={`space-y-2 ${className}`} aria-label="Precios y formas de pago">
-      <div className="font-headline text-[1.95rem] font-extrabold leading-none text-[#0f4261] md:text-[2.35rem]">
+      <div className="font-headline text-[1.95rem] font-extrabold leading-none text-secondary md:text-[2.35rem]">
         {formatPrice(listPrice)}
       </div>
 
       {hasDiscount && (
-        <div className="font-headline text-xl font-extrabold text-[#2aa6ac] md:text-2xl">
+        <div className="font-headline text-xl font-extrabold text-primary md:text-2xl">
           {formatPrice(transferPrice!)} con Transferencia
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 pt-1 text-sm text-[#0f4261]">
-        <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#ff4c9a] text-[11px] font-extrabold text-[#ff4c9a]">
-          GO
-        </span>
-        <span>
-          Cuotas SIN interés con <strong>DÉBITO</strong>
-        </span>
+      <div className="space-y-1 pt-1 text-sm text-on-surface-variant">
+        <p className="font-medium">3 x {formatInstallment(installmentAmount)} sin interés</p>
         {hasDiscount && (
-          <span className="rounded-md border border-[#ff4c9a] px-2 py-1 text-xs font-extrabold text-[#ff4c9a]">
-            {discountPercent}% OFF
-          </span>
+          <p className="font-medium text-primary">
+            {discountPercent}% de descuento pagando con Transferencia
+          </p>
         )}
       </div>
 
-      <p className="text-sm font-medium text-[#2aa6ac]">3 x {formatInstallment(installmentAmount)} sin interés</p>
-      {hasDiscount && <p className="text-sm font-medium text-[#2aa6ac]">{discountPercent}% de descuento pagando con Transferencia</p>}
-      <button type="button" className="text-sm font-semibold text-[#0f4261] underline underline-offset-4">
-        Ver más detalles
+      <button type="button" className="text-sm font-semibold text-secondary underline underline-offset-4">
+        Ver medios de pago
       </button>
     </section>
   );

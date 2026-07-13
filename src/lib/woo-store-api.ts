@@ -77,9 +77,26 @@ export async function proxyWooStoreRequest({ path, method = "GET", body, request
     return NextResponse.json({ message: "No está configurada la tienda." }, { status: 500 });
   }
 
+  const headers = getForwardHeaders(request);
+
+  if (method.toUpperCase() !== "GET" && !headers.has("nonce")) {
+    const cartUrl = getStoreUrl("/cart");
+    if (cartUrl) {
+      const cartResponse = await fetch(cartUrl, {
+        method: "GET",
+        headers,
+        cache: "no-store",
+      }).catch(() => null);
+      const nonce = cartResponse?.headers.get("nonce");
+      const cartToken = cartResponse?.headers.get("cart-token");
+      if (nonce) headers.set("nonce", nonce);
+      if (cartToken && !headers.has("cart-token")) headers.set("cart-token", cartToken);
+    }
+  }
+
   const response = await fetch(url, {
     method,
-    headers: getForwardHeaders(request),
+    headers,
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
     redirect: "manual",

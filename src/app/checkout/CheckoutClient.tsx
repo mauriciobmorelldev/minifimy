@@ -58,6 +58,18 @@ function getCheckoutUnitPrice(item: CheckoutCartItem, paymentMethodId: string) {
   return prices?.list ?? prices?.base ?? item.product.price;
 }
 
+async function getCheckoutErrorMessage(response: Response) {
+  const text = await response.text().catch(() => "");
+  if (!text) return "No pudimos preparar tu pedido. Revisemos los datos e intentemos otra vez.";
+
+  try {
+    const payload = JSON.parse(text) as { message?: string; code?: string; data?: { message?: string } };
+    return payload.message ?? payload.data?.message ?? "No pudimos preparar tu pedido. Revisemos los datos e intentemos otra vez.";
+  } catch {
+    return text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 220) || "No pudimos preparar tu pedido. Revisemos los datos e intentemos otra vez.";
+  }
+}
+
 export default function CheckoutClient() {
   const { items, total, refreshCart } = useCart();
   const [status, setStatus] = useState<string | null>(null);
@@ -127,6 +139,8 @@ export default function CheckoutClient() {
   const onSubmit = async (data: CheckoutFormValues) => {
     setStatus("Estamos preparando tu pedido...");
 
+    await refreshCart().catch(() => null);
+
     const headers = getWooStoreRequestHeaders();
     headers.set("Content-Type", "application/json");
 
@@ -142,8 +156,7 @@ export default function CheckoutClient() {
     });
 
     if (!response.ok) {
-      const payload = await response.json().catch(() => ({})) as { message?: string };
-      setStatus(payload.message ?? "No pudimos preparar tu pedido. Revisemos los datos e intentemos otra vez.");
+      setStatus(await getCheckoutErrorMessage(response));
       return;
     }
 
