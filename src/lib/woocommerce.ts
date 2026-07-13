@@ -302,6 +302,9 @@ type WooProduct = {
 type WooMinifimyPrices = {
   list_price?: number | string;
   discount_price?: number | string;
+  discount_gateway_ids?: string[];
+  discount_label?: string;
+  list_label?: string;
 };
 
 type WooVariation = {
@@ -403,6 +406,11 @@ function getMinifimyPrices(source: { price?: string; regular_price?: string; min
     base: validDiscount ?? base ?? list,
     list: list > 0 ? list : undefined,
     discount: validDiscount,
+    discountGatewayIds: Array.isArray(source.minifimy_prices?.discount_gateway_ids)
+      ? source.minifimy_prices.discount_gateway_ids
+      : undefined,
+    discountLabel: source.minifimy_prices?.discount_label,
+    listLabel: source.minifimy_prices?.list_label,
   };
 }
 

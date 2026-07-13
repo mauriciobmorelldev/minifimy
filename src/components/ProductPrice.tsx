@@ -8,47 +8,73 @@ interface ProductPriceProps {
 }
 
 function formatPrice(value: number) {
-  return `AR$ ${Math.round(value).toLocaleString("es-AR")}`;
+  return `$${Math.round(value).toLocaleString("es-AR")}`;
+}
+
+function formatInstallment(value: number) {
+  return `$${value.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function getDisplayPrice(price: number, prices?: ProductPriceSet) {
   const listPrice = prices?.list && prices.list > 0 ? prices.list : undefined;
   const discountPrice = prices?.discount && prices.discount > 0 ? prices.discount : undefined;
-  const finalPrice = discountPrice ?? prices?.base ?? price;
-  const hasDiscount = Boolean(listPrice && discountPrice && discountPrice < listPrice);
-  const discountPercent = hasDiscount ? Math.round(((listPrice! - discountPrice!) / listPrice!) * 100) : 0;
+  const cardPrice = listPrice ?? prices?.base ?? price;
+  const transferPrice = discountPrice && discountPrice < cardPrice ? discountPrice : undefined;
+  const hasDiscount = Boolean(transferPrice);
+  const discountPercent = hasDiscount ? Math.round(((cardPrice - transferPrice!) / cardPrice) * 100) : 0;
+  const installmentAmount = cardPrice / 3;
 
-  return { listPrice, finalPrice, hasDiscount, discountPercent };
+  return { listPrice: cardPrice, finalPrice: transferPrice ?? cardPrice, transferPrice, hasDiscount, discountPercent, installmentAmount };
 }
 
 export function ProductPrice({ price, prices, compact = false, className = "" }: ProductPriceProps) {
-  const { listPrice, finalPrice, hasDiscount, discountPercent } = getDisplayPrice(price, prices);
+  const { listPrice, finalPrice, transferPrice, hasDiscount, discountPercent, installmentAmount } = getDisplayPrice(price, prices);
 
   if (compact) {
     return (
-      <div className={`text-right ${className}`}>
+      <div className={`text-right leading-tight ${className}`}>
+        <div className="font-headline text-lg font-extrabold text-[#0f4261]">{formatPrice(listPrice)}</div>
         {hasDiscount && (
-          <div className="text-[10px] font-bold text-on-surface-variant line-through">
-            {formatPrice(listPrice!)}
+          <div className="mt-1 text-[11px] font-extrabold text-[#2aa6ac]">
+            {formatPrice(finalPrice)} transferencia
           </div>
         )}
-        <div className="font-headline text-lg font-extrabold text-secondary">{formatPrice(finalPrice)}</div>
+        <div className="mt-1 text-[10px] font-semibold text-primary/75">3x {formatInstallment(installmentAmount)}</div>
       </div>
     );
   }
 
   return (
-    <div className={`space-y-1 ${className}`}>
+    <section className={`space-y-2 ${className}`} aria-label="Precios y formas de pago">
+      <div className="font-headline text-[1.95rem] font-extrabold leading-none text-[#0f4261] md:text-[2.35rem]">
+        {formatPrice(listPrice)}
+      </div>
+
       {hasDiscount && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-bold text-on-surface-variant line-through">{formatPrice(listPrice!)}</span>
-          <span className="rounded-full bg-[#f7dfc7] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-secondary">
-            {discountPercent}% off
-          </span>
+        <div className="font-headline text-xl font-extrabold text-[#2aa6ac] md:text-2xl">
+          {formatPrice(transferPrice!)} con Transferencia
         </div>
       )}
-      <div className="font-headline text-2xl font-semibold text-secondary md:text-3xl">{formatPrice(finalPrice)}</div>
-      {hasDiscount && <p className="text-xs font-bold text-primary">Precio especial abonando con medio bonificado.</p>}
-    </div>
+
+      <div className="flex flex-wrap items-center gap-2 pt-1 text-sm text-[#0f4261]">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#ff4c9a] text-[11px] font-extrabold text-[#ff4c9a]">
+          GO
+        </span>
+        <span>
+          Cuotas SIN interés con <strong>DÉBITO</strong>
+        </span>
+        {hasDiscount && (
+          <span className="rounded-md border border-[#ff4c9a] px-2 py-1 text-xs font-extrabold text-[#ff4c9a]">
+            {discountPercent}% OFF
+          </span>
+        )}
+      </div>
+
+      <p className="text-sm font-medium text-[#2aa6ac]">3 x {formatInstallment(installmentAmount)} sin interés</p>
+      {hasDiscount && <p className="text-sm font-medium text-[#2aa6ac]">{discountPercent}% de descuento pagando con Transferencia</p>}
+      <button type="button" className="text-sm font-semibold text-[#0f4261] underline underline-offset-4">
+        Ver más detalles
+      </button>
+    </section>
   );
 }

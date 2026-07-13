@@ -42,6 +42,7 @@ type StoreApiCartItem = {
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 const NONCE_STORAGE_KEY = "minifimy-wc-store-nonce";
 const CART_TOKEN_STORAGE_KEY = "minifimy-wc-cart-token";
+const CART_PRICE_STORAGE_KEY = "minifimy-cart-prices";
 
 function getStoredHeader(key: string) {
   if (typeof window === "undefined") return null;
@@ -53,10 +54,36 @@ function setStoredHeader(key: string, value: string | null) {
   window.localStorage.setItem(key, value);
 }
 
+export function getWooStoreRequestHeaders() {
+  const headers = new Headers();
+  const nonce = getStoredHeader(NONCE_STORAGE_KEY);
+  const cartToken = getStoredHeader(CART_TOKEN_STORAGE_KEY);
+  if (nonce) headers.set("x-wc-store-api-nonce", nonce);
+  if (cartToken) headers.set("x-wc-store-api-cart-token", cartToken);
+  return headers;
+}
+
 function getMoneyValue(value?: string, minorUnit = 2) {
   const numeric = Number(value ?? 0);
   if (!Number.isFinite(numeric)) return 0;
   return numeric / Math.pow(10, minorUnit);
+}
+
+function getStoredCartPrices() {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(CART_PRICE_STORAGE_KEY) ?? "{}") as Record<string, Product["prices"]>;
+  } catch {
+    return {};
+  }
+}
+
+function rememberCartPrices(product: Product, selection?: ProductSelection) {
+  if (typeof window === "undefined" || !product.prices) return;
+  const current = getStoredCartPrices();
+  current[product.id] = product.prices;
+  if (selection?.variationId) current[selection.variationId] = product.prices;
+  window.localStorage.setItem(CART_PRICE_STORAGE_KEY, JSON.stringify(current));
 }
 
 function mapStoreItem(item: StoreApiCartItem): CartItem {
@@ -66,6 +93,13 @@ function mapStoreItem(item: StoreApiCartItem): CartItem {
   const size = variation.find((entry) => /talle|size|edad/i.test(entry.attribute ?? ""))?.value;
   const color = variation.find((entry) => /color|tono/i.test(entry.attribute ?? ""))?.value;
   const price = getMoneyValue(item.prices?.price ?? item.prices?.regular_price, minorUnit);
+  const listPrice = getMoneyValue(item.prices?.regular_price, minorUnit);
+  const storedPrices = getStoredCartPrices()[String(item.id ?? item.key)];
+  const prices = storedPrices ?? {
+    base: price,
+    list: listPrice || price,
+    discount: listPrice > price ? price : undefined,
+  };
 
   return {
     id: item.key,
@@ -77,6 +111,7 @@ function mapStoreItem(item: StoreApiCartItem): CartItem {
       slug: String(item.id ?? item.key),
       description: item.short_description ?? "",
       price,
+      prices,
       images: [image],
       category: "Minifimy",
       stock: 1,
@@ -88,10 +123,7 @@ async function storeFetch(path: string, init?: RequestInit) {
   const headers = new Headers(init?.headers);
   headers.set("content-type", "application/json");
 
-  const nonce = getStoredHeader(NONCE_STORAGE_KEY);
-  const cartToken = getStoredHeader(CART_TOKEN_STORAGE_KEY);
-  if (nonce) headers.set("x-wc-store-api-nonce", nonce);
-  if (cartToken) headers.set("x-wc-store-api-cart-token", cartToken);
+  getWooStoreRequestHeaders().forEach((value, key) => headers.set(key, value));
 
   const response = await fetch(path, {
     ...init,
@@ -154,6 +186,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addToCart = async (product: Product, quantity = 1, selection?: ProductSelection) => {
     setLoading(true);
     try {
+      rememberCartPrices(product, selection);
       applyCart(await storeFetch("/api/woo/cart/add", {
         method: "POST",
         body: JSON.stringify(buildAddItemPayload(product, quantity, selection)),

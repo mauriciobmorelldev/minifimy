@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
-import { useCart } from "@/context/cart-context";
+import { getWooStoreRequestHeaders, useCart } from "@/context/cart-context";
 
 interface CheckoutFormValues {
   name: string;
@@ -42,6 +42,20 @@ function formatPhone(value: string) {
 
 function formatPostalCode(value: string) {
   return value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+}
+
+type CheckoutCartItem = ReturnType<typeof useCart>["items"][number];
+
+function isDiscountPaymentMethod(paymentMethodId: string, gatewayIds?: string[]) {
+  return Boolean(paymentMethodId && gatewayIds?.includes(paymentMethodId));
+}
+
+function getCheckoutUnitPrice(item: CheckoutCartItem, paymentMethodId: string) {
+  const prices = item.product.prices;
+  if (isDiscountPaymentMethod(paymentMethodId, prices?.discountGatewayIds) && prices?.discount) {
+    return prices.discount;
+  }
+  return prices?.list ?? prices?.base ?? item.product.price;
 }
 
 export default function CheckoutClient() {
@@ -91,7 +105,12 @@ export default function CheckoutClient() {
     [shippingMethodId, shippingMethods]
   );
   const shipping = selectedShippingMethod?.total ?? 0;
-  const grandTotal = total + shipping;
+  const paymentSubtotal = useMemo(
+    () => items.reduce((sum, item) => sum + getCheckoutUnitPrice(item, paymentMethodId) * item.quantity, 0),
+    [items, paymentMethodId]
+  );
+  const paymentDiscount = Math.max(0, total - paymentSubtotal);
+  const grandTotal = paymentSubtotal + shipping;
 
   const maskPhone = (event: ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhone(event.target.value);
@@ -108,9 +127,12 @@ export default function CheckoutClient() {
   const onSubmit = async (data: CheckoutFormValues) => {
     setStatus("Estamos preparando tu pedido...");
 
+    const headers = getWooStoreRequestHeaders();
+    headers.set("Content-Type", "application/json");
+
     const response = await fetch("/api/checkout", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         customer: data,
         items,
@@ -375,7 +397,7 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                         </p>
                       )}
                       <p className="mt-2 text-sm font-extrabold text-secondary">
-                        AR$ {(item.product.price * item.quantity).toLocaleString("es-AR")}
+                        AR$ {(getCheckoutUnitPrice(item, paymentMethodId) * item.quantity).toLocaleString("es-AR")}
                       </p>
                     </div>
                   </div>
@@ -387,6 +409,12 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                   <span>Subtotal</span>
                   <span>AR$ {total.toLocaleString("es-AR")}</span>
                 </div>
+                {paymentDiscount > 0 && (
+                  <div className="flex justify-between text-primary">
+                    <span>Bonificación por método de pago</span>
+                    <span>- AR$ {paymentDiscount.toLocaleString("es-AR")}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span>{selectedShippingMethod?.title ?? "Envio"}</span>
                   <span>AR$ {shipping.toLocaleString("es-AR")}</span>

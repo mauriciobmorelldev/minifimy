@@ -2,6 +2,9 @@
   base: number;
   list?: number;
   discount?: number;
+  discountGatewayIds?: string[];
+  discountLabel?: string;
+  listLabel?: string;
 }
 
 export interface ProductVariant {
