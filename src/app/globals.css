@@ -204,6 +204,14 @@
   }
 
 
+  @media (max-width: 640px) {
+    .reveal {
+      transform: translateY(10px) scale(0.995);
+      transition-duration: 0.45s;
+    }
+  }
+
+
   .price-range-thumb::-webkit-slider-thumb {
     appearance: none;
     height: 1.35rem;

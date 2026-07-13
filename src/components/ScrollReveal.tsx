@@ -7,13 +7,15 @@ interface ScrollRevealProps {
   className?: string;
   delayMs?: number;
   threshold?: number;
+  rootMargin?: string;
 }
 
 export function ScrollReveal({
   children,
   className,
   delayMs = 0,
-  threshold = 0.2,
+  threshold = 0.08,
+  rootMargin = "0px 0px 140px 0px",
 }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -23,16 +25,20 @@ export function ScrollReveal({
       return;
     }
 
+    const element = ref.current;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setVisible(entry.isIntersecting);
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.unobserve(entry.target);
+        }
       },
-      { threshold }
+      { rootMargin, threshold }
     );
 
-    observer.observe(ref.current);
+    observer.observe(element);
     return () => observer.disconnect();
-  }, [threshold]);
+  }, [rootMargin, threshold]);
 
   const style: CSSProperties = {
     "--reveal-delay": `${delayMs}ms`,
