@@ -1,9 +1,29 @@
 import Link from "next/link";
-import type { StoreOrderPaymentDetails } from "@/lib/woocommerce";
+import type { StoreManualPaymentDetails, StoreOrderPaymentDetails } from "@/lib/woocommerce";
 
 interface OrderPaymentViewProps {
   order: StoreOrderPaymentDetails | null;
   paymentUrl?: string;
+}
+
+function getManualPaymentRows(details?: StoreManualPaymentDetails) {
+  if (!details) return [];
+
+  return [
+    { label: "Alias", value: details.alias },
+    { label: "CBU / CVU", value: details.cbu },
+    { label: "Titular", value: details.holder },
+    { label: "Banco", value: details.bank },
+    { label: "Tipo de cuenta", value: details.accountType },
+  ].filter((row): row is { label: string; value: string } => Boolean(row.value));
+}
+
+function getWhatsAppHref(phone?: string, orderId?: number) {
+  const digits = phone?.replace(/\D/g, "");
+  if (!digits) return undefined;
+
+  const text = encodeURIComponent(`Hola Minifimy, te envío el comprobante del pedido #${orderId}.`);
+  return `https://wa.me/${digits}?text=${text}`;
 }
 
 export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
@@ -19,12 +39,15 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
     );
   }
 
-  const isOfflinePayment = ["bacs", "cod", "cheque"].includes(order.paymentMethod);
+  const isManualPayment = ["bacs", "cod", "cheque"].includes(order.paymentMethod);
   const hasGatewayLink = Boolean(paymentUrl);
-  const paymentHelpText = order.paymentInstructions ||
-    (hasGatewayLink
-      ? "Tomamos los datos del pedido generado por Fimy y dejamos el pago preparado desde esta pantalla. Si necesitás un cupón o medio específico, escribinos y lo terminamos juntos."
-      : "Te vamos a enviar los datos para completar el pago y preparar tu pedido.");
+  const manualRows = getManualPaymentRows(order.manualPayment);
+  const whatsappHref = getWhatsAppHref(order.manualPayment?.whatsapp, order.id);
+  const paymentHelpText = isManualPayment
+    ? order.manualPayment?.note || order.paymentInstructions || "Cuando termines el pago, envianos el comprobante con tu número de pedido."
+    : hasGatewayLink
+      ? "Tu pago se abre en el proveedor elegido para completarlo de forma segura."
+      : "Te vamos a acompañar para completar el pago y preparar tu pedido.";
 
   return (
     <main className="mobile-soft-page mx-auto min-h-screen max-w-5xl px-5 pb-20 pt-28 md:px-6">
@@ -35,15 +58,17 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
         <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_0.75fr]">
           <div>
             <h1 className="font-headline text-[2.25rem] font-extrabold leading-tight text-on-surface md:text-5xl">
-              Ya tenemos tu pedido.
+              {isManualPayment ? "Tu pedido quedó reservado." : "Ya tenemos tu pedido."}
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-on-surface-variant md:text-base">
-              Revisá el resumen y continuá con el pago cuando esté todo bien.
+              {isManualPayment
+                ? "Te dejamos los datos para completar el pago. En Fimy lo vemos como pendiente hasta confirmar el comprobante."
+                : "Revisá el resumen y continuá con el pago cuando esté todo bien."}
             </p>
           </div>
           <div className="rounded-[1.5rem] bg-white/78 p-5 shadow-soft">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Estado</p>
-            <p className="mt-2 text-2xl font-extrabold text-on-surface">{order.status}</p>
+            <p className="mt-2 text-2xl font-extrabold text-on-surface">{isManualPayment ? "Pendiente de pago" : order.status}</p>
             <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-primary">Método</p>
             <p className="mt-2 font-bold text-on-surface">{order.paymentMethodTitle}</p>
             <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-primary">Total</p>
@@ -74,7 +99,7 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
             <div className="flex items-start gap-3">
               <span className="material-symbols-outlined mt-0.5 text-primary">payments</span>
               <div>
-                <p className="font-bold text-on-surface">Tu pedido ya quedó reservado.</p>
+                <p className="font-bold text-on-surface">{isManualPayment ? "Pago manual pendiente." : "Continuá con el pago."}</p>
                 <p>{paymentHelpText}</p>
               </div>
             </div>
@@ -82,16 +107,32 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
             <div className="rounded-[1.1rem] bg-white/72 p-4 text-on-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Método elegido</p>
               <p className="mt-1 font-headline text-xl font-extrabold">{order.paymentMethodTitle}</p>
-              {isOfflinePayment && (
-                <p className="mt-2 text-sm leading-6 text-on-surface-variant">
-                  Conservamos la orden en Fimy para que puedas completar el pago con calma.
+              {isManualPayment && manualRows.length > 0 && (
+                <dl className="mt-4 space-y-2">
+                  {manualRows.map((row) => (
+                    <div key={row.label} className="rounded-2xl bg-[#fbf4ea] px-4 py-3">
+                      <dt className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{row.label}</dt>
+                      <dd className="mt-1 break-words font-bold text-on-surface">{row.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+              {isManualPayment && manualRows.length === 0 && (
+                <p className="mt-3 text-sm leading-6 text-on-surface-variant">
+                  Todavía no hay datos bancarios cargados. Escribinos y te pasamos cómo completar el pago.
                 </p>
               )}
             </div>
           </div>
-          <Link href={`/gracias?order=${order.id}`} className="mt-4 flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-primary shadow-soft">
-            Ver confirmación
-          </Link>
+          {isManualPayment && whatsappHref ? (
+            <a href={whatsappHref} className="mt-4 flex w-full items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-bold text-on-primary shadow-soft">
+              Enviar comprobante
+            </a>
+          ) : (
+            <Link href={`/gracias?order=${order.id}`} className="mt-4 flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-primary shadow-soft">
+              Ver confirmación
+            </Link>
+          )}
         </aside>
       </section>
     </main>

@@ -33,6 +33,16 @@ export interface StorePaymentMethod {
   enabled: boolean;
 }
 
+export interface StoreManualPaymentDetails {
+  alias?: string;
+  cbu?: string;
+  holder?: string;
+  bank?: string;
+  accountType?: string;
+  whatsapp?: string;
+  note?: string;
+}
+
 export interface StoreShippingMethod {
   id: string;
   methodId: string;
@@ -131,6 +141,7 @@ export interface StoreOrderPaymentDetails extends StoreOrderSummary {
   paymentMethodTitle: string;
   paymentInstructions?: string;
   paymentUrl?: string;
+  manualPayment?: StoreManualPaymentDetails;
   customerEmail?: string;
   items: { id: number; name: string; quantity: number; total: string }[];
 }
@@ -141,6 +152,16 @@ type WooPaymentGateway = {
   description?: string;
   enabled?: boolean;
   settings?: Record<string, { value?: string }>;
+};
+
+type WooManualPaymentDetails = {
+  alias?: string;
+  cbu?: string;
+  holder?: string;
+  bank?: string;
+  account_type?: string;
+  whatsapp?: string;
+  note?: string;
 };
 
 type WooShippingZone = {
@@ -333,6 +354,22 @@ function buildWordPressUrl(path: string) {
   return new URL(path, `${STORE_URL}/`).toString();
 }
 
+async function fetchWordPressJson<T>(path: string, revalidate = CACHE_SECONDS.checkout, tags: string[] = [CACHE_TAGS.checkout]) {
+  const url = buildWordPressUrl(path);
+  if (!url) return null;
+
+  try {
+    const response = await fetch(url, {
+      next: { revalidate, tags },
+    });
+
+    if (!response.ok) return null;
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 export function getWordPressNewsletterUrl() {
   return process.env.WORDPRESS_NEWSLETTER_URL ?? buildWordPressUrl("wp-json/minifimy/v1/newsletter");
 }
@@ -517,13 +554,13 @@ async function enrichCatalogProducts(products: Product[], sources: WooProduct[])
   );
 }
 
-async function getStoreProductVariations(productId: string) {
+async function getStoreProductVariations(productId: string, revalidate = CACHE_SECONDS.products) {
   if (!canUseWooCommerce()) return [];
 
   const data = await fetchWoo<WooVariation[]>(
     `products/${productId}/variations`,
     { per_page: 100, _fields: WOO_VARIATION_FIELDS },
-    CACHE_SECONDS.products,
+    revalidate,
     [CACHE_TAGS.products]
   );
 
@@ -802,14 +839,14 @@ export async function getStoreProductBySlug(slug: string) {
       status: "publish",
       _fields: WOO_PRODUCT_FIELDS,
     },
-    CACHE_SECONDS.products,
+    0,
     [CACHE_TAGS.products]
   );
 
   if (!data?.[0]) return undefined;
 
   const product = mapWooProduct(data[0]);
-  const variants = await getStoreProductVariations(product.id);
+  const variants = await getStoreProductVariations(product.id, 0);
   return mergeProductVariants(product, variants);
 }
 
@@ -952,6 +989,28 @@ export async function getStorePaymentMethods(): Promise<StorePaymentMethod[]> {
     }));
 }
 
+export async function getStoreManualPaymentDetails(): Promise<StoreManualPaymentDetails | undefined> {
+  const details = await fetchWordPressJson<WooManualPaymentDetails>(
+    "wp-json/minifimy/v1/manual-payment",
+    CACHE_SECONDS.checkout,
+    [CACHE_TAGS.checkout]
+  );
+
+  if (!details) return undefined;
+
+  const normalized = {
+    alias: cleanText(details.alias),
+    cbu: cleanText(details.cbu),
+    holder: cleanText(details.holder),
+    bank: cleanText(details.bank),
+    accountType: cleanText(details.account_type),
+    whatsapp: cleanText(details.whatsapp),
+    note: cleanText(details.note),
+  };
+
+  return Object.values(normalized).some(Boolean) ? normalized : undefined;
+}
+
 export async function getStoreShippingMethods(): Promise<StoreShippingMethod[]> {
   if (!canUseWooCommerce()) {
     return [{ id: "fallback:flat_rate", methodId: "flat_rate", title: "Envio estimado", description: "A coordinar", total: 950 }];
@@ -1001,8 +1060,12 @@ export async function getStoreOrderForPayment(orderId: string, orderKey?: string
   if (!order) return null;
   if (orderKey && order.order_key && order.order_key !== orderKey) return null;
 
-  const paymentMethods = await getStorePaymentMethods();
+  const [paymentMethods, manualPayment] = await Promise.all([
+    getStorePaymentMethods(),
+    getStoreManualPaymentDetails(),
+  ]);
   const selectedPaymentMethod = paymentMethods.find((method) => method.id === order.payment_method);
+  const isManualPayment = ["bacs", "cod", "cheque"].includes(order.payment_method ?? "");
 
   return {
     ...mapWooOrderSummary(order),
@@ -1011,6 +1074,7 @@ export async function getStoreOrderForPayment(orderId: string, orderKey?: string
     paymentMethodTitle: cleanText(order.payment_method_title) || order.payment_method || "Pago pendiente",
     paymentInstructions: selectedPaymentMethod?.instructions || selectedPaymentMethod?.description,
     paymentUrl: getSafePaymentUrl(order.payment_url ?? order.checkout_payment_url),
+    manualPayment: isManualPayment ? manualPayment : undefined,
     customerEmail: order.billing?.email,
     items: (order.line_items ?? []).map((item) => ({
       id: item.id,

@@ -52,6 +52,10 @@ function isDiscountPaymentMethod(paymentMethodId: string, gatewayIds?: string[])
   return ["bacs", "cod", "cheque"].includes(paymentMethodId);
 }
 
+function isManualPaymentMethod(paymentMethodId: string) {
+  return ["bacs", "cod", "cheque"].includes(paymentMethodId);
+}
+
 function getCheckoutUnitPrice(item: CheckoutCartItem, paymentMethodId: string) {
   const prices = item.product.prices;
   if (isDiscountPaymentMethod(paymentMethodId, prices?.discountGatewayIds) && prices?.discount) {
@@ -187,8 +191,16 @@ export default function CheckoutClient() {
       payment_result?: { redirect_url?: string; payment_status?: string };
     };
     const redirectUrl = payload.payment_result?.redirect_url;
+    const manualPayment = isManualPaymentMethod(paymentMethodId);
 
     await refreshCart();
+
+    if (manualPayment && payload.order_id) {
+      const params = new URLSearchParams();
+      if (payload.order_key) params.set("key", payload.order_key);
+      window.location.href = `/orden/pagar/${payload.order_id}${params.toString() ? `?${params.toString()}` : ""}`;
+      return;
+    }
 
     if (redirectUrl) {
       const url = new URL(redirectUrl, window.location.origin);

@@ -13,6 +13,10 @@ export const metadata: Metadata = {
   description: "Resumen de pedido Minifimy.",
 };
 
+function isManualPaymentMethod(paymentMethodId?: string) {
+  return ["bacs", "cod", "cheque"].includes(paymentMethodId ?? "");
+}
+
 function getPaymentUrl(value?: string) {
   if (!value) return undefined;
   try {
@@ -29,7 +33,7 @@ export default async function OrderPayPage({ params, searchParams }: OrderPayPag
   const order = await getStoreOrderForPayment(orderId, query.key);
   const paymentUrl = getPaymentUrl(query.pay) ?? order?.paymentUrl;
 
-  if (paymentUrl) {
+  if (paymentUrl && !isManualPaymentMethod(order?.paymentMethod)) {
     redirect(paymentUrl);
   }
 

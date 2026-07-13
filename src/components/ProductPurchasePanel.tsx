@@ -97,7 +97,13 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
 
   const selectedPrice = selectedVariant?.price ?? product.price;
   const selectedPrices = selectedVariant?.prices ?? product.prices;
+  const hasVariantData = Boolean(product.variants?.length);
   const missingRequiredOptions = productNeedsOptions(product) && !selectedVariant;
+  const disabledReason = missingRequiredOptions
+    ? hasVariantData
+      ? "Esta combinación no está disponible. Probá otro talle o color."
+      : "No pudimos cargar las variantes desde Fimy. Revisá que el producto tenga variaciones activas y publicadas."
+    : null;
 
   return (
     <div className="space-y-5">
@@ -180,6 +186,12 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
         <div className="rounded-[1.3rem] bg-[#f7efe3] px-4 py-3">
           <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Precio para esta opción</span>
           <ProductPrice price={selectedPrice} prices={selectedPrices} compact />
+        </div>
+      )}
+
+      {disabledReason && (
+        <div className="rounded-[1.25rem] bg-[#f7efe3] px-4 py-3 text-sm font-semibold leading-6 text-primary shadow-soft">
+          {disabledReason}
         </div>
       )}
 

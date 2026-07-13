@@ -9,12 +9,8 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export const revalidate = 300;
-
-export async function generateStaticParams() {
-  const products = await getStoreProducts({ perPage: 100 });
-  return products.map((product) => ({ slug: product.slug }));
-}
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
