@@ -56,24 +56,28 @@ type FimiGiftGuideProps = {
   products: Product[];
   title: string;
   intro: string;
-  featuredProductSlugs?: Record<string, string[]>;
 };
 
-function findProductsBySlugs(products: Product[], slugs: string[] = []) {
-  return slugs
-    .map((slug) => products.find((product) => product.slug === slug))
-    .filter((product): product is Product => Boolean(product));
+const intentTags: Record<string, string[]> = {
+  newborn: ["home-recien-nacidos", "home-newborn"],
+  "baby-shower": ["home-baby-shower"],
+  cozy: ["home-abrigado", "home-cozy"],
+  fimy: ["home-sorprendeme", "home-fimy"],
+};
+
+function hasAnyTag(product: Product, tags: string[]) {
+  return product.tagSlugs?.some((tag) => tags.includes(tag)) ?? false;
 }
 
-export function FimiGiftGuide({ products, title, intro, featuredProductSlugs }: FimiGiftGuideProps) {
+export function FimiGiftGuide({ products, title, intro }: FimiGiftGuideProps) {
   const [selectedIntent, setSelectedIntent] = useState(intents[0].id);
   const activeIntent = intents.find((intent) => intent.id === selectedIntent) ?? intents[0];
 
   const recommended = useMemo(() => {
-    const configuredProducts = findProductsBySlugs(products, featuredProductSlugs?.[activeIntent.id]);
+    const taggedProducts = products.filter((product) => hasAnyTag(product, intentTags[activeIntent.id] ?? []));
 
-    if (configuredProducts.length > 0) {
-      return configuredProducts.slice(0, 3);
+    if (taggedProducts.length > 0) {
+      return taggedProducts.slice(0, 3);
     }
 
     const matches = products.filter((product) => {
@@ -84,7 +88,7 @@ export function FimiGiftGuide({ products, title, intro, featuredProductSlugs }: 
     });
 
     return (matches.length > 0 ? matches : products).slice(0, 3);
-  }, [activeIntent, featuredProductSlugs, products]);
+  }, [activeIntent, products]);
 
   return (
     <section className="fimy-guide px-5 py-20 sm:px-8 lg:px-10" aria-labelledby="fimy-guide-title">

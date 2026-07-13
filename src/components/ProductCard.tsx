@@ -52,14 +52,14 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#2f2a22]/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
           {product.badge && (
-            <div className="absolute left-3 top-3 max-w-[68%] truncate rounded-full bg-[#fffaf1]/94 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary shadow-soft backdrop-blur">
+            <div className="absolute left-3 top-3 max-w-[72%] truncate rounded-full bg-primary px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-on-primary shadow-soft">
               {product.badge}
             </div>
           )}
 
           <button
             type="button"
-            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-[#fffaf1]/96 text-primary shadow-soft backdrop-blur transition-all hover:scale-105 hover:text-secondary"
+            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-[#fffaf1] text-primary shadow-soft ring-1 ring-white/70 transition-all hover:scale-105 hover:text-secondary"
             aria-label="Guardar en favoritos"
           >
             <span className="material-symbols-outlined text-[21px]">favorite</span>
@@ -79,9 +79,8 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
           </h3>
         </div>
 
-        <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.15rem] bg-white/72 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-on-surface-variant">Precio</span>
-          <ProductPrice price={product.price} prices={product.prices} compact />
+        <div className="mb-4 rounded-[1.25rem] bg-[#f8efdf] px-4 py-3 text-center ring-1 ring-[#eadfcb]/75">
+          <ProductPrice price={product.price} prices={product.prices} compact className="text-center" />
         </div>
 
         {!compact && product.colors && product.colors.length > 0 && (

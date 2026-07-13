@@ -17,6 +17,12 @@ function pickProductsBySlugs(products: Awaited<ReturnType<typeof getFeaturedStor
   return picked.length > 0 ? picked : fallback;
 }
 
+function pickProductsByTags(products: Awaited<ReturnType<typeof getFeaturedStoreProducts>>, tags: string[], fallback: typeof products) {
+  const picked = products.filter((product) => product.tagSlugs?.some((tag) => tags.includes(tag)));
+
+  return picked.length > 0 ? picked : fallback;
+}
+
 export const metadata: Metadata = {
   title: "Inicio",
   description:
@@ -26,17 +32,20 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   const newsletterUrl = getWordPressNewsletterUrl();
   const [home, featured] = await Promise.all([getHomeContent(), getFeaturedStoreProducts()]);
+  const taggedHero = pickProductsByTags(featured, ["home-fimy"], [])[0];
   const configuredHero = home.heroFeaturedProductSlug
     ? featured.find((product) => product.slug === home.heroFeaturedProductSlug)
     : undefined;
-  const heroProduct = configuredHero ?? featured[0];
+  const heroProduct = configuredHero ?? taggedHero ?? featured[0];
   const configuredCompanion = home.heroCompanionProductSlug
     ? featured.find((product) => product.slug === home.heroCompanionProductSlug)
     : undefined;
   const heroCompanion = configuredCompanion ?? featured.find((product) => product.id !== heroProduct?.id) ?? heroProduct;
   const supportProducts = featured.filter((product) => product.id !== heroProduct?.id);
-  const editorialProducts = pickProductsBySlugs(featured, home.editorialProductSlugs, supportProducts.slice(0, 3));
-  const featuredSectionProducts = pickProductsBySlugs(featured, home.featuredProductSlugs, featured);
+  const editorialProductsBySlug = pickProductsBySlugs(featured, home.editorialProductSlugs, []);
+  const editorialProducts = pickProductsByTags(featured, ["home-editorial"], editorialProductsBySlug.length > 0 ? editorialProductsBySlug : supportProducts.slice(0, 3));
+  const featuredProductsBySlug = pickProductsBySlugs(featured, home.featuredProductSlugs, []);
+  const featuredSectionProducts = pickProductsByTags(featured, ["home-destacados"], featuredProductsBySlug.length > 0 ? featuredProductsBySlug : featured);
   const sectionHeroProduct = featuredSectionProducts[0] ?? heroProduct;
   const sectionSupportProducts = featuredSectionProducts.filter((product) => product.id !== sectionHeroProduct?.id);
 
@@ -148,7 +157,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <FimiGiftGuide products={featured} title={home.guideTitle} intro={home.guideIntro} featuredProductSlugs={home.guideProductSlugs} />
+      <FimiGiftGuide products={featured} title={home.guideTitle} intro={home.guideIntro} />
 
       <section className="story-river relative px-5 py-20 sm:px-8 lg:px-10">
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">

@@ -32,23 +32,21 @@ export function ProductPrice({ price, prices, compact = false, className = "" }:
 
   if (compact) {
     return (
-      <div className={`text-right leading-tight ${className}`}>
+      <div className={`leading-tight ${className}`}>
         {hasDiscount && (
-          <div className="font-headline text-sm font-bold text-primary/80">
-            {formatPrice(listPrice)}
+          <div className="font-headline text-sm font-bold text-primary/75">
+            Lista {formatPrice(listPrice)}
           </div>
         )}
-        <div className={`font-headline font-extrabold text-secondary ${hasDiscount ? "mt-1 text-xl" : "text-lg"}`}>
-          {hasDiscount ? (
-            <>
-              {formatPrice(finalPrice)}
-              <span className="ml-1 text-[11px] font-bold text-secondary/80">transferencia</span>
-            </>
-          ) : (
-            formatPrice(listPrice)
-          )}
+        <div className={`font-headline font-extrabold text-secondary ${hasDiscount ? "mt-1 text-[1.55rem]" : "text-xl"}`}>
+          {hasDiscount ? formatPrice(finalPrice) : formatPrice(listPrice)}
         </div>
-        <div className="mt-1 text-[10px] font-semibold text-primary/75">3x {formatInstallment(installmentAmount)}</div>
+        {hasDiscount && (
+          <div className="mt-0.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-secondary/80">
+            con transferencia
+          </div>
+        )}
+        <div className="mt-1.5 text-[11px] font-semibold text-primary/75">3x {formatInstallment(installmentAmount)}</div>
       </div>
     );
   }

@@ -1,4 +1,4 @@
-﻿export interface ProductPriceSet {
+export interface ProductPriceSet {
   base: number;
   list?: number;
   discount?: number;
@@ -33,6 +33,8 @@ export interface Product {
   categoryIds?: string[];
   stock: number;
   badge?: string;
+  tagSlugs?: string[];
+  tagNames?: string[];
   sizes?: string[];
   colors?: string[];
   variants?: ProductVariant[];

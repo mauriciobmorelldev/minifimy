@@ -475,6 +475,8 @@ function mapWooProduct(product: WooProduct): Product {
   )?.options;
 
   const prices = getMinifimyPrices(product);
+  const tagSlugs = product.tags?.map((tag) => tag.slug).filter(Boolean) as string[] | undefined;
+  const tagNames = product.tags?.map((tag) => tag.name).filter(Boolean) as string[] | undefined;
 
   return {
     id: String(product.id),
@@ -490,7 +492,9 @@ function mapWooProduct(product: WooProduct): Product {
     categorySlugs,
     categoryIds,
     stock: product.stock_quantity ?? (product.stock_status === "instock" ? 1 : 0),
-    badge: product.tags?.[0]?.name,
+    badge: product.tags?.find((tag) => !tag.slug?.startsWith("home-"))?.name ?? product.tags?.[0]?.name,
+    tagSlugs,
+    tagNames,
     sizes,
     colors,
   };
@@ -759,11 +763,16 @@ export async function getStoreProducts(options: StoreProductQuery = {}) {
 }
 
 export async function getFeaturedStoreProducts() {
-  const featuredCollection = await getStoreProductCollection({ featured: true, perPage: 8 });
-  if (featuredCollection.products.length > 0) return featuredCollection.products.slice(0, 6);
+  const collection = await getStoreProductCollection({ perPage: 48 });
+  const featuredCollection = await getStoreProductCollection({ featured: true, perPage: 12 });
+  const homeTaggedProducts = collection.products.filter((product) =>
+    product.tagSlugs?.some((tag) => tag.startsWith("home-"))
+  );
+  const mergedProducts = [...homeTaggedProducts, ...featuredCollection.products, ...collection.products].filter(
+    (product, index, products) => products.findIndex((item) => item.id === product.id) === index
+  );
 
-  const collection = await getStoreProductCollection({ perPage: 8 });
-  if (collection.products.length > 0) return collection.products.slice(0, 6);
+  if (mergedProducts.length > 0) return mergedProducts.slice(0, 48);
 
   return canUseWooCommerce() ? [] : fallbackProducts.slice(0, 6);
 }
