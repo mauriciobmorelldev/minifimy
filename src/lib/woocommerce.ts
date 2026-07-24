@@ -512,7 +512,8 @@ function mapWooProduct(product: WooProduct): Product {
     categoryId: categoryIds[0],
     categorySlugs,
     categoryIds,
-    stock: product.stock_quantity ?? (product.stock_status === "instock" ? 1 : 0),
+    stock: product.stock_status === "outofstock" ? 0 : product.stock_quantity ?? (product.stock_status === "instock" ? 1 : 0),
+    stockStatus: product.stock_status,
     badge: product.tags?.find((tag) => !tag.slug?.startsWith("home-"))?.name ?? product.tags?.[0]?.name,
     tagSlugs,
     tagNames,
@@ -544,7 +545,8 @@ function mapWooVariation(variation: WooVariation): ProductVariant {
     image: getSafeImage(variation.image?.src) ?? undefined,
     price: getMinifimyPrices(variation).base || undefined,
     prices: getMinifimyPrices(variation),
-    stock: variation.stock_quantity ?? (variation.stock_status === "instock" ? 1 : 0),
+    stock: variation.stock_status === "outofstock" ? 0 : variation.stock_quantity ?? (variation.stock_status === "instock" ? 1 : 0),
+    stockStatus: variation.stock_status,
   };
 }
 
@@ -561,6 +563,9 @@ function mergeProductVariants(product: Product, variants: ProductVariant[]): Pro
   const sizes = getUniqueSortedValues([...(product.sizes ?? []), ...variants.map((variant) => variant.size)]);
   const colors = getUniqueSortedValues([...(product.colors ?? []), ...variants.map((variant) => variant.color)]);
 
+  const availableVariants = variants.filter((variant) => variant.stockStatus !== "outofstock" && (variant.stock === undefined || variant.stock > 0));
+  const variantStock = variants.reduce((total, variant) => total + (variant.stock && variant.stock > 0 ? variant.stock : 0), 0);
+
   return {
     ...product,
     images,
@@ -568,6 +573,8 @@ function mergeProductVariants(product: Product, variants: ProductVariant[]): Pro
     colors: colors.length > 0 ? colors : product.colors,
     price: bestPrice,
     prices: bestPrices ?? product.prices,
+    stock: availableVariants.length > 0 ? Math.max(variantStock, 1) : 0,
+    stockStatus: availableVariants.length > 0 ? "instock" : "outofstock",
     variants,
   };
 }

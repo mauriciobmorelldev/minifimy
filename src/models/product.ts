@@ -7,6 +7,8 @@ export interface ProductPriceSet {
   listLabel?: string;
 }
 
+export type ProductStockStatus = "instock" | "outofstock" | "onbackorder" | string;
+
 export interface ProductVariant {
   id: string;
   size?: string;
@@ -16,6 +18,7 @@ export interface ProductVariant {
   price?: number;
   prices?: ProductPriceSet;
   stock?: number;
+  stockStatus?: ProductStockStatus;
 }
 
 export interface Product {
@@ -32,6 +35,7 @@ export interface Product {
   categorySlugs?: string[];
   categoryIds?: string[];
   stock: number;
+  stockStatus?: ProductStockStatus;
   badge?: string;
   tagSlugs?: string[];
   tagNames?: string[];

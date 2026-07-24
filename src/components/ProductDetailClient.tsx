@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductPrice } from "@/components/ProductPrice";
 import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
+import { productIsInStock, variantIsInStock } from "@/lib/product-stock";
 import type { Product, ProductSelection } from "@/models/product";
 
 interface ProductDetailClientProps {
@@ -61,7 +62,7 @@ function findBestVariantForSelection(variants: ProductVariant[] | undefined, sel
 }
 
 function getInitialSelection(product: Product): ProductSelection {
-  const firstVariant = product.variants?.find((variant) => variant.stock === undefined || variant.stock > 0) ?? product.variants?.[0];
+  const firstVariant = product.variants?.find(variantIsInStock) ?? product.variants?.[0];
 
   return {
     size: firstVariant?.size ?? product.sizes?.[0],
@@ -85,7 +86,8 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
 
   const selectedPrice = selectedVariant?.price ?? visualVariant?.price ?? product.price;
   const selectedPrices = selectedVariant?.prices ?? visualVariant?.prices ?? product.prices;
-  const selectedStock = selectedVariant?.stock ?? visualVariant?.stock ?? product.stock;
+  const selectedInStock = selectedVariant ? variantIsInStock(selectedVariant) : visualVariant ? variantIsInStock(visualVariant) : productIsInStock(product);
+  const selectedStock = selectedInStock ? selectedVariant?.stock ?? visualVariant?.stock ?? product.stock : 0;
   const galleryImages = useMemo(() => {
     const selectedImage = visualVariant?.image;
     const variantImages = product.variants?.flatMap((variant) => (variant.image ? [variant.image] : [])) ?? [];
@@ -107,7 +109,7 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
           <div className="mt-4 flex items-center justify-between gap-4">
             <ProductPrice price={selectedPrice} prices={selectedPrices} />
             <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-bold text-on-primary-container">
-              Stock {selectedStock > 0 ? "disponible" : "a consultar"}
+              {selectedStock > 0 ? "Stock disponible" : "Sin stock"}
             </span>
           </div>
         </header>

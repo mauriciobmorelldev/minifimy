@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { useCart } from "@/context/cart-context";
 import { productNeedsOptions } from "@/lib/product-options";
+import { productIsInStock } from "@/lib/product-stock";
 import type { Product, ProductSelection } from "@/models/product";
 
 interface AddToCartButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick" | "type"> {
@@ -18,6 +19,8 @@ export function AddToCartButton({ product, quantity = 1, selection, className, c
   const [status, setStatus] = useState<"idle" | "adding" | "added" | "error">("idle");
   const [bump, setBump] = useState(false);
   const resetTimer = useRef<number | null>(null);
+  const inStock = productIsInStock(product);
+  const isDisabled = Boolean(buttonProps.disabled || status === "adding" || !inStock);
   const classes = [
     "inline-flex items-center justify-center rounded-md font-bold transition-all touch-manipulation select-none",
     bump ? "cart-bump" : "",
@@ -39,8 +42,13 @@ export function AddToCartButton({ product, quantity = 1, selection, className, c
       type="button"
       className={classes}
       {...buttonProps}
-      disabled={buttonProps.disabled || status === "adding"}
+      disabled={isDisabled}
       onClick={async () => {
+        if (!inStock) {
+          setStatus("idle");
+          return;
+        }
+
         if (productNeedsOptions(product) && !selection?.variationId && !selection?.variationAttributes?.length) {
           window.location.href = `/producto/${product.slug}`;
           return;
@@ -62,7 +70,12 @@ export function AddToCartButton({ product, quantity = 1, selection, className, c
         resetTimer.current = window.setTimeout(() => setStatus("idle"), 1800);
       }}
     >
-      {status === "adding" ? (
+      {!inStock ? (
+        <span className="flex items-center gap-2" aria-live="polite">
+          <span className="material-symbols-outlined text-lg">inventory_2</span>
+          Sin stock
+        </span>
+      ) : status === "adding" ? (
         <span className="flex items-center gap-2" aria-live="polite">
           <span className="material-symbols-outlined text-lg">progress_activity</span>
           Agregando

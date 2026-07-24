@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductPrice } from "@/components/ProductPrice";
 import { productNeedsOptions } from "@/lib/product-options";
+import { productIsInStock } from "@/lib/product-stock";
 import type { Product } from "@/models/product";
 
 interface ProductCardProps {
@@ -33,6 +34,7 @@ function colorValue(color: string) {
 export function ProductCard({ product, compact = false }: ProductCardProps) {
   const image = product.images[0] ?? "/brand/illustrations/jirafa.svg";
   const needsOptions = productNeedsOptions(product);
+  const inStock = productIsInStock(product);
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] bg-[#fffaf1] shadow-soft ring-1 ring-[#eadfcb]/80 transition-all duration-500 hover:-translate-y-1 hover:shadow-lift">
@@ -51,11 +53,9 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
 
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#2f2a22]/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
-          {product.badge && (
-            <div className="absolute left-3 top-3 max-w-[72%] truncate rounded-full bg-primary px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-on-primary shadow-soft">
-              {product.badge}
-            </div>
-          )}
+          <div className={`absolute left-3 top-3 max-w-[72%] truncate rounded-full px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] shadow-soft ${inStock ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-secondary ring-1 ring-secondary/20"}`}>
+            {inStock ? product.badge ?? "Minifimy" : "Sin stock"}
+          </div>
 
           <button
             type="button"
@@ -102,7 +102,16 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
           </div>
         )}
 
-        {needsOptions ? (
+        {!inStock ? (
+          <button
+            type="button"
+            disabled
+            className="relative mt-auto inline-flex w-full cursor-not-allowed items-center justify-center gap-2 overflow-hidden rounded-full bg-[#e8ddca] px-4 py-3.5 font-headline text-sm font-bold text-primary/65 shadow-soft"
+          >
+            <span className="material-symbols-outlined text-lg">inventory_2</span>
+            Sin stock
+          </button>
+        ) : needsOptions ? (
           <Link
             href={`/producto/${product.slug}`}
             className="group/btn relative mt-auto inline-flex w-full items-center justify-center overflow-hidden rounded-full bg-primary px-4 py-3.5 font-headline text-sm font-bold text-on-primary shadow-soft transition-transform hover:scale-[1.015] active:scale-[0.98]"

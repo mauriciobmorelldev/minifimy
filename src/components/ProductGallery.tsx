@@ -12,10 +12,8 @@ interface ProductGalleryProps {
 export function ProductGallery({ images, productName, selectedImage }: ProductGalleryProps) {
   const galleryImages = images.length > 0 ? images : ["/products/flatlay-01.jpg"];
   const [activeIndex, setActiveIndex] = useState(0);
-  const [lastSelectedImage, setLastSelectedImage] = useState(selectedImage);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const selectedImageIndex = selectedImage ? galleryImages.findIndex((image) => image === selectedImage) : -1;
-  const displayIndex = selectedImage && selectedImage !== lastSelectedImage && selectedImageIndex >= 0 ? selectedImageIndex : activeIndex;
+  const displayIndex = Math.min(activeIndex, galleryImages.length - 1);
   const activeImage = galleryImages[displayIndex] ?? galleryImages[0];
   const hasManyImages = galleryImages.length > 1;
 
@@ -29,9 +27,17 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
     const imageIndex = galleryImages.findIndex((image) => image === selectedImage);
     if (imageIndex >= 0) {
       setActiveIndex(imageIndex);
-      setLastSelectedImage(selectedImage);
     }
   }, [galleryImages, selectedImage]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    galleryImages.forEach((image) => {
+      const preload = new window.Image();
+      preload.decoding = "async";
+      preload.src = image;
+    });
+  }, [galleryImages]);
 
   useEffect(() => {
     if (!lightboxOpen) return;
@@ -56,14 +62,13 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
     <div className="space-y-4 md:space-y-5">
       <div className="relative overflow-hidden rounded-[1.6rem] bg-surface-container-low shadow-soft md:rounded-[2rem]">
         <div className="relative aspect-[4/5] w-full overflow-hidden md:aspect-[4/4.8]">
-          <Image
+          <img
+            key={activeImage}
             src={activeImage}
             alt={`${productName} vista ${displayIndex + 1}`}
-            fill
-            sizes="(min-width: 1280px) 620px, (min-width: 1024px) 52vw, 92vw"
-            className="object-cover transition-transform duration-500 ease-soft-spring"
-            quality={78}
-            priority
+            loading="eager"
+            decoding="async"
+            className="h-full w-full object-cover transition-opacity duration-150 ease-out"
           />
         </div>
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductPrice } from "@/components/ProductPrice";
 import { productNeedsOptions } from "@/lib/product-options";
+import { productIsInStock, variantIsInStock } from "@/lib/product-stock";
 import type { Product, ProductSelection, ProductVariant } from "@/models/product";
 
 interface ProductPurchasePanelProps {
@@ -95,15 +96,18 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
     });
   };
 
+  const selectedInStock = selectedVariant ? variantIsInStock(selectedVariant) : productIsInStock(product);
   const selectedPrice = selectedVariant?.price ?? product.price;
   const selectedPrices = selectedVariant?.prices ?? product.prices;
   const hasVariantData = Boolean(product.variants?.length);
   const missingRequiredOptions = productNeedsOptions(product) && !selectedVariant;
-  const disabledReason = missingRequiredOptions
-    ? hasVariantData
-      ? "Esta combinación no está disponible. Probá otro talle o color."
-      : "No pudimos cargar las variantes desde Fimy. Revisá que el producto tenga variaciones activas y publicadas."
-    : null;
+  const disabledReason = !selectedInStock
+    ? "Esta opción está sin stock por ahora."
+    : missingRequiredOptions
+      ? hasVariantData
+        ? "Esta combinación no está disponible. Probá otro talle o color."
+        : "No pudimos cargar las variantes desde Fimy. Revisá que el producto tenga variaciones activas y publicadas."
+      : null;
 
   return (
     <div className="space-y-5">
@@ -196,14 +200,14 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
       )}
 
       <AddToCartButton
-        product={{ ...product, price: selectedPrice, prices: selectedPrices, images: selectedVariant?.image ? [selectedVariant.image, ...product.images.filter((image) => image !== selectedVariant.image)] : product.images }}
+        product={{ ...product, price: selectedPrice, prices: selectedPrices, stock: selectedInStock ? selectedVariant?.stock ?? product.stock : 0, stockStatus: selectedInStock ? product.stockStatus : "outofstock", images: selectedVariant?.image ? [selectedVariant.image, ...product.images.filter((image) => image !== selectedVariant.image)] : product.images }}
         quantity={quantity}
         selection={selection}
-        disabled={missingRequiredOptions}
+        disabled={missingRequiredOptions || !selectedInStock}
         className="w-full gap-3 rounded-full bg-primary py-4 font-headline text-base text-on-primary shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-55 md:py-5 md:text-lg"
       >
         <span className="material-symbols-outlined">shopping_bag</span>
-        {missingRequiredOptions ? "Elegí una opción disponible" : "Agregar al bolso"}
+        {!selectedInStock ? "Sin stock" : missingRequiredOptions ? "Elegí una opción disponible" : "Agregar al bolso"}
       </AddToCartButton>
     </div>
   );
