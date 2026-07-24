@@ -708,7 +708,6 @@ function getProductQueryParams(options: StoreProductQuery = {}) {
     per_page: options.perPage ?? 24,
     page: options.page ?? 1,
     status: "publish",
-    stock_status: "instock",
     _fields: WOO_PRODUCT_FIELDS,
     ...(options.featured ? { featured: true } : {}),
     ...(options.category ? { category: options.category } : {}),
