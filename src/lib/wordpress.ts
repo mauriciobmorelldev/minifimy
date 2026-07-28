@@ -154,7 +154,7 @@ export const fallbackSiteSettings: SiteSettings = {
   ],
   featuredMenuItems: [],
   menusFromWordPress: false,
-  whatsappPhone: process.env.NEXT_PUBLIC_STORE_WHATSAPP_PHONE,
+  whatsappPhone: process.env.NEXT_PUBLIC_STORE_WHATSAPP_PHONE ?? "5493794004299",
   whatsappMessage: "Hola Minifimy! Quiero hacer una consulta.",
   whatsappMessages: ["Hola, soy Fimy.", "Te ayudo a elegir?"],
 };
@@ -166,7 +166,13 @@ function normalizeMenu(items: { label?: string; href?: string }[] | undefined) {
 }
 
 function normalizePhone(value?: string) {
-  return value?.replace(/[^0-9]/g, "") || undefined;
+  const phone = value?.replace(/[^0-9]/g, "");
+
+  if (!phone) return undefined;
+  if (phone.startsWith("54")) return phone;
+  if (phone.length === 10 && phone.startsWith("3")) return `549${phone}`;
+
+  return phone;
 }
 
 function normalizeSiteSettings(acf?: HomeACF | null): SiteSettings {

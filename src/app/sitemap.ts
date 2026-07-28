@@ -11,6 +11,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/checkout`, lastModified: new Date() },
     { url: `${baseUrl}/cuenta`, lastModified: new Date() },
     { url: `${baseUrl}/contacto`, lastModified: new Date() },
+    { url: `${baseUrl}/legales`, lastModified: new Date() },
+    { url: `${baseUrl}/privacidad`, lastModified: new Date() },
+    { url: `${baseUrl}/cookies`, lastModified: new Date() },
     ...categories.map((category) => ({
       url: `${baseUrl}/catalogo/${category.slug}`,
       lastModified: new Date(),

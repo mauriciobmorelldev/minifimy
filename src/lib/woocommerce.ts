@@ -804,6 +804,18 @@ export async function getFeaturedStoreProducts() {
   return canUseWooCommerce() ? [] : fallbackProducts.slice(0, 6);
 }
 
+export async function getNewestStoreProducts(limit = 15) {
+  const products = await getStoreProducts({
+    perPage: limit,
+    orderby: "date",
+    order: "desc",
+  });
+
+  if (products.length > 0) return products.slice(0, limit);
+
+  return canUseWooCommerce() ? [] : fallbackProducts.slice(0, limit);
+}
+
 async function getWooAttributeTerms(attribute: WooProductAttribute | undefined) {
   if (!attribute) return [];
 

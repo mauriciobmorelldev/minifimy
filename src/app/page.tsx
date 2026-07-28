@@ -2,10 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
-import { FimiGiftGuide } from "@/components/FimiGiftGuide";
+import { NewArrivalsCarousel } from "@/components/NewArrivalsCarousel";
 import { ProductPrice } from "@/components/ProductPrice";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { getFeaturedStoreProducts, getWordPressNewsletterUrl } from "@/lib/woocommerce";
+import { getFeaturedStoreProducts, getNewestStoreProducts, getWordPressNewsletterUrl } from "@/lib/woocommerce";
 import { productNeedsOptions } from "@/lib/product-options";
 import { getHomeContent } from "@/lib/wordpress";
 
@@ -31,7 +31,11 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const newsletterUrl = getWordPressNewsletterUrl();
-  const [home, featured] = await Promise.all([getHomeContent(), getFeaturedStoreProducts()]);
+  const [home, featured, newestProducts] = await Promise.all([
+    getHomeContent(),
+    getFeaturedStoreProducts(),
+    getNewestStoreProducts(15),
+  ]);
   const taggedHero = pickProductsByTags(featured, ["home-fimy"], [])[0];
   const configuredHero = home.heroFeaturedProductSlug
     ? featured.find((product) => product.slug === home.heroFeaturedProductSlug)
@@ -41,7 +45,6 @@ export default async function HomePage() {
     ? featured.find((product) => product.slug === home.heroCompanionProductSlug)
     : undefined;
   const heroCompanion = configuredCompanion ?? featured.find((product) => product.id !== heroProduct?.id) ?? heroProduct;
-  const supportProducts = featured.filter((product) => product.id !== heroProduct?.id);
   const featuredProductsBySlug = pickProductsBySlugs(featured, home.featuredProductSlugs, []);
   const featuredSectionProducts = pickProductsByTags(featured, ["home-destacados"], featuredProductsBySlug.length > 0 ? featuredProductsBySlug : featured);
   const sectionHeroProduct = featuredSectionProducts[0] ?? heroProduct;
@@ -154,8 +157,7 @@ export default async function HomePage() {
           </ScrollReveal>
         </div>
       </section>
-
-      <FimiGiftGuide products={featured} title={home.guideTitle} intro={home.guideIntro} />
+      <NewArrivalsCarousel products={newestProducts} />
 
       <section className="story-river relative px-5 py-20 sm:px-8 lg:px-10">
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.88fr_1.12fr]">
