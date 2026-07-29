@@ -3,7 +3,7 @@ import { AccountClient } from "@/components/AccountClient";
 
 export const metadata: Metadata = {
   title: "Mi cuenta",
-  description: "Cuenta, pedidos e inicio de sesion con Fimy desde el front de Minifimy.",
+  description: "Cuenta, pedidos e inicio de sesión con Fimy desde el front de MiniFimy.",
 };
 
 export default function AccountPage() {

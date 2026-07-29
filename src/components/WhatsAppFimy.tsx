@@ -41,7 +41,7 @@ export function WhatsAppFimy({ phone, message, messages }: WhatsAppFimyProps) {
       >
         <Image
           src="/brand/fimy.jpg"
-          alt="Fimy, la jirafita de Minifimy"
+          alt="Fimy, la jirafita de MiniFimy"
           width={64}
           height={64}
           className="h-12 w-12 rounded-full object-cover"

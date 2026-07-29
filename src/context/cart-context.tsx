@@ -115,7 +115,7 @@ function mapStoreItem(item: StoreApiCartItem): CartItem {
       price,
       prices,
       images: [image],
-      category: "Minifimy",
+      category: "MiniFimy",
       stock,
     },
   };
@@ -181,7 +181,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [applyCart]);
 
   useEffect(() => {
-    void refreshCart();
+    // La carga inicial no debe romper la tienda si Woo no está disponible
+    // en el entorno local. Las acciones de compra sí siguen propagando errores.
+    void refreshCart().catch(() => undefined);
   }, [refreshCart]);
 
   const items = useMemo(() => (cart.items ?? []).map(mapStoreItem), [cart.items]);

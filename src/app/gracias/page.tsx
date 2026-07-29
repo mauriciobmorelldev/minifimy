@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Gracias",
-  description: "Compra confirmada en MINIFIMY.",
+  description: "Compra confirmada en MiniFimy.",
 };
 
 export default function ThankYouPage() {

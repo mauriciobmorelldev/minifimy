@@ -101,68 +101,83 @@ export type SiteSettings = {
 const HOME_SLUG = process.env.WORDPRESS_HOME_SLUG ?? "inicio";
 
 export const fallbackHomeContent: HomeContent = {
-  heroKicker: "Minifimy, con amor",
+  heroKicker: "MiniFimy, con amor",
   heroTitle: "Un regalo que empieza antes de abrir la caja.",
   heroSubtitle:
     "Fimy te acompana a elegir prendas suaves para esas primeras veces que quedan guardadas en la familia.",
   heroPrimaryLabel: "Encontrar algo especial",
   heroPrimaryHref: "/catalogo",
-  heroSecondaryLabel: "Es para recien nacido",
+  heroSecondaryLabel: "Es para recién nacido",
   heroSecondaryHref: "/catalogo/recien-nacido",
   guideProductSlugs: { newborn: [], "baby-shower": [], cozy: [], fimy: [] },
   editorialProductSlugs: [],
   featuredProductSlugs: [],
   fimiNoteTitle: "Fimy dice",
   fimiNoteText:
-    "Si es un regalo, empeza por una pieza suave, facil de combinar y lista para usar.",
+    "Si es un regalo, empezá por una pieza suave, fácil de combinar y lista para usar.",
   heroGiftChip: "Para baby shower, primeros dias o una visita con amor",
-  guideTitle: "Contame para quien es y te muestro por donde empezar.",
+  guideTitle: "Contame para quién es y te muestro por donde empezar.",
   guideIntro:
     "La idea no es llenar la pantalla de productos. Es encontrar una prenda que tenga sentido para ese momento.",
   editorialKicker: "Un ratito de pausa",
-  editorialTitle: "Pequenas cosas que hacen enorme la infancia.",
+  editorialTitle: "Pequeñas cosas que hacen enorme la infancia.",
   editorialNotes: [
     "Las primeras veces merecen algo especial.",
     "Elegimos cada detalle como si fuera para nuestra familia.",
     "Fimy aparece poquito, solo cuando puede ayudar.",
   ],
   featuredSectionKicker: "Encontramos algo especial",
-  featuredSectionTitle: "Una seleccion pequena, pensada para elegir sin apuro.",
+  featuredSectionTitle: "Una selección pequeña, pensada para elegir sin apuro.",
   trustKicker: "Gracias por pasar",
-  trustTitle: "Una compra tranquila tambien es parte del regalo.",
+  trustTitle: "Una compra tranquila también es parte del regalo.",
   trustItems: [
-    { icon: "eco", title: "Algodon suave" },
+    { icon: "eco", title: "Algodón suave" },
     { icon: "redeem", title: "Listo para regalar" },
-    { icon: "local_shipping", title: "Envios cuidados" },
+    { icon: "local_shipping", title: "Envíos cuidados" },
     { icon: "favorite", title: "Curado con amor" },
   ],
-  newsletterTitle: "Cartitas suaves de Minifimy",
-  newsletterText: "Novedades, regalos y pequenas joyitas para mirar con tiempo.",
+  newsletterTitle: "Cartitas suaves de MiniFimy",
+  newsletterText: "Novedades, regalos y pequeñas joyitas para mirar con tiempo.",
 };
 
 
 export const fallbackSiteSettings: SiteSettings = {
-  mainMenu: [{ href: "/catalogo", label: "Catalogo" }],
+  mainMenu: [{ href: "/catalogo", label: "Catálogo" }],
   footerExploreMenu: [
-    { href: "/catalogo", label: "Catalogo" },
-    { href: "/contacto", label: "Guia de talles" },
-    { href: "/contacto", label: "Envios y devoluciones" },
+    { href: "/catalogo", label: "Catálogo" },
+    { href: "/envios-y-cambios", label: "Envíos y cambios" },
   ],
   footerSupportMenu: [
     { href: "/contacto", label: "Contacto" },
-    { href: "/contacto", label: "Politicas" },
+    { href: "/legales", label: "Políticas" },
   ],
   featuredMenuItems: [],
   menusFromWordPress: false,
   whatsappPhone: process.env.NEXT_PUBLIC_STORE_WHATSAPP_PHONE ?? "5493794004299",
-  whatsappMessage: "Hola Minifimy! Quiero hacer una consulta.",
+  whatsappMessage: "¡Hola MiniFimy! Quiero hacer una consulta.",
   whatsappMessages: ["Hola, soy Fimy.", "Te ayudo a elegir?"],
 };
 
 function normalizeMenu(items: { label?: string; href?: string }[] | undefined) {
-  return items
+  const routeByLabel = [
+    { terms: ["envio"], href: "/envios-y-cambios", label: "Envíos y cambios" },
+    { terms: ["devolucion"], href: "/envios-y-cambios", label: "Envíos y cambios" },
+    { terms: ["cambio"], href: "/envios-y-cambios", label: "Envíos y cambios" },
+    { terms: ["politica"], href: "/legales", label: "Políticas" },
+  ];
+
+  return (items
     ?.map((item) => ({ label: item.label?.trim() ?? "", href: item.href?.trim() ?? "" }))
-    .filter((item) => item.label && item.href) ?? [];
+    .filter((item) => {
+      if (!item.label || !item.href) return false;
+      const normalizedLabel = item.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      return !(normalizedLabel.includes("guia") && normalizedLabel.includes("talle"));
+    }) ?? [])
+    .map((item) => {
+      const label = item.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const route = routeByLabel.find((candidate) => candidate.terms.some((term) => label.includes(term)));
+      return route ? { ...item, href: route.href, label: route.label } : item;
+    });
 }
 
 function normalizePhone(value?: string) {
@@ -259,7 +274,7 @@ function normalizeHomeContent(acf?: HomeACF | null): HomeContent {
     trustTitle: firstText(acf.trust_title, fallbackHomeContent.trustTitle),
     trustItems:
       acf.trust_items
-        ?.map((item) => ({ icon: item.icon || "favorite", title: item.title || "Minifimy" }))
+        ?.map((item) => ({ icon: item.icon || "favorite", title: item.title || "MiniFimy" }))
         .filter((item) => item.title) ?? fallbackHomeContent.trustItems,
     newsletterTitle: firstText(acf.newsletter_title, fallbackHomeContent.newsletterTitle),
     newsletterText: firstText(acf.newsletter_text, fallbackHomeContent.newsletterText),

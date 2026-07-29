@@ -26,6 +26,10 @@ export interface Product {
   name: string;
   slug: string;
   description: string;
+  material?: string;
+  care?: string;
+  fit?: string;
+  includes?: string;
   price: number;
   prices?: ProductPriceSet;
   type?: "simple" | "variable" | "grouped" | "external" | string;

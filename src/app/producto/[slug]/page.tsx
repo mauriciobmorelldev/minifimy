@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ProductCarousel } from "@/components/ProductCarousel";
 import { ProductDetailClient } from "@/components/ProductDetailClient";
 import { ProductReviews } from "@/components/ProductReviews";
+import { productIsInStock } from "@/lib/product-stock";
 import { getStoreCategories, getStoreProductBySlug, getStoreProductReviews, getStoreProducts } from "@/lib/woocommerce";
 
 interface ProductPageProps {
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const product = await getStoreProductBySlug(slug);
   return {
     title: product ? product.name : "Producto",
-    description: product?.description ?? "Detalle de producto MINIFIMY.",
+    description: product?.description ?? "Detalle de producto MiniFimy.",
     openGraph: product
       ? {
           title: product.name,
@@ -40,9 +41,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
     return (
       <main className="mobile-soft-page mx-auto w-full max-w-6xl px-4 py-28 md:px-6">
         <div className="rounded-[2rem] bg-white/80 p-8 text-center shadow-soft">
-          <p className="text-sm text-on-surface-variant">Producto no encontrado o todavia no publicado.</p>
+          <p className="text-sm text-on-surface-variant">Producto no encontrado o todavía no publicado.</p>
           <Link href="/catalogo" className="btn-ghost mt-6 inline-flex">
-            Volver al catalogo
+            Volver al catálogo
           </Link>
         </div>
       </main>
@@ -51,8 +52,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   const category = categories.find((item) => item.slug === product.category);
   const recommendations = allProducts
-    .filter((item) => item.id !== product.id && item.category === product.category)
-    .concat(allProducts.filter((item) => item.id !== product.id && item.category !== product.category))
+    .filter((item) => item.id !== product.id && item.category !== product.category && productIsInStock(item))
     .slice(0, 8);
   const productReviews = await getStoreProductReviews(product.id);
 
@@ -64,11 +64,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </Link>
         <span className="material-symbols-outlined text-[12px]">chevron_right</span>
         <Link href="/catalogo" className="transition-colors hover:text-primary">
-          Catalogo
+          Catálogo
         </Link>
         <span className="material-symbols-outlined text-[12px]">chevron_right</span>
         <Link href={`/catalogo/${product.category}`} className="transition-colors hover:text-primary">
-          {category?.name ?? "Categoria"}
+          {category?.name ?? "Categoría"}
         </Link>
         <span className="material-symbols-outlined text-[12px]">chevron_right</span>
         <span className="text-on-surface">{product.name}</span>
@@ -77,7 +77,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Link href="/catalogo" className="inline-flex items-center gap-2 rounded-full bg-white/78 px-4 py-2 text-sm font-bold text-primary shadow-soft transition hover:bg-white">
           <span className="material-symbols-outlined text-lg">arrow_back</span>
-          Volver al catalogo
+          Volver al catálogo
         </Link>
         <Link href="/carrito" className="inline-flex items-center gap-2 rounded-full bg-[#f7efe3] px-4 py-2 text-sm font-bold text-secondary shadow-soft">
           Ver carrito
@@ -93,11 +93,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
       <div className="mt-14 md:mt-24">
         <ProductCarousel
-          title="Completa el look"
+          title="Completá el look"
           eyebrow="Productos relacionados"
           description="Combos suaves para cada momento, listos para sumar a la bolsita."
           products={recommendations}
-          ctaLabel="Ver coleccion"
+          ctaLabel="Ver colección"
         />
       </div>
     </main>

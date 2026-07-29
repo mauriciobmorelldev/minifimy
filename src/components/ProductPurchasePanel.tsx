@@ -114,7 +114,7 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
       {product.sizes && product.sizes.length > 0 && (
         <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
           <span className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-            Elegi talle
+            Elegí talle
           </span>
           <div className="flex flex-wrap items-center gap-2">
             {product.sizes.map((size) => (
@@ -138,7 +138,7 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
       {product.colors && product.colors.length > 0 && (
         <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
           <span className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-            Elegi color
+            Elegí color
           </span>
           <div className="flex flex-wrap items-center gap-2">
             {product.colors.map((color) => (

@@ -30,5 +30,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "No pudimos crear la cuenta. Puede que ese email ya este registrado." }, { status: 502 });
   }
 
-  return NextResponse.json({ message: "Cuenta creada. Ya podes iniciar sesion.", customer });
+  return NextResponse.json({ message: "Cuenta creada. Ya podés iniciar sesión.", customer });
 }

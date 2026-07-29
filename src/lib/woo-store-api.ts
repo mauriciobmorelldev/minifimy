@@ -49,7 +49,7 @@ function getForwardHeaders(request: NextRequest, contentType = "application/json
 
   headers.set("accept", "application/json");
   headers.set("content-type", contentType);
-  headers.set("user-agent", request.headers.get("user-agent") ?? "Minifimy Store API BFF");
+  headers.set("user-agent", request.headers.get("user-agent") ?? "MiniFimy Store API BFF");
   if (cookie) headers.set("cookie", cookie);
   if (nonce) headers.set("nonce", nonce);
   if (cartToken) headers.set("cart-token", cartToken);

@@ -54,7 +54,7 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#2f2a22]/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
           <div className={`absolute left-3 top-3 max-w-[72%] truncate rounded-full px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] shadow-soft ${inStock ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-secondary ring-1 ring-secondary/20"}`}>
-            {inStock ? product.badge ?? "Minifimy" : "Sin stock"}
+            {inStock ? product.badge ?? "MiniFimy" : "Sin stock"}
           </div>
 
           <button
@@ -69,7 +69,7 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
 
       <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
         <div className="mb-3">
-          <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.2em] text-primary/70">
+          <p className="mb-2 hidden text-[10px] font-extrabold uppercase tracking-[0.2em] text-primary/70 sm:block">
             {product.category}
           </p>
           <h3 className="line-clamp-2 min-h-[3rem] font-headline text-[1.28rem] font-extrabold leading-[1.16] text-on-surface md:text-[1.36rem]">
@@ -84,7 +84,7 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
         </div>
 
         {!compact && product.colors && product.colors.length > 0 && (
-          <div className="mb-5 flex items-center justify-between gap-3 rounded-[1rem] bg-[#f7efe3]/70 px-3 py-2">
+          <div className="mb-5 hidden items-center justify-between gap-3 rounded-[1rem] sm:flex bg-[#f7efe3]/70 px-3 py-2">
             <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary/70">Colores</span>
             <div className="flex items-center -space-x-1.5">
               {product.colors.slice(0, 5).map((color) => (
@@ -117,7 +117,7 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
             className="group/btn relative mt-auto inline-flex w-full items-center justify-center overflow-hidden rounded-full bg-primary px-4 py-3.5 font-headline text-sm font-bold text-on-primary shadow-soft transition-transform hover:scale-[1.015] active:scale-[0.98]"
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
-              Elegir opciones
+              Ver opciones
               <span className="material-symbols-outlined text-lg transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
             </span>
             <span className="absolute inset-0 bg-secondary opacity-0 transition-opacity group-hover/btn:opacity-100" />
@@ -128,7 +128,7 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
             className="group/btn relative mt-auto w-full overflow-hidden rounded-full bg-primary px-4 py-3.5 font-headline text-sm font-bold text-on-primary shadow-soft transition-transform hover:scale-[1.015] active:scale-[0.98]"
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
-              Agregar a la bolsita
+              Agregar al carrito
               <span className="material-symbols-outlined text-lg transition-transform group-hover/btn:translate-x-1">shopping_basket</span>
             </span>
             <span className="absolute inset-0 bg-secondary opacity-0 transition-opacity group-hover/btn:opacity-100" />

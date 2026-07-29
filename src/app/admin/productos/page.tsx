@@ -3,7 +3,7 @@ import { products } from "@/lib/products";
 
 export const metadata: Metadata = {
   title: "Admin productos",
-  description: "Panel interno para gestionar productos MINIFIMY.",
+  description: "Panel interno para gestionar productos MiniFimy.",
 };
 
 export default function AdminProductsPage() {

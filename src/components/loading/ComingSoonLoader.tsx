@@ -9,14 +9,14 @@ export function ComingSoonLoader({ progress }: ComingSoonLoaderProps) {
     <main className="pattern-surface flex min-h-[calc(100vh-5rem)] items-center px-6 py-24">
       <section className="mx-auto grid w-full max-w-5xl items-center gap-10 rounded-lg bg-surface-container-low/95 p-8 shadow-lift md:grid-cols-[1fr_0.8fr] md:p-12">
         <div className="space-y-7">
-          <span className="chip">MINIFIMY</span>
+          <span className="chip">MiniFimy</span>
           <div className="space-y-4">
             <h1 className="font-headline text-4xl font-bold leading-tight text-on-surface md:text-5xl">
               Pagina cargando, proximamente
             </h1>
             <p className="max-w-xl text-base leading-relaxed text-on-surface-variant md:text-lg">
               Estamos preparando este espacio con el mismo cuidado suave de cada detalle
-              MINIFIMY.
+              MiniFimy.
             </p>
           </div>
 
@@ -50,7 +50,7 @@ export function ComingSoonLoader({ progress }: ComingSoonLoaderProps) {
           <div className="absolute inset-4 rounded-lg border border-dashed border-outline-variant" />
           <Image
             src="/brand/logo.svg"
-            alt="Logo MINIFIMY"
+            alt="Logo MiniFimy"
             width={180}
             height={180}
             className="relative fimy-float h-auto w-36 md:w-44"

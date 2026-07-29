@@ -3,7 +3,7 @@ import { Be_Vietnam_Pro, Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@/components/Analytics";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { MinifimyIntroLoader } from "@/components/MinifimyIntroLoader";
+import { MiniFimyIntroLoader } from "@/components/MiniFimyIntroLoader";
 import { SiteLockedScreen } from "@/components/SiteLockedScreen";
 import { WhatsAppFimy } from "@/components/WhatsAppFimy";
 import { CartProvider } from "@/context/cart-context";
@@ -29,15 +29,15 @@ const plusJakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL("https://minifimy.com"),
   title: {
-    default: "MINIFIMY | Ropa para bebés",
-    template: "%s | MINIFIMY",
+    default: "MiniFimy | Ropa para bebés",
+    template: "%s | MiniFimy",
   },
   description:
-    "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MINIFIMY.",
+    "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MiniFimy.",
   openGraph: {
-    title: "MINIFIMY | Ropa para bebés",
+    title: "MiniFimy | Ropa para bebés",
     description:
-      "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MINIFIMY.",
+      "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MiniFimy.",
     type: "website",
     locale: "es_AR",
   },
@@ -68,7 +68,7 @@ export default async function RootLayout({
     .filter((category) => !featuredHrefs.has(category.href))
     .slice(0, 12);
   const baseMenu = [
-    { href: "/catalogo", label: "Catalogo", children: catalogChildren },
+    { href: "/catalogo", label: "Catálogo", children: catalogChildren },
     ...featuredMenu,
   ];
   const extraMenu = siteSettings.menusFromWordPress
@@ -98,7 +98,7 @@ export default async function RootLayout({
             >
               Saltar al contenido
             </a>
-            <MinifimyIntroLoader />
+            <MiniFimyIntroLoader />
             <Header navLinks={mainMenu} />
             <div id="main-content">{children}</div>
             <Footer exploreLinks={siteSettings.footerExploreMenu} supportLinks={siteSettings.footerSupportMenu} />

@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
-import { ProductCarousel } from "@/components/ProductCarousel";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import type { Category, Product, ProductFilterOptions } from "@/models/product";
 
@@ -42,7 +41,7 @@ function serializePriceRange(min: number, max: number, limitMin: number, limitMa
   return min <= limitMin && max >= limitMax ? "all" : `${Math.round(min)}-${Math.round(max)}`;
 }
 
-export function CatalogExperience({ products, categories, filterOptions, totalProducts, totalPages, currentPage, perPage }: CatalogExperienceProps) {
+export function CatalogExperience({ products, categories, filterOptions, totalProducts, totalPages, currentPage }: CatalogExperienceProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const routeCategory = pathname.startsWith("/catalogo/") ? pathname.split("/").filter(Boolean)[1] ?? "all" : "all";
@@ -274,7 +273,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
         </ScrollReveal>
 
         <div className="relative z-10 mt-8 grid gap-6 lg:mt-12 lg:grid-cols-[300px_1fr] lg:gap-8">
-          <aside className="h-fit rounded-[1.6rem] bg-white/82 p-4 shadow-soft ring-1 ring-white/70 lg:sticky lg:top-28 lg:rounded-[2rem] lg:p-5" aria-label="Filtros de catálogo">
+          <aside id="filtros" className="h-fit scroll-mt-28 rounded-[1.6rem] bg-white/82 p-4 shadow-soft ring-1 ring-white/70 lg:sticky lg:top-28 lg:rounded-[2rem] lg:p-5" aria-label="Filtros de catálogo">
             <div className="mb-4 flex items-center justify-between gap-4 lg:mb-6">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Fimy filtra por vos</span>
@@ -301,17 +300,17 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
 
             <div className={`${mobileFiltersOpen ? "block" : "hidden"} space-y-5 lg:block`}>
               <p className="rounded-[1.2rem] bg-[#f7efe3] px-4 py-3 text-xs font-semibold leading-5 text-primary/85">
-                Usamos las categorias, talles, colores y precios reales cargados en Fimy.
+                Usamos las categorías, talles, colores y precios reales cargados en MiniFimy.
               </p>
               <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">Categoria</h3>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">Categoría</h3>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => setCategoryFilter("all")}
                     className={`rounded-full px-4 py-2 text-sm font-bold transition ${category === "all" ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
                   >
-                    Todo Minifimy
+                    Todo MiniFimy
                   </button>
                   {categories.slice(0, 10).map((item) => (
                     <button
@@ -414,7 +413,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                       value={draftPriceRange.min}
                       onChange={(event) => updatePriceSlider("min", event.target.value)}
                       className={`price-range-thumb absolute inset-x-0 top-1/2 h-2 w-full -translate-y-1/2 appearance-none bg-transparent ${draftPriceRange.min > priceMaxLimit - (priceMaxLimit - priceMinLimit) * 0.12 ? "z-30" : "z-10"}`}
-                      aria-label="Precio minimo"
+                      aria-label="Precio mínimo"
                     />
                     <input
                       type="range"
@@ -424,7 +423,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                       value={draftPriceRange.max}
                       onChange={(event) => updatePriceSlider("max", event.target.value)}
                       className="price-range-thumb absolute inset-x-0 top-1/2 z-20 h-2 w-full -translate-y-1/2 appearance-none bg-transparent"
-                      aria-label="Precio maximo"
+                      aria-label="Precio máximo"
                     />
                   </div>
 
@@ -463,7 +462,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                   {totalProducts} {totalProducts === 1 ? "producto encontrado" : "productos encontrados"}
                 </p>
                 <p className="text-xs text-on-surface-variant">
-                  Página {currentPage} de {totalPages}. Mostrando hasta {perPage} por página para cuidar performance.
+                  Mostrando {paginatedProducts.length} de {totalProducts} productos.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -526,7 +525,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                   height={140}
                   className="mx-auto mb-5 h-32 w-auto opacity-75"
                 />
-                <h3 className="font-headline text-xl font-extrabold text-on-surface md:text-2xl">Fimy no encontro algo exacto.</h3>
+                <h3 className="font-headline text-xl font-extrabold text-on-surface md:text-2xl">Fimy no encontró algo exacto.</h3>
                 <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-on-surface-variant">
 Probá con “regalo”, “recién nacido”, “body” o limpiá filtros para volver a ver toda la colección.
                 </p>
@@ -535,13 +534,6 @@ Probá con “regalo”, “recién nacido”, “body” o limpiá filtros para
           </section>
         </div>
 
-        <div className="mt-10 md:mt-14">
-          <ProductCarousel
-            title="También puede gustarte"
-            description="Una selección suave para seguir mirando sin perder el hilo."
-            products={products.slice(0, 8)}
-          />
-        </div>
       </section>
     </main>
   );

@@ -2,10 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { BenefitsBar } from "@/components/BenefitsBar";
 import { NewArrivalsCarousel } from "@/components/NewArrivalsCarousel";
 import { ProductPrice } from "@/components/ProductPrice";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { getFeaturedStoreProducts, getNewestStoreProducts, getWordPressNewsletterUrl } from "@/lib/woocommerce";
+import { getFeaturedStoreProducts, getNewestStoreProducts, getStoreProductFilters, getWordPressNewsletterUrl } from "@/lib/woocommerce";
 import { productNeedsOptions } from "@/lib/product-options";
 import { getHomeContent } from "@/lib/wordpress";
 
@@ -26,15 +27,16 @@ function pickProductsByTags(products: Awaited<ReturnType<typeof getFeaturedStore
 export const metadata: Metadata = {
   title: "Inicio",
   description:
-    "Minifimy acompana primeras veces con ropa de bebe suave, regalos con significado y prendas elegidas con amor.",
+    "MiniFimy acompaña primeras veces con ropa de bebé suave, regalos con significado y prendas elegidas con amor.",
 };
 
 export default async function HomePage() {
   const newsletterUrl = getWordPressNewsletterUrl();
-  const [home, featured, newestProducts] = await Promise.all([
+  const [home, featured, newestProducts, filterOptions] = await Promise.all([
     getHomeContent(),
     getFeaturedStoreProducts(),
     getNewestStoreProducts(15),
+    getStoreProductFilters(),
   ]);
   const taggedHero = pickProductsByTags(featured, ["home-fimy"], [])[0];
   const configuredHero = home.heroFeaturedProductSlug
@@ -49,9 +51,23 @@ export default async function HomePage() {
   const featuredSectionProducts = pickProductsByTags(featured, ["home-destacados"], featuredProductsBySlug.length > 0 ? featuredProductsBySlug : featured);
   const sectionHeroProduct = featuredSectionProducts[0] ?? heroProduct;
   const sectionSupportProducts = featuredSectionProducts.filter((product) => product.id !== sectionHeroProduct?.id);
+  const homeFilterLinks = [
+    ...filterOptions.categories.slice(0, 3).map((category) => ({
+      label: category.name,
+      href: `/catalogo/${category.slug}`,
+      icon: "category",
+    })),
+    ...filterOptions.sizes.slice(0, 3).map((size) => ({
+      label: `Talle ${size}`,
+      href: `/catalogo?talle=${encodeURIComponent(size)}`,
+      icon: "straighten",
+    })),
+  ].slice(0, 6);
 
   return (
     <main className="minifimy-story overflow-hidden bg-background pt-20">
+      <BenefitsBar />
+
       <section className="nursery-hero relative px-5 pb-16 pt-10 sm:px-8 lg:px-10">
         <div className="mx-auto grid min-h-[calc(100vh-8rem)] max-w-7xl items-center gap-10 lg:grid-cols-[0.72fr_1.28fr]">
           <ScrollReveal className="relative z-10 max-w-xl space-y-7">
@@ -64,12 +80,12 @@ export default async function HomePage() {
                 Mini ropa. Maxi amor.
               </h1>
               <p className="max-w-md text-base leading-8 text-on-surface-variant sm:text-lg">
-                Después de meses de imaginar, crear y compartir este camino, MiniFimi ya está acá. Prendas pensadas para acompañar sus primeros momentos.
+                Después de meses de imaginar, crear y compartir este camino, MiniFimy ya está acá. Prendas pensadas para acompañar sus primeros momentos.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <Link href="/catalogo" className="btn-primary gap-2 rounded-full px-7">
-                Descubrir MiniFimi
+                Descubrir MiniFimy
                 <span className="material-symbols-outlined text-lg">arrow_forward</span>
               </Link>
             </div>
@@ -100,7 +116,7 @@ export default async function HomePage() {
                     </div>
                     <div className="flex items-center justify-between gap-4 px-2 pb-2 pt-4">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">EL PRIMER FAVORITO DE FIMI</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">EL PRIMER FAVORITO DE FIMY</p>
                         <h2 className="mt-1 font-headline text-2xl font-extrabold leading-tight text-on-surface">{heroProduct.name}</h2>
                       </div>
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition group-hover:translate-x-1" aria-label="Ver producto">
@@ -157,47 +173,36 @@ export default async function HomePage() {
           </ScrollReveal>
         </div>
       </section>
-      <NewArrivalsCarousel products={newestProducts} />
 
-      <section className="story-river relative px-5 py-20 sm:px-8 lg:px-10">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.88fr_1.12fr]">
-          <ScrollReveal className="space-y-6">
-            <span className="chip bg-white/70">Nuestra historia</span>
-            <h2 className="max-w-2xl font-headline text-4xl font-extrabold leading-tight text-on-surface sm:text-5xl">
-              Somos Sofi y May, dos tías babosas detrás de MiniFimy.
-            </h2>
-            <div className="space-y-4 pt-2 text-base leading-8 text-on-surface-variant sm:text-lg">
-              <p>
-                Una idea que nació entre sobrinos, ropitas diminutas y mucho amor por cada detalle. Después de muchos años soñándolo, hoy MiniFimy finalmente es una realidad.
-              </p>
-              <p className="rounded-[1.4rem] bg-white/68 p-5 font-headline text-xl font-extrabold leading-8 text-primary shadow-soft">
-                De dos tías babosas, para todos esos pequeños momentos que se guardan para siempre.
-              </p>
+      <section aria-labelledby="shop-by-need" className="mx-auto max-w-7xl px-5 pb-8 sm:px-8 lg:px-10">
+        <ScrollReveal>
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div>
+              <span className="chip">Empezá por acá</span>
+              <h2 id="shop-by-need" className="mt-3 font-headline text-3xl font-extrabold sm:text-4xl">
+                Comprá por talle o necesidad
+              </h2>
             </div>
-          </ScrollReveal>
-          <ScrollReveal delayMs={120}>
-            <div className="relative mx-auto max-w-xl">
-              <div className="absolute -left-5 top-8 hidden h-28 w-28 rounded-full bg-[#d8e0c3] opacity-70 blur-2xl sm:block" />
-              <div className="absolute -right-4 bottom-10 h-32 w-32 rounded-full bg-[#f1cdbd] opacity-60 blur-2xl" />
-              <figure className="relative overflow-hidden rounded-[2.2rem] bg-white p-3 shadow-lift ring-1 ring-primary/10">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.7rem] bg-surface-container sm:aspect-[5/6]">
-                  <Image
-                    src="/brand/story/sofi-may.jpeg"
-                    alt="Sofi y May, creadoras de MiniFimy"
-                    fill
-                    sizes="(min-width: 1024px) 520px, 92vw"
-                    className="object-cover"
-                  />
-                </div>
-                <figcaption className="flex items-center justify-between gap-4 px-3 py-4 text-sm font-bold text-primary">
-                  <span>Sofi & May</span>
-                  <span className="rounded-full bg-[#f7efe3] px-3 py-1 text-xs uppercase tracking-[0.18em]">Mini ropa, maxi amor</span>
-                </figcaption>
-              </figure>
-            </div>
-          </ScrollReveal>
-        </div>
+            <Link href="/catalogo" className="hidden text-sm font-bold text-secondary underline underline-offset-4 sm:inline-flex">
+              Ver catálogo completo
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {homeFilterLinks.map((link) => (
+              <Link
+                key={`${link.href}-${link.label}`}
+                href={link.href}
+                className="group flex min-h-32 flex-col justify-between rounded-[1.5rem] bg-white/78 p-4 shadow-soft ring-1 ring-primary/10 transition hover:-translate-y-1 hover:shadow-lift"
+              >
+                <span className="material-symbols-outlined text-2xl text-primary transition group-hover:-rotate-6">{link.icon}</span>
+                <span className="font-headline text-base font-extrabold leading-tight text-on-surface">{link.label}</span>
+              </Link>
+            ))}
+          </div>
+        </ScrollReveal>
       </section>
+
+      <NewArrivalsCarousel products={newestProducts} />
 
       <section className="relative mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10">
         <ScrollReveal className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
@@ -261,7 +266,7 @@ export default async function HomePage() {
                     </Link>
                     <div className="flex min-w-0 flex-col justify-between py-1">
                       <div>
-                        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-primary">{product.badge ?? "Minifimy"}</p>
+                        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-primary">{product.badge ?? "MiniFimy"}</p>
                         <h3 className="font-headline text-xl font-extrabold leading-tight text-on-surface">
                           <Link href={`/producto/${product.slug}`}>{product.name}</Link>
                         </h3>
@@ -305,6 +310,47 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <section className="story-river relative px-5 py-20 sm:px-8 lg:px-10">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.88fr_1.12fr]">
+          <ScrollReveal className="space-y-6">
+            <span className="chip bg-white/70">Nuestra historia</span>
+            <h2 className="max-w-2xl font-headline text-4xl font-extrabold leading-tight text-on-surface sm:text-5xl">
+              Somos Sofi y May, dos tías babosas detrás de MiniFimy.
+            </h2>
+            <div className="space-y-4 pt-2 text-base leading-8 text-on-surface-variant sm:text-lg">
+              <p>
+                Una idea que nació entre sobrinos, ropitas diminutas y mucho amor por cada detalle. Después de muchos años soñándolo, hoy MiniFimy finalmente es una realidad.
+              </p>
+              <p className="rounded-[1.4rem] bg-white/68 p-5 font-headline text-xl font-extrabold leading-8 text-primary shadow-soft">
+                De dos tías babosas, para todos esos pequeños momentos que se guardan para siempre.
+              </p>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal delayMs={120}>
+            <div className="relative mx-auto max-w-xl">
+              <div className="absolute -left-5 top-8 hidden h-28 w-28 rounded-full bg-[#d8e0c3] opacity-70 blur-2xl sm:block" />
+              <div className="absolute -right-4 bottom-10 h-32 w-32 rounded-full bg-[#f1cdbd] opacity-60 blur-2xl" />
+              <figure className="relative overflow-hidden rounded-[2.2rem] bg-white p-3 shadow-lift ring-1 ring-primary/10">
+                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.7rem] bg-surface-container sm:aspect-[5/6]">
+                  <Image
+                    src="/brand/story/sofi-may.jpeg"
+                    alt="Sofi y May, creadoras de MiniFimy"
+                    fill
+                    sizes="(min-width: 1024px) 520px, 92vw"
+                    className="object-cover"
+                  />
+                </div>
+                <figcaption className="flex items-center justify-between gap-4 px-3 py-4 text-sm font-bold text-primary">
+                  <span>Sofi & May</span>
+                  <span className="rounded-full bg-[#f7efe3] px-3 py-1 text-xs uppercase tracking-[0.18em]">Mini ropa, maxi amor</span>
+                </figcaption>
+              </figure>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
 
       <section className="mx-auto max-w-7xl px-5 pb-24 sm:px-8 lg:px-10">
         <ScrollReveal className="newsletter-cloud overflow-hidden bg-[#d3e0ea] p-8 shadow-soft sm:p-10">

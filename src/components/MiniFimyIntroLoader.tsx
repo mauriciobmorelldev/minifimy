@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-export function MinifimyIntroLoader() {
+export function MiniFimyIntroLoader() {
   const [visible, setVisible] = useState(true);
   const [leaving, setLeaving] = useState(false);
 
@@ -22,14 +22,14 @@ export function MinifimyIntroLoader() {
   }
 
   return (
-    <div className={`intro-loader ${leaving ? "intro-loader-out" : ""}`} role="status" aria-live="polite" aria-label="Cargando Minifimy">
+    <div className={`intro-loader ${leaving ? "intro-loader-out" : ""}`} role="status" aria-live="polite" aria-label="Cargando MiniFimy">
       <div className="intro-loader-mark">
-        <Image src="/brand/logo.svg" alt="Minifimy" width={210} height={70} priority className="h-auto w-52" />
+        <Image src="/brand/logo.svg" alt="MiniFimy" width={210} height={70} priority className="h-auto w-52" />
       </div>
       <div className="intro-loader-line" aria-hidden="true">
         <span />
       </div>
-      <span className="sr-only">Cargando Minifimy</span>
+      <span className="sr-only">Cargando MiniFimy</span>
     </div>
   );
 }

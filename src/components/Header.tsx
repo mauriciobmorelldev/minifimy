@@ -73,13 +73,13 @@ export function Header({ navLinks }: HeaderProps) {
           >
             <Image
               src="/brand/logo.svg"
-              alt="MINIFIMY"
+              alt="MiniFimy"
               width={140}
               height={40}
               className="h-7 w-auto md:h-9"
               priority
             />
-            <span className="sr-only">Minifimy</span>
+            <span className="sr-only">MiniFimy</span>
           </Link>
 
           <div className="hidden items-center gap-7 font-headline text-sm font-medium tracking-wide md:flex">
@@ -98,7 +98,7 @@ export function Header({ navLinks }: HeaderProps) {
                     <div className="pointer-events-none absolute left-1/2 top-full z-50 w-72 -translate-x-1/2 translate-y-1 pt-3 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
                       <div className="rounded-[1.4rem] bg-white p-3 shadow-lift ring-1 ring-primary/10">
                       <div className="mb-2 rounded-[1rem] bg-[#f7efe3] px-4 py-3">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Categorias</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Categorías</p>
                         <p className="mt-1 text-xs leading-5 text-on-surface-variant">Todo lo que esta cargado en Fimy.</p>
                       </div>
                       <div className="grid gap-1">
@@ -225,8 +225,8 @@ export function Header({ navLinks }: HeaderProps) {
           >
             <div className="max-h-[calc(100vh-7rem)] space-y-5 overflow-y-auto px-4 py-4">
               <div className="rounded-[1.25rem] bg-[#f7efe3] px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Menu Minifimy</p>
-                <p className="mt-1 text-xs leading-5 text-on-surface-variant">Categorias y accesos de la tienda.</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Menú MiniFimy</p>
+                <p className="mt-1 text-xs leading-5 text-on-surface-variant">Categorías y accesos de la tienda.</p>
               </div>
               <div className="flex flex-col gap-2 font-headline text-base font-semibold text-primary">
                 {navLinks.map((link) => {

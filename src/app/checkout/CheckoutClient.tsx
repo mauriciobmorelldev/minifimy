@@ -135,7 +135,7 @@ export default function CheckoutClient() {
         setShippingMethodId((current) => current || nextShippingMethods[0]?.id || "");
 
         if (nextPaymentMethods.length === 0 || nextShippingMethods.length === 0) {
-          setStatus("Todavia no encontramos opciones disponibles para completar la compra.");
+          setStatus("Todavía no encontramos opciones disponibles para completar la compra.");
         }
       })
       .catch(() => {
@@ -259,7 +259,7 @@ export default function CheckoutClient() {
       <section className="relative mx-auto max-w-6xl">
         <header className="mb-8 rounded-[1.8rem] bg-[#efe4d0] px-4 py-6 shadow-soft md:rounded-[2.4rem] md:px-10 md:py-8">
           <span className="inline-flex rounded-full bg-white/72 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary shadow-soft">
-            Ultimo pasito
+            Último pasito
           </span>
           <h1 className="mt-5 font-headline text-[2.15rem] font-extrabold leading-tight text-on-surface md:text-6xl">
             Dejamos todo listo para que llegue a casa.
@@ -271,10 +271,10 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
 
         {items.length === 0 ? (
           <div className="rounded-[2rem] bg-white/78 p-10 text-center shadow-soft">
-            <h2 className="font-headline text-3xl font-extrabold text-on-surface">Tu carrito esta vacio.</h2>
+            <h2 className="font-headline text-3xl font-extrabold text-on-surface">Tu carrito está vacío.</h2>
             <p className="mt-3 text-on-surface-variant">Primero elegi una prenda o regalo para avanzar al checkout.</p>
             <Link href="/catalogo" className="mt-6 inline-flex rounded-full bg-primary px-7 py-3 font-bold text-on-primary shadow-soft">
-              Volver al catalogo
+              Volver al catálogo
             </Link>
           </div>
         ) : (
@@ -344,7 +344,7 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                 </div>
 
                 <label className="text-sm font-semibold text-on-surface">
-                  Direccion
+                  Dirección
                   <input
                     {...register("address", {
                     required: "Ingresá la dirección de entrega.",
@@ -353,7 +353,7 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                     className="mt-2 w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none ring-1 ring-transparent focus:ring-primary/35"
                     type="text"
                     autoComplete="street-address"
-                    placeholder="Calle, numero, piso/depto"
+                    placeholder="Calle, número, piso/depto"
                   />
                   {errors.address?.message && <span className="mt-1 block text-xs text-error">{errors.address.message}</span>}
                 </label>
@@ -505,7 +505,7 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>{selectedShippingMethod?.title ?? "Envio"}</span>
+                  <span>{selectedShippingMethod?.title ?? "Envío"}</span>
                   <span>AR$ {shipping.toLocaleString("es-AR")}</span>
                 </div>
                 <div className="flex items-baseline justify-between pt-3 font-headline text-xl font-extrabold text-on-surface">

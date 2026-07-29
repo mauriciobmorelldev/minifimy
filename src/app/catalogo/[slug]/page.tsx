@@ -46,8 +46,8 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   const categories = await getStoreCategories();
   const category = categories.find((item) => item.slug === slug);
   return {
-    title: category ? category.name : "Categoria",
-    description: category?.description ?? "Productos para cada etapa del bebe.",
+    title: category ? category.name : "Categoría",
+    description: category?.description ?? "Productos para cada etapa del bebé.",
   };
 }
 
@@ -59,9 +59,9 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   if (!category) {
     return (
       <main className="mx-auto w-full max-w-6xl px-6 py-24">
-        <p className="text-sm text-on-surface-variant">Categoria no encontrada.</p>
+        <p className="text-sm text-on-surface-variant">Categoría no encontrada.</p>
         <Link href="/catalogo" className="btn-ghost mt-6 inline-flex">
-          Volver al catalogo
+          Volver al catálogo
         </Link>
       </main>
     );
@@ -76,6 +76,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       search: getParam(query, "q"),
       size: getParam(query, "talle"),
       color: getParam(query, "color"),
+      inStockFirst: true,
       ...getPriceRange(getParam(query, "precio")),
       ...getSort(getParam(query, "orden")),
     }),

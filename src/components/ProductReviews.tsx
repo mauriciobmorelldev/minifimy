@@ -23,10 +23,12 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
     ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
     : 0;
 
+  if (initialReviews.length === 0) return null;
+
   const submitReview = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    setStatus("Enviando tu resena...");
+    setStatus("Enviando tu reseña...");
 
     const response = await fetch(`/api/productos/${productSlug}/reviews`, {
       method: "POST",
@@ -40,7 +42,7 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
     });
     const payload = await response.json().catch(() => ({})) as { message?: string; review?: Review };
 
-    setStatus(payload.message ?? (response.ok ? "Resena enviada." : "No pudimos enviar la resena."));
+    setStatus(payload.message ?? (response.ok ? "Reseña enviada." : "No pudimos enviar la reseña."));
     if (response.ok && payload.review) {
       setReviews((current) => [payload.review!, ...current]);
       event.currentTarget.reset();
@@ -54,11 +56,11 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
         <div>
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Opiniones de familias</span>
           <h2 className="mt-2 font-headline text-2xl font-extrabold text-on-surface md:text-3xl">
-            Familias que ya eligieron Minifimy
+            Familias que ya eligieron MiniFimy
           </h2>
         </div>
         <div className="rounded-full bg-[#f7efe3] px-4 py-2 text-sm font-bold text-secondary">
-          {reviews.length ? `${average.toFixed(1)} / 5` : "Sin resenas aun"}
+          {reviews.length ? `${average.toFixed(1)} / 5` : "Sin reseñas aún"}
         </div>
       </div>
 
@@ -80,20 +82,20 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
           ))}
           {reviews.length === 0 && (
             <div className="rounded-[1.5rem] bg-[#fbf4ea] p-5 text-sm leading-6 text-on-surface-variant">
-              Todavia no hay opiniones publicadas para este producto. Podes dejar la primera.
+              Todavía no hay opiniones publicadas para este producto. Podés dejar la primera.
             </div>
           )}
         </div>
 
         <form onSubmit={submitReview} className="rounded-[1.5rem] bg-[#efe4d0] p-5 shadow-soft">
-          <h3 className="font-headline text-xl font-extrabold text-on-surface">Dejar una resena</h3>
+          <h3 className="font-headline text-xl font-extrabold text-on-surface">Dejar una reseña</h3>
           <p className="mt-2 text-sm leading-6 text-on-surface-variant">La revisamos antes de publicarla para cuidar la comunidad.</p>
           <div className="mt-5 space-y-3">
             <input name="reviewer" required placeholder="Tu nombre" className="w-full rounded-full bg-white/82 px-5 py-3 text-sm outline-none" />
             <input name="email" type="email" required placeholder="Email" className="w-full rounded-full bg-white/82 px-5 py-3 text-sm outline-none" />
             <div className="rounded-[1.3rem] bg-white/82 px-5 py-4">
-              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-on-surface-variant">Tu puntuacion</span>
-              <div className="flex items-center gap-1" role="radiogroup" aria-label="Puntuacion de la resena">
+              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-on-surface-variant">Tu puntuación</span>
+              <div className="flex items-center gap-1" role="radiogroup" aria-label="Puntuación de la reseña">
                 {Array.from({ length: 5 }).map((_, index) => {
                   const value = index + 1;
                   return (
@@ -114,9 +116,9 @@ export function ProductReviews({ productSlug, initialReviews }: ProductReviewsPr
                 })}
               </div>
             </div>
-            <textarea name="review" required minLength={8} placeholder="Contanos como fue la experiencia" className="min-h-28 w-full rounded-[1.3rem] bg-white/82 px-5 py-4 text-sm outline-none" />
+            <textarea name="review" required minLength={8} placeholder="Contanos cómo fue la experiencia" className="min-h-28 w-full rounded-[1.3rem] bg-white/82 px-5 py-4 text-sm outline-none" />
           </div>
-          <button className="mt-4 w-full rounded-full bg-primary py-3 font-bold text-on-primary">Enviar resena</button>
+          <button className="mt-4 w-full rounded-full bg-primary py-3 font-bold text-on-primary">Enviar reseña</button>
           {status && <p className="mt-4 rounded-[1rem] bg-white/70 p-3 text-sm font-semibold text-primary">{status}</p>}
         </form>
       </div>

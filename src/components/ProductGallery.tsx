@@ -75,7 +75,7 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
         <div className="pointer-events-none absolute left-4 top-4 rounded-full bg-[#fffaf1]/95 px-3 py-2 shadow-soft backdrop-blur md:left-6 md:top-6 md:px-4">
           <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
             <span className="material-symbols-outlined text-sm">eco</span>
-            Minifimy
+            MiniFimy
           </span>
         </div>
 

@@ -77,11 +77,11 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
 
   const selectedVariant = useMemo(() => {
     return product.variants?.find((variant) => variantMatchesSelection(variant, selection));
-  }, [product.variants, selection.color, selection.size]);
+  }, [product.variants, selection]);
 
   const visualVariant = useMemo(() => {
     return selectedVariant ?? findBestVariantForSelection(product.variants, selection);
-  }, [product.variants, selectedVariant, selection.color, selection.size]);
+  }, [product.variants, selectedVariant, selection]);
 
 
   const selectedPrice = selectedVariant?.price ?? visualVariant?.price ?? product.price;
@@ -116,27 +116,95 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
 
         <ProductPurchasePanel product={product} selection={selection} onSelectionChange={setSelection} selectedVariant={selectedVariant} />
 
-        <div className="space-y-4 rounded-[1.5rem] bg-surface-container-low p-5 md:p-6">
+        <div className="grid gap-3 rounded-[1.5rem] bg-surface-container-low p-5 md:p-6">
           <div className="flex items-start gap-4">
             <span className="material-symbols-outlined text-primary">local_shipping</span>
             <div>
-              <h4 className="text-sm font-bold">Envio cuidado</h4>
-              <p className="text-sm text-on-surface-variant">Preparado en packaging Minifimy y despachado con seguimiento.</p>
+              <h2 className="text-sm font-bold">Envíos a todo el país</h2>
+              <p className="text-sm leading-6 text-on-surface-variant">
+                Consultá modalidades, costos, plazos y seguimiento antes de finalizar.
+              </p>
+              <a href="/envios-y-cambios" className="mt-2 inline-flex text-xs font-bold text-secondary underline underline-offset-4">
+                Ver envíos y cambios
+              </a>
             </div>
           </div>
           <div className="flex items-start gap-4 border-t border-outline-variant/10 pt-4">
-            <span className="material-symbols-outlined text-primary">verified_user</span>
+            <span className="material-symbols-outlined text-primary">support_agent</span>
             <div>
-              <h4 className="text-sm font-bold">Cambios simples</h4>
-              <p className="text-sm text-on-surface-variant">Acompanamiento para elegir talle o cambiar con tranquilidad.</p>
+              <h2 className="text-sm font-bold">¿Dudas con el talle?</h2>
+              <p className="text-sm leading-6 text-on-surface-variant">
+                Escribinos por WhatsApp y te ayudamos a elegir antes de comprar.
+              </p>
+              <a href="/contacto" className="mt-2 inline-flex text-xs font-bold text-secondary underline underline-offset-4">
+                Hablar con MiniFimy
+              </a>
             </div>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <h3 className="font-headline text-xl font-bold">La historia detras</h3>
-          <p className="leading-relaxed text-on-surface-variant">{product.description}</p>
-        </div>
+        <section aria-labelledby="product-details-title" className="overflow-hidden rounded-[1.5rem] bg-white/72 shadow-soft">
+          <h2 id="product-details-title" className="border-b border-primary/10 px-5 py-4 font-headline text-xl font-extrabold text-on-surface">
+            Detalles del producto
+          </h2>
+          <div className="divide-y divide-primary/10">
+          <details className="group p-5" open>
+            <summary className="flex cursor-pointer list-none items-center justify-between font-headline text-lg font-extrabold">
+              Descripción
+              <span className="material-symbols-outlined transition group-open:rotate-180">expand_more</span>
+            </summary>
+            <p className="mt-4 whitespace-pre-line text-sm leading-7 text-on-surface-variant">{product.description}</p>
+          </details>
+          {product.material && (
+            <details className="group p-5">
+              <summary className="flex cursor-pointer list-none items-center justify-between font-headline text-lg font-extrabold">
+                Material y composición
+                <span className="material-symbols-outlined transition group-open:rotate-180">expand_more</span>
+              </summary>
+              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-on-surface-variant">{product.material}</p>
+            </details>
+          )}
+          {product.care && (
+            <details className="group p-5">
+              <summary className="flex cursor-pointer list-none items-center justify-between font-headline text-lg font-extrabold">
+                Cuidados de lavado
+                <span className="material-symbols-outlined transition group-open:rotate-180">expand_more</span>
+              </summary>
+              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-on-surface-variant">{product.care}</p>
+            </details>
+          )}
+          {product.fit && (
+            <details className="group p-5">
+              <summary className="flex cursor-pointer list-none items-center justify-between font-headline text-lg font-extrabold">
+                Calce y talle
+                <span className="material-symbols-outlined transition group-open:rotate-180">expand_more</span>
+              </summary>
+              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-on-surface-variant">{product.fit}</p>
+            </details>
+          )}
+          {product.includes && (
+            <details className="group p-5">
+              <summary className="flex cursor-pointer list-none items-center justify-between font-headline text-lg font-extrabold">
+                Qué incluye
+                <span className="material-symbols-outlined transition group-open:rotate-180">expand_more</span>
+              </summary>
+              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-on-surface-variant">{product.includes}</p>
+            </details>
+          )}
+          <details className="group p-5">
+            <summary className="flex cursor-pointer list-none items-center justify-between font-headline text-lg font-extrabold">
+              Envíos y cambios
+              <span className="material-symbols-outlined transition group-open:rotate-180">expand_more</span>
+            </summary>
+            <p className="mt-4 text-sm leading-7 text-on-surface-variant">
+              Revisá las condiciones vigentes y aprobadas antes de confirmar tu pedido.
+            </p>
+            <a href="/envios-y-cambios" className="mt-3 inline-flex text-sm font-bold text-secondary underline underline-offset-4">
+              Consultar condiciones
+            </a>
+          </details>
+          </div>
+        </section>
       </div>
     </>
   );

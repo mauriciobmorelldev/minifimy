@@ -25,7 +25,7 @@ export default function CartClient() {
       <section className="relative mx-auto max-w-7xl">
         <header className="mb-8 rounded-[1.8rem] bg-[#efe4d0] px-4 py-6 shadow-soft md:mb-10 md:rounded-[2.4rem] md:px-10 md:py-8">
           <span className="inline-flex rounded-full bg-white/72 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary shadow-soft">
-            Bolsita Minifimy
+            Bolsita MiniFimy
           </span>
           <div className="mt-5 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
             <div>
@@ -59,13 +59,13 @@ export default function CartClient() {
             />
             <h2 className="font-headline text-3xl font-extrabold text-on-surface">Tu bolsita esta esperando algo suave.</h2>
             <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-on-surface-variant">
-              Suma regalos, ajuares o prendas para recien nacido y volve cuando quieras.
+              Suma regalos, ajuares o prendas para recién nacido y volvé cuando quieras.
             </p>
             <Link
               href="/catalogo"
               className="mt-7 inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 font-bold text-on-primary shadow-soft transition hover:scale-[1.02]"
             >
-              Explorar catalogo
+              Explorar catálogo
               <span className="material-symbols-outlined">arrow_forward</span>
             </Link>
           </div>
@@ -129,7 +129,7 @@ export default function CartClient() {
                 <h2 className="font-headline text-2xl font-extrabold text-on-surface">Resumen dulce</h2>
                 <div className="mt-6 space-y-4 text-sm text-on-surface-variant">
                   <div className="flex justify-between"><span>Subtotal</span><span className="font-bold text-on-surface">AR$ {total.toLocaleString("es-AR")}</span></div>
-                  <div className="flex justify-between"><span>Envio estimado</span><span className="font-bold text-on-surface">AR$ {shipping.toLocaleString("es-AR")}</span></div>
+                  <div className="flex justify-between"><span>Envío estimado</span><span className="font-bold text-on-surface">AR$ {shipping.toLocaleString("es-AR")}</span></div>
                   <div className="rounded-[1.4rem] bg-[#f7efe3] p-4 text-xs leading-5 text-primary">El costo final de envio puede ajustarse segun zona y metodo elegido en checkout.</div>
                   <div className="border-t border-outline-variant/30 pt-5">
                     <div className="flex items-baseline justify-between"><span className="font-headline text-lg font-extrabold">Total</span><span className="font-headline text-3xl font-extrabold text-primary">AR$ {grandTotal.toLocaleString("es-AR")}</span></div>

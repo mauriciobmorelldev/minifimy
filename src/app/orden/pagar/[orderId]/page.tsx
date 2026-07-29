@@ -10,7 +10,7 @@ interface OrderPayPageProps {
 
 export const metadata: Metadata = {
   title: "Pagar pedido",
-  description: "Resumen de pedido Minifimy.",
+  description: "Resumen de pedido MiniFimy.",
 };
 
 function isManualPaymentMethod(paymentMethodId?: string) {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Política de privacidad",
-  description: "Cómo cuidamos los datos personales en Minifimy.",
+  description: "Cómo cuidamos los datos personales en MiniFimy.",
 };
 
 export default function PrivacyPage() {

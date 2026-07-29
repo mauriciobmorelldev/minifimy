@@ -22,7 +22,7 @@ function getWhatsAppHref(phone?: string, orderId?: number) {
   const digits = phone?.replace(/\D/g, "");
   if (!digits) return undefined;
 
-  const text = encodeURIComponent(`Hola Minifimy, te envío el comprobante del pedido #${orderId}.`);
+  const text = encodeURIComponent(`Hola MiniFimy, te envío el comprobante del pedido #${orderId}.`);
   return `https://wa.me/${digits}?text=${text}`;
 }
 

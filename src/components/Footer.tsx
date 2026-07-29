@@ -17,7 +17,7 @@ const whatsappUrl =
   "https://wa.me/" +
   whatsappPhone +
   "?text=" +
-  encodeURIComponent("Hola Minifimy! Quiero hacer una consulta.");
+  encodeURIComponent("¡Hola MiniFimy! Quiero hacer una consulta.");
 
 function InstagramIcon() {
   return (
@@ -52,7 +52,7 @@ export function Footer({ exploreLinks, supportLinks }: FooterProps) {
     <footer className="mt-12 w-full rounded-t-[2rem] bg-surface-container">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-6 py-14 sm:px-8 lg:grid-cols-[1.15fr_0.8fr_0.8fr_1fr] lg:px-12 lg:py-16">
         <div className="flex flex-col gap-5">
-          <div className="font-headline text-xl font-bold uppercase tracking-widest text-primary">minifimy</div>
+          <div className="font-headline text-xl font-bold uppercase tracking-widest text-primary">MiniFimy</div>
           <p className="max-w-sm text-sm leading-7 text-primary/72">
             Mini ropa, maxi amor. Prendas, regalos y pequeños detalles elegidos con calma para acompañar sus primeras
             veces.
@@ -63,7 +63,7 @@ export function Footer({ exploreLinks, supportLinks }: FooterProps) {
               target="_blank"
               rel="noopener noreferrer"
               className="flex h-10 w-10 items-center justify-center rounded-full bg-white/75 text-primary shadow-soft transition hover:-translate-y-0.5 hover:bg-white"
-              aria-label="Instagram de Minifimy"
+              aria-label="Instagram de MiniFimy"
             >
               <InstagramIcon />
             </a>
@@ -72,7 +72,7 @@ export function Footer({ exploreLinks, supportLinks }: FooterProps) {
               target="_blank"
               rel="noopener noreferrer"
               className="flex h-10 w-10 items-center justify-center rounded-full bg-white/75 text-primary shadow-soft transition hover:-translate-y-0.5 hover:bg-white"
-              aria-label="WhatsApp de Minifimy"
+              aria-label="WhatsApp de MiniFimy"
             >
               <WhatsAppIcon />
             </a>
@@ -130,7 +130,7 @@ export function Footer({ exploreLinks, supportLinks }: FooterProps) {
 
       <div className="border-t border-primary/10 px-6 py-5 sm:px-8 lg:px-12">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 text-xs text-primary/62 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} Minifimy. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} MiniFimy. Todos los derechos reservados.</p>
           <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Legales">
             <Link href="/legales" className="transition hover:text-primary">
               Términos y condiciones

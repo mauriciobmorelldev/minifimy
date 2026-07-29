@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
 
   const rating = Math.min(Math.max(Number(payload?.rating) || 0, 1), 5);
   if (!payload?.reviewer || !isValidEmail(payload.email) || !payload.review || payload.review.length < 8) {
-    return NextResponse.json({ message: "Completa nombre, email y una resena real." }, { status: 400 });
+    return NextResponse.json({ message: "Completá nombre, email y una reseña real." }, { status: 400 });
   }
 
   const review = await createStoreProductReview({
@@ -40,8 +40,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
   });
 
   if (!review) {
-    return NextResponse.json({ message: "No pudimos guardar tu resena. Intentemos de nuevo en un ratito." }, { status: 502 });
+    return NextResponse.json({ message: "No pudimos guardar tu reseña. Intentemos de nuevo en un ratito." }, { status: 502 });
   }
 
-  return NextResponse.json({ message: "Gracias por tu resena. La vamos a revisar antes de publicarla.", review });
+  return NextResponse.json({ message: "Gracias por tu reseña. La vamos a revisar antes de publicarla.", review });
 }

@@ -20,8 +20,8 @@ type GuideIntent = {
 const intents: GuideIntent[] = [
   {
     id: "newborn",
-    label: "Recien nacido",
-    title: "Si es para un recien nacido, empezaria por estas prendas.",
+    label: "Recién nacido",
+    title: "Si es para un recién nacido, empezaría por estas prendas.",
     note: "Busco suavidad, broches comodos y colores que combinen con todo.",
     categories: ["recien-nacido"],
     keywords: ["body", "nido", "manta"],
@@ -29,7 +29,7 @@ const intents: GuideIntent[] = [
   {
     id: "baby-shower",
     label: "Baby shower",
-    title: "Para baby shower conviene algo tierno, util y facil de regalar.",
+    title: "Para baby shower conviene algo tierno, útil y fácil de regalar.",
     note: "Me gustan los sets, mantas y piezas que se sienten especiales al abrir la caja.",
     categories: ["recien-nacido", "accesorios"],
     keywords: ["set", "manta", "gorro"],
@@ -45,8 +45,8 @@ const intents: GuideIntent[] = [
   {
     id: "fimy",
     label: "Sorprendeme",
-    title: "Encontre algunas pequenas joyitas para mirar sin apuro.",
-    note: "Una seleccion corta para que elegir no se sienta enorme.",
+    title: "Encontré algunas pequeñas joyitas para mirar sin apuro.",
+    note: "Una selección corta para que elegir no se sienta enorme.",
     categories: [],
     keywords: [],
   },
@@ -150,7 +150,7 @@ export function FimiGiftGuide({ products, title, intro }: FimiGiftGuideProps) {
                   />
                 </Link>
                 <div className="flex flex-1 flex-col p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{product.badge ?? "Minifimy"}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{product.badge ?? "MiniFimy"}</p>
                   <h4 className="mt-2 font-headline text-lg font-extrabold leading-tight text-on-surface">
                     <Link href={`/producto/${product.slug}`}>{product.name}</Link>
                   </h4>

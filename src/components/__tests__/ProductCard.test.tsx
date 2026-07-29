@@ -26,7 +26,8 @@ describe("ProductCard", () => {
     );
 
     expect(screen.getByText("Body Nube")).toBeInTheDocument();
-    expect(screen.getByText("Algodón orgánico.")).toBeInTheDocument();
-    expect(screen.getByText(/AR\$/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Body Nube" })).toHaveAttribute("href", "/producto/body-nube");
+    expect(screen.getByText(/\$12\.900/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Agregar al carrito/i })).toBeEnabled();
   });
 });

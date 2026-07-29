@@ -50,7 +50,7 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
               </h2>
               <p className="mt-1 text-sm text-on-surface-variant">
                 {itemCount === 0
-                  ? "Todavia no elegiste prendas."
+                  ? "Todavía no elegiste prendas."
                   : `${itemCount} ${itemCount === 1 ? "producto elegido" : "productos elegidos"}.`}
               </p>
             </div>
@@ -80,14 +80,14 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
               Fimy te ayuda a elegir.
             </h3>
             <p className="mt-3 text-sm leading-6 text-on-surface-variant">
-              Empeza por recien nacido, regalos con amor o esos tejidos que se sienten abrazo.
+              Empezá por recién nacido, regalos con amor o esos tejidos que se sienten abrazo.
             </p>
             <Link
               href="/catalogo"
               onClick={onClose}
               className="mt-7 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-on-primary shadow-soft"
             >
-              Ver catalogo
+              Ver catálogo
               <span className="material-symbols-outlined text-lg">arrow_forward</span>
             </Link>
           </div>

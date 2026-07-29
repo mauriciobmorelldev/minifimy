@@ -5,7 +5,7 @@ import { getStoreProductCollection, getStoreProductFilters } from "@/lib/woocomm
 
 export const metadata: Metadata = {
   title: "Catálogo",
-  description: "Explorá categorías, regalos y productos de MINIFIMY.",
+  description: "Explorá categorías, regalos y productos de MiniFimy.",
 };
 
 interface CatalogPageProps {
@@ -48,6 +48,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       search: getParam(params, "q"),
       size: getParam(params, "talle"),
       color: getParam(params, "color"),
+      inStockFirst: true,
       ...getPriceRange(getParam(params, "precio")),
       ...getSort(getParam(params, "orden")),
     }),

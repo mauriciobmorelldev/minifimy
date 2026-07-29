@@ -4,12 +4,12 @@ import { getStoreOrdersForCustomerEmail, verifyWordPressCustomerToken } from "@/
 export async function GET(request: NextRequest) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) {
-    return NextResponse.json({ message: "Sesion requerida." }, { status: 401 });
+    return NextResponse.json({ message: "Sesión requerida." }, { status: 401 });
   }
 
   const user = await verifyWordPressCustomerToken(token);
   if (!user?.email) {
-    return NextResponse.json({ message: "Necesitamos que vuelvas a iniciar sesion." }, { status: 401 });
+    return NextResponse.json({ message: "Necesitamos que vuelvas a iniciar sesión." }, { status: 401 });
   }
 
   const orders = await getStoreOrdersForCustomerEmail(user.email);

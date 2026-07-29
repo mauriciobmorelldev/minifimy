@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   description: "Escribinos por WhatsApp, Instagram o email.",
 };
 
-const whatsappUrl = "https://wa.me/5493794004299?text=Hola%20Minifimy!%20Quiero%20hacer%20una%20consulta.";
+const whatsappUrl = "https://wa.me/5493794004299?text=%C2%A1Hola%20MiniFimy!%20Quiero%20hacer%20una%20consulta.";
 
 export default function ContactPage() {
   return (

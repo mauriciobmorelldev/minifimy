@@ -11,10 +11,10 @@ export async function POST(request: NextRequest) {
   const session = await loginStoreCustomer(payload.email, payload.password);
   if (!session) {
     return NextResponse.json(
-      { message: "No pudimos iniciar sesion con esos datos." },
+      { message: "No pudimos iniciar sesión con esos datos." },
       { status: 401 }
     );
   }
 
-  return NextResponse.json({ message: "Sesion iniciada desde Fimy.", session });
+  return NextResponse.json({ message: "Sesión iniciada desde Fimy.", session });
 }

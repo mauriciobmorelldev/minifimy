@@ -57,7 +57,7 @@ export function AccountClient() {
     const payload = await response.json().catch(() => ({})) as { message?: string; session?: SessionData };
 
     if (!response.ok || !payload.session) {
-      setStatus(payload.message ?? "No pudimos iniciar sesion.");
+      setStatus(payload.message ?? "No pudimos iniciar sesión.");
       return;
     }
 
@@ -91,17 +91,17 @@ export function AccountClient() {
     window.localStorage.removeItem(SESSION_KEY);
     setSession(null);
     setOrders([]);
-    setStatus("Sesion cerrada en este dispositivo.");
+    setStatus("Sesión cerrada en este dispositivo.");
   };
 
   return (
     <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
       <section className="rounded-[2rem] bg-[#efe4d0] p-6 shadow-soft md:p-9">
         <span className="inline-flex rounded-full bg-white/75 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary shadow-soft">
-          Cuenta Minifimy
+          Cuenta MiniFimy
         </span>
         <h1 className="mt-5 font-headline text-[2.25rem] font-extrabold leading-tight text-on-surface md:text-5xl">
-          Tu espacio Minifimy.
+          Tu espacio MiniFimy.
         </h1>
         <p className="mt-4 text-sm leading-7 text-on-surface-variant md:text-base">
           Entra para ver tus pedidos, guardar tus datos y comprar mas rapido.
@@ -109,17 +109,17 @@ export function AccountClient() {
 
         {session ? (
           <div className="mt-7 rounded-[1.5rem] bg-white/78 p-5 shadow-soft">
-            <p className="text-sm font-bold text-primary">Sesion activa</p>
+            <p className="text-sm font-bold text-primary">Sesión activa</p>
             <p className="mt-1 text-lg font-extrabold text-on-surface">{session.name || session.email}</p>
             <p className="text-sm text-on-surface-variant">{session.email}</p>
             <button type="button" onClick={logout} className="mt-5 rounded-full bg-primary px-5 py-3 text-sm font-bold text-on-primary">
-              Cerrar sesion
+              Cerrar sesión
             </button>
           </div>
         ) : (
           <div className="mt-7 flex gap-2 rounded-full bg-white/60 p-1">
             <button type="button" onClick={() => setMode("login")} className={`flex-1 rounded-full px-4 py-3 text-sm font-bold ${mode === "login" ? "bg-primary text-on-primary" : "text-primary"}`}>
-              Iniciar sesion
+              Iniciar sesión
             </button>
             <button type="button" onClick={() => setMode("register")} className={`flex-1 rounded-full px-4 py-3 text-sm font-bold ${mode === "register" ? "bg-primary text-on-primary" : "text-primary"}`}>
               Crear cuenta
@@ -134,7 +134,7 @@ export function AccountClient() {
             <h2 className="font-headline text-2xl font-extrabold text-on-surface">Entrar a mi cuenta Fimy</h2>
             <input name="email" type="email" required autoComplete="email" placeholder="Email" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
             <input name="password" type="password" required minLength={8} autoComplete="current-password" placeholder="Clave" className="w-full rounded-full bg-[#fbf4ea] px-5 py-3.5 outline-none" />
-            <button className="w-full rounded-full bg-primary py-3.5 font-bold text-on-primary">Iniciar sesion</button>
+            <button className="w-full rounded-full bg-primary py-3.5 font-bold text-on-primary">Iniciar sesión</button>
           </form>
         )}
 
@@ -164,7 +164,7 @@ export function AccountClient() {
                   <p className="mt-2 font-bold text-secondary">{order.currency} {order.total}</p>
                 </article>
               ))}
-              {!loadingOrders && orders.length === 0 && <p className="text-sm text-on-surface-variant">Todavia no hay pedidos para esta cuenta.</p>}
+              {!loadingOrders && orders.length === 0 && <p className="text-sm text-on-surface-variant">Todavía no hay pedidos para esta cuenta.</p>}
             </div>
           </div>
         )}

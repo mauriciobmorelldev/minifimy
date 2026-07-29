@@ -1,5 +1,7 @@
 import type { Category, Product, ProductFilterOptions, ProductVariant } from "@/models/product";
 import { CACHE_SECONDS, CACHE_TAGS, normalizeBaseUrl } from "@/lib/cache";
+import { normalizeAndSortColors, normalizeAndSortSizes } from "@/lib/catalog-taxonomy";
+import { productIsInStock } from "@/lib/product-stock";
 import { categories as fallbackCategories, products as fallbackProducts } from "@/lib/products";
 
 const WOO_PRODUCT_FIELDS = [
@@ -19,6 +21,7 @@ const WOO_PRODUCT_FIELDS = [
   "attributes",
   "featured",
   "type",
+  "meta_data",
 ].join(",");
 
 const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description"].join(",");
@@ -65,6 +68,7 @@ export interface StoreProductQuery {
   maxPrice?: number;
   order?: "asc" | "desc";
   orderby?: "date" | "price" | "title" | "menu_order";
+  inStockFirst?: boolean;
 }
 
 export interface StoreProductCollection {
@@ -340,7 +344,7 @@ type WooProduct = {
   short_description?: string;
   price?: string;
   regular_price?: string;
-  minifimy_prices?: WooMinifimyPrices;
+  minifimy_prices?: WooMiniFimyPrices;
   stock_quantity?: number | null;
   stock_status?: string;
   images?: WooImage[];
@@ -349,9 +353,10 @@ type WooProduct = {
   attributes?: { name?: string; options?: string[] }[];
   featured?: boolean;
   type?: string;
+  meta_data?: { key?: string; value?: unknown }[];
 };
 
-type WooMinifimyPrices = {
+type WooMiniFimyPrices = {
   list_price?: number | string;
   discount_price?: number | string;
   discount_gateway_ids?: string[];
@@ -363,7 +368,7 @@ type WooVariation = {
   id: number;
   price?: string;
   regular_price?: string;
-  minifimy_prices?: WooMinifimyPrices;
+  minifimy_prices?: WooMiniFimyPrices;
   stock_quantity?: number | null;
   stock_status?: string;
   image?: WooImage;
@@ -403,8 +408,41 @@ export function getWordPressNewsletterUrl() {
   return process.env.WORDPRESS_NEWSLETTER_URL ?? buildWordPressUrl("wp-json/minifimy/v1/newsletter");
 }
 
+const VISIBLE_ACCENT_CORRECTIONS: Array<[RegExp, string]> = [
+  [/\bcatalogo\b/gi, "catálogo"],
+  [/\bcategorias\b/gi, "categorías"],
+  [/\bmenu\b/gi, "menú"],
+  [/\btodavia\b/gi, "todavía"],
+  [/\bempeza\b/gi, "empezá"],
+  [/\brecien\b/gi, "recién"],
+  [/\bguia\b/gi, "guía"],
+  [/\benvios\b/gi, "envíos"],
+  [/\bpoliticas\b/gi, "políticas"],
+  [/\belegi\b/gi, "elegí"],
+  [/\benvio\b/gi, "envío"],
+  [/\bacompanamiento\b/gi, "acompañamiento"],
+  [/\bdetras\b/gi, "detrás"],
+  [/\bresenas\b/gi, "reseñas"],
+  [/\bpodes\b/gi, "podés"],
+  [/\bseleccion\b/gi, "selección"],
+  [/\bpequena\b/gi, "pequeña"],
+  [/\btambien\b/gi, "también"],
+  [/\balgodon\b/gi, "algodón"],
+  [/\bcardigans\b/gi, "cárdigans"],
+];
+
+function preserveInitialCase(original: string, corrected: string) {
+  return original[0] === original[0]?.toUpperCase()
+    ? corrected[0].toUpperCase() + corrected.slice(1)
+    : corrected;
+}
+
 function cleanText(value?: string) {
-  return value?.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim() ?? "";
+  let text = value?.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim() ?? "";
+  for (const [pattern, corrected] of VISIBLE_ACCENT_CORRECTIONS) {
+    text = text.replace(pattern, (match) => preserveInitialCase(match, corrected));
+  }
+  return text;
 }
 
 function normalizeFilterName(value?: string) {
@@ -420,13 +458,20 @@ function getUniqueSortedValues(values: Array<string | undefined>) {
   );
 }
 
+function getProductMeta(product: WooProduct, key: string) {
+  const value = product.meta_data?.find((item) => item.key === key)?.value;
+  return typeof value === "string" ? cleanText(value) : "";
+}
+
 function buildFilterOptionsFromProducts(products: Product[], categories: Category[]): ProductFilterOptions {
-  const prices = products.map((product) => product.price).filter((price) => Number.isFinite(price) && price > 0);
+  const prices = products
+    .flatMap((product) => [product.price, product.prices?.discount, product.prices?.list])
+    .filter((price): price is number => Number.isFinite(price) && Number(price) > 0);
 
   return {
     categories,
-    sizes: getUniqueSortedValues(products.flatMap((product) => product.sizes ?? [])),
-    colors: getUniqueSortedValues(products.flatMap((product) => product.colors ?? [])),
+    sizes: normalizeAndSortSizes(products.flatMap((product) => product.sizes ?? [])),
+    colors: normalizeAndSortColors(products.flatMap((product) => product.colors ?? [])),
     price: {
       min: prices.length ? Math.min(...prices) : 0,
       max: prices.length ? Math.max(...prices) : 0,
@@ -464,7 +509,7 @@ function getPriceNumber(value?: string | number | null) {
   return Number.isFinite(price) && price > 0 ? price : 0;
 }
 
-function getMinifimyPrices(source: { price?: string; regular_price?: string; minifimy_prices?: WooMinifimyPrices }) {
+function getMiniFimyPrices(source: { price?: string; regular_price?: string; minifimy_prices?: WooMiniFimyPrices }) {
   const base = getPriceNumber(source.price) || getPriceNumber(source.regular_price);
   const list = getPriceNumber(source.minifimy_prices?.list_price) || getPriceNumber(source.regular_price) || base;
   const discount = getPriceNumber(source.minifimy_prices?.discount_price);
@@ -495,7 +540,7 @@ function mapWooProduct(product: WooProduct): Product {
     attribute.name?.toLowerCase().includes("color")
   )?.options;
 
-  const prices = getMinifimyPrices(product);
+  const prices = getMiniFimyPrices(product);
   const tagSlugs = product.tags?.map((tag) => tag.slug).filter(Boolean) as string[] | undefined;
   const tagNames = product.tags?.map((tag) => tag.name).filter(Boolean) as string[] | undefined;
 
@@ -504,6 +549,10 @@ function mapWooProduct(product: WooProduct): Product {
     name: product.name,
     slug: product.slug,
     description: cleanText(product.short_description) || cleanText(product.description),
+    material: getProductMeta(product, "_minifimy_material") || undefined,
+    care: getProductMeta(product, "_minifimy_care") || undefined,
+    fit: getProductMeta(product, "_minifimy_fit") || undefined,
+    includes: getProductMeta(product, "_minifimy_includes") || undefined,
     price: prices.base,
     prices,
     type: product.type,
@@ -517,8 +566,8 @@ function mapWooProduct(product: WooProduct): Product {
     badge: product.tags?.find((tag) => !tag.slug?.startsWith("home-"))?.name ?? product.tags?.[0]?.name,
     tagSlugs,
     tagNames,
-    sizes,
-    colors,
+    sizes: normalizeAndSortSizes(sizes ?? []),
+    colors: normalizeAndSortColors(colors ?? []),
   };
 }
 
@@ -543,8 +592,8 @@ function mapWooVariation(variation: WooVariation): ProductVariant {
     color: cleanText(getVariationOption(variation, ["color", "tono"])),
     variationAttributes,
     image: getSafeImage(variation.image?.src) ?? undefined,
-    price: getMinifimyPrices(variation).base || undefined,
-    prices: getMinifimyPrices(variation),
+    price: getMiniFimyPrices(variation).base || undefined,
+    prices: getMiniFimyPrices(variation),
     stock: variation.stock_status === "outofstock" ? 0 : variation.stock_quantity ?? (variation.stock_status === "instock" ? 1 : 0),
     stockStatus: variation.stock_status,
   };
@@ -560,8 +609,8 @@ function mergeProductVariants(product: Product, variants: ProductVariant[]): Pro
   const bestPrice = bestPrices?.base ?? variants.map((variant) => variant.price).find((price) => price && price > 1) ?? product.price;
   const variantImages = variants.map((variant) => variant.image).filter(Boolean) as string[];
   const images = Array.from(new Set([...product.images, ...variantImages]));
-  const sizes = getUniqueSortedValues([...(product.sizes ?? []), ...variants.map((variant) => variant.size)]);
-  const colors = getUniqueSortedValues([...(product.colors ?? []), ...variants.map((variant) => variant.color)]);
+  const sizes = normalizeAndSortSizes([...(product.sizes ?? []), ...variants.map((variant) => variant.size)]);
+  const colors = normalizeAndSortColors([...(product.colors ?? []), ...variants.map((variant) => variant.color)]);
 
   const availableVariants = variants.filter((variant) => variant.stockStatus !== "outofstock" && (variant.stock === undefined || variant.stock > 0));
   const variantStock = variants.reduce((total, variant) => total + (variant.stock && variant.stock > 0 ? variant.stock : 0), 0);
@@ -612,14 +661,14 @@ function mapWooCategory(category: WooCategory): Category {
     id: String(category.id),
     name: category.name,
     slug: category.slug,
-    description: cleanText(category.description) || `Productos Minifimy de ${category.name}.`,
+    description: cleanText(category.description) || `Productos MiniFimy de ${category.name}.`,
   };
 }
 
 function mapWooReview(review: WooProductReview): StoreReview {
   return {
     id: String(review.id),
-    reviewer: cleanText(review.reviewer) || "Familia Minifimy",
+    reviewer: cleanText(review.reviewer) || "Familia MiniFimy",
     review: cleanText(review.review),
     rating: Math.min(Math.max(Number(review.rating) || 0, 0), 5),
     dateCreated: review.date_created,
@@ -721,7 +770,7 @@ function getProductQueryParams(options: StoreProductQuery = {}) {
 
 export async function getStoreProductCollection(options: StoreProductQuery = {}): Promise<StoreProductCollection> {
   const page = Math.max(1, Math.floor(options.page ?? 1));
-  const perPage = Math.min(Math.max(Math.floor(options.perPage ?? 12), 1), 24);
+  const perPage = Math.min(Math.max(Math.floor(options.perPage ?? 12), 1), 100);
 
   if (!canUseWooCommerce()) {
     const total = fallbackProducts.length;
@@ -735,9 +784,9 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
     };
   }
 
-  const needsAttributeFilter = Boolean(options.size || options.color);
-  const requestPage = needsAttributeFilter ? 1 : page;
-  const requestPerPage = needsAttributeFilter ? 100 : perPage;
+  const needsLocalPagination = Boolean(options.size || options.color || options.inStockFirst);
+  const requestPage = needsLocalPagination ? 1 : page;
+  const requestPerPage = needsLocalPagination ? 100 : perPage;
   const response = await fetchWooResponse(
     "products",
     getProductQueryParams({ ...options, page: requestPage, perPage: requestPerPage }),
@@ -761,7 +810,14 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
     products = products.filter((product) => product.colors?.includes(options.color!));
   }
 
-  if (needsAttributeFilter) {
+  if (options.inStockFirst) {
+    products = products
+      .map((product, index) => ({ product, index, inStock: productIsInStock(product) }))
+      .sort((first, second) => Number(second.inStock) - Number(first.inStock) || first.index - second.index)
+      .map(({ product }) => product);
+  }
+
+  if (needsLocalPagination) {
     const total = products.length;
     const start = (page - 1) * perPage;
     return {
@@ -811,7 +867,8 @@ export async function getNewestStoreProducts(limit = 15) {
     order: "desc",
   });
 
-  if (products.length > 0) return products.slice(0, limit);
+  const inStockProducts = products.filter(productIsInStock);
+  if (inStockProducts.length > 0) return inStockProducts.slice(0, limit);
 
   return canUseWooCommerce() ? [] : fallbackProducts.slice(0, limit);
 }
@@ -863,8 +920,8 @@ export async function getStoreProductFilters(): Promise<ProductFilterOptions> {
 
   return {
     categories,
-    sizes: sizesFromWoo.length > 0 ? sizesFromWoo : fallback.sizes,
-    colors: colorsFromWoo.length > 0 ? colorsFromWoo : fallback.colors,
+    sizes: normalizeAndSortSizes(sizesFromWoo.length > 0 ? sizesFromWoo : fallback.sizes),
+    colors: normalizeAndSortColors(colorsFromWoo.length > 0 ? colorsFromWoo : fallback.colors),
     price: fallback.price,
   };
 }

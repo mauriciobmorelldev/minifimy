@@ -19,7 +19,7 @@ export function SiteLockedScreen() {
           <div className="flex justify-center lg:justify-start">
             <Image
               src="/brand/logo.svg"
-              alt="Minifimy"
+              alt="MiniFimy"
               width={180}
               height={64}
               priority
@@ -35,7 +35,7 @@ export function SiteLockedScreen() {
               Estamos preparando algo muy suave.
             </h1>
             <p className="mx-auto max-w-xl text-base leading-8 text-on-surface-variant sm:text-lg lg:mx-0">
-              Minifimy esta terminando de acomodar cada detalle para que la experiencia se sienta linda, calida y especial desde el primer momento.
+              MiniFimy está terminando de acomodar cada detalle para que la experiencia se sienta linda, cálida y especial desde el primer momento.
             </p>
           </div>
 
@@ -62,11 +62,11 @@ export function SiteLockedScreen() {
             priority
           />
           <div className="absolute bottom-10 left-10 z-20 rounded-[1.5rem] bg-white/78 px-5 py-4 text-sm font-semibold leading-6 text-on-surface-variant shadow-soft">
-            Gracias por pasar por Minifimy.
+            Gracias por pasar por MiniFimy.
           </div>
           <Image
             src="/brand/illustrations/jirafa.svg"
-            alt="Fimy, la guia de Minifimy"
+            alt="Fimy, la guía de MiniFimy"
             width={260}
             height={380}
             priority

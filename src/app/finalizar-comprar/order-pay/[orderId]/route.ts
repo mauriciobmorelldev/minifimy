@@ -41,7 +41,7 @@ function getCheckoutEnhancement(request: NextRequest) {
   .wp-site-blocks, .site, #page, main, .entry-content, .woocommerce { max-width: 1060px !important; margin-inline: auto !important; padding-inline: 18px !important; }
   header, .wp-block-template-part, footer, .wp-block-navigation, .wc-block-mini-cart, .wp-admin-bar, #wpadminbar { display: none !important; }
   h1, .wp-block-site-title, .entry-title { color: transparent !important; height: 0 !important; margin: 0 !important; overflow: hidden !important; }
-  .woocommerce::before { content: "Minifimy"; display: block; width: max-content; margin: 32px auto 18px; padding: 10px 18px; border-radius: 999px; background: rgba(255,255,255,.76); box-shadow: 0 14px 40px rgba(83,69,49,.10); color: #50683d; font-size: 12px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
+  .woocommerce::before { content: "MiniFimy"; display: block; width: max-content; margin: 32px auto 18px; padding: 10px 18px; border-radius: 999px; background: rgba(255,255,255,.76); box-shadow: 0 14px 40px rgba(83,69,49,.10); color: #50683d; font-size: 12px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
   .woocommerce-order-pay, .woocommerce { background: rgba(255,255,255,.72) !important; border: 1px solid rgba(234,223,203,.75) !important; border-radius: 34px !important; box-shadow: 0 24px 70px rgba(83,69,49,.11) !important; padding: clamp(20px, 4vw, 44px) !important; }
   table.shop_table { width: 100% !important; border-collapse: separate !important; border-spacing: 0 10px !important; }
   table.shop_table th { color: #50683d !important; font-size: 12px !important; letter-spacing: .16em !important; text-transform: uppercase !important; text-align: left !important; }
@@ -71,7 +71,7 @@ function getCheckoutEnhancement(request: NextRequest) {
       return value;
     } catch { return value; }
   };
-  document.title = "Finalizar pago | Minifimy";
+  document.title = "Finalizar pago | MiniFimy";
   document.querySelectorAll("a[href], form[action]").forEach((node) => {
     const attr = node.tagName === "FORM" ? "action" : "href";
     const value = node.getAttribute(attr);
@@ -108,7 +108,7 @@ function getCheckoutEnhancement(request: NextRequest) {
   if (!canAutoSubmit) return;
   const overlay = document.createElement("div");
   overlay.id = "minifimy-autopay";
-  overlay.innerHTML = "<div><strong>Estamos abriendo tu pago</strong><p>Ya usamos el método que elegiste en Minifimy. Te llevamos al paso seguro para completar la compra.</p></div>";
+  overlay.innerHTML = "<div><strong>Estamos abriendo tu pago</strong><p>Ya usamos el método que elegiste en MiniFimy. Te llevamos al paso seguro para completar la compra.</p></div>";
   document.body.appendChild(overlay);
   window.setTimeout(() => {
     sessionStorage.setItem(storageKey, String(Date.now()));
@@ -121,8 +121,8 @@ function getCheckoutEnhancement(request: NextRequest) {
 
 function injectCheckoutEnhancement(html: string, request: NextRequest) {
   const enhancedHtml = html
-    .replaceAll("darkorange-seahorse-714610.hostingersite.com", "Minifimy")
-    .replace(/<title>[\s\S]*?<\/title>/i, "<title>Finalizar pago | Minifimy</title>");
+    .replaceAll("darkorange-seahorse-714610.hostingersite.com", "MiniFimy")
+    .replace(/<title>[\s\S]*?<\/title>/i, "<title>Finalizar pago | MiniFimy</title>");
   const injection = getCheckoutEnhancement(request);
   return enhancedHtml.includes("</head>")
     ? enhancedHtml.replace("</head>", `${injection}</head>`)
@@ -158,7 +158,7 @@ async function proxyOrderPay(request: NextRequest, context: OrderPayRouteContext
       accept: request.headers.get("accept") ?? "text/html,application/xhtml+xml",
       "content-type": request.headers.get("content-type") ?? "application/x-www-form-urlencoded",
       cookie: request.headers.get("cookie") ?? "",
-      "user-agent": request.headers.get("user-agent") ?? "Minifimy checkout proxy",
+      "user-agent": request.headers.get("user-agent") ?? "MiniFimy checkout proxy",
     },
     cache: "no-store",
   });
