@@ -3,9 +3,9 @@ import { getStoreProductBySlug } from "@/lib/woocommerce";
 
 export async function GET(
   _: NextRequest,
-  { params }: { params?: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = params ? await params : { slug: "" };
+  const { slug } = await params;
   const product = await getStoreProductBySlug(slug);
   if (!product) {
     return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });

@@ -43,7 +43,7 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
-                Fimy esta guardando
+                Fimy está guardando
               </span>
               <h2 className="mt-1 font-headline text-2xl font-extrabold text-on-surface">
                 Tu bolsita suave

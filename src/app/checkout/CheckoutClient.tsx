@@ -515,7 +515,7 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
               </div>
 
               <p className="mt-5 rounded-[1.4rem] bg-primary/10 p-4 text-xs leading-5 text-primary">
-                Tu pedido queda guardado para que podamos prepararlo y acompanarte con el seguimiento.
+                Tu pedido queda guardado para que podamos prepararlo y acompañarte con el seguimiento.
               </p>
             </aside>
           </div>

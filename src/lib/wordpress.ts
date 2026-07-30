@@ -104,7 +104,7 @@ export const fallbackHomeContent: HomeContent = {
   heroKicker: "MiniFimy, con amor",
   heroTitle: "Un regalo que empieza antes de abrir la caja.",
   heroSubtitle:
-    "Fimy te acompana a elegir prendas suaves para esas primeras veces que quedan guardadas en la familia.",
+    "Fimy te acompaña a elegir prendas suaves para esas primeras veces que quedan guardadas en la familia.",
   heroPrimaryLabel: "Encontrar algo especial",
   heroPrimaryHref: "/catalogo",
   heroSecondaryLabel: "Es para recién nacido",
@@ -116,7 +116,7 @@ export const fallbackHomeContent: HomeContent = {
   fimiNoteText:
     "Si es un regalo, empezá por una pieza suave, fácil de combinar y lista para usar.",
   heroGiftChip: "Para baby shower, primeros dias o una visita con amor",
-  guideTitle: "Contame para quién es y te muestro por donde empezar.",
+  guideTitle: "Contame para quién es y te muestro por dónde empezar.",
   guideIntro:
     "La idea no es llenar la pantalla de productos. Es encontrar una prenda que tenga sentido para ese momento.",
   editorialKicker: "Un ratito de pausa",

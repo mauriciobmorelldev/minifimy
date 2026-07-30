@@ -85,7 +85,7 @@ export default async function HomePage() {
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <Link href="/catalogo" className="btn-primary gap-2 rounded-full px-7">
-                Descubrir MiniFimy
+                Ver catálogo completo
                 <span className="material-symbols-outlined text-lg">arrow_forward</span>
               </Link>
             </div>
@@ -266,7 +266,6 @@ export default async function HomePage() {
                     </Link>
                     <div className="flex min-w-0 flex-col justify-between py-1">
                       <div>
-                        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-primary">{product.badge ?? "MiniFimy"}</p>
                         <h3 className="font-headline text-xl font-extrabold leading-tight text-on-surface">
                           <Link href={`/producto/${product.slug}`}>{product.name}</Link>
                         </h3>

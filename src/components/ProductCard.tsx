@@ -47,15 +47,17 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
               fill
               sizes="(min-width: 1280px) 280px, (min-width: 768px) 30vw, 86vw"
               className="object-cover transition-transform duration-700 ease-soft-spring group-hover:scale-[1.045]"
-              quality={76}
+              quality={70}
             />
           </Link>
 
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#2f2a22]/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
-          <div className={`absolute left-3 top-3 max-w-[72%] truncate rounded-full px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] shadow-soft ${inStock ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-secondary ring-1 ring-secondary/20"}`}>
-            {inStock ? product.badge ?? "MiniFimy" : "Sin stock"}
-          </div>
+          {!inStock && (
+            <div className="absolute left-3 top-3 max-w-[72%] truncate rounded-full bg-[#f7efe3] px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-secondary shadow-soft ring-1 ring-secondary/20">
+              Sin stock
+            </div>
+          )}
 
           <button
             type="button"

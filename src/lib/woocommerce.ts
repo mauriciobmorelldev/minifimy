@@ -325,8 +325,17 @@ async function postWoo<T>(path: string, body: unknown) {
 }
 
 type WooImage = {
+  id?: number;
   src?: string;
   alt?: string;
+};
+
+type WordPressMedia = {
+  id: number;
+  source_url?: string;
+  media_details?: {
+    sizes?: Record<string, { source_url?: string }>;
+  };
 };
 
 type WooCategory = {
@@ -490,6 +499,44 @@ function getSafeImage(src?: string) {
   }
 }
 
+function getPreferredMediaSource(media: WordPressMedia) {
+  const sizes = media.media_details?.sizes;
+  return (
+    sizes?.woocommerce_single?.source_url ??
+    sizes?.medium_large?.source_url ??
+    sizes?.large?.source_url ??
+    media.source_url
+  );
+}
+
+async function getMediaSources(images: WooImage[]) {
+  const ids = Array.from(new Set(images.map((image) => image.id).filter((id): id is number => Number.isFinite(id))));
+  if (ids.length === 0) return new Map<number, string>();
+
+  const chunks = Array.from({ length: Math.ceil(ids.length / 100) }, (_, index) => ids.slice(index * 100, index * 100 + 100));
+  const responses = await Promise.all(
+    chunks.map((chunk) => {
+      const params = new URLSearchParams({
+        include: chunk.join(","),
+        per_page: "100",
+        _fields: "id,source_url,media_details",
+      });
+      return fetchWordPressJson<WordPressMedia[]>(
+        `wp-json/wp/v2/media?${params.toString()}`,
+        CACHE_SECONDS.products,
+        [CACHE_TAGS.products],
+      );
+    }),
+  );
+
+  return new Map(
+    responses
+      .flatMap((items) => items ?? [])
+      .map((media) => [media.id, getPreferredMediaSource(media)] as const)
+      .filter((entry): entry is readonly [number, string] => Boolean(entry[1])),
+  );
+}
+
 function buildWooUrl(path: string, params: Record<string, string | number | boolean> = {}) {
   if (!STORE_URL || !CONSUMER_KEY || !CONSUMER_SECRET) return null;
 
@@ -528,11 +575,11 @@ function getMiniFimyPrices(source: { price?: string; regular_price?: string; min
   };
 }
 
-function mapWooProduct(product: WooProduct): Product {
+function mapWooProduct(product: WooProduct, mediaSources = new Map<number, string>()): Product {
   const categorySlugs = product.categories?.map((category) => category.slug).filter(Boolean) ?? [];
   const categoryIds = product.categories?.map((category) => String(category.id)).filter(Boolean) ?? [];
   const category = categorySlugs[0] ?? "catalogo";
-  const images = product.images?.map((image) => getSafeImage(image.src)).filter(Boolean) as string[] | undefined;
+  const images = product.images?.map((image) => getSafeImage(mediaSources.get(image.id ?? -1) ?? image.src)).filter(Boolean) as string[] | undefined;
   const sizes = product.attributes?.find((attribute) =>
     attribute.name?.toLowerCase().includes("talle") || attribute.name?.toLowerCase().includes("size")
   )?.options;
@@ -653,7 +700,12 @@ async function getStoreProductVariations(productId: string, revalidate = CACHE_S
     [CACHE_TAGS.products]
   );
 
-  return (data ?? []).map(mapWooVariation);
+  const mediaSources = await getMediaSources((data ?? []).flatMap((variation) => variation.image ? [variation.image] : []));
+  return (data ?? []).map((variation) => {
+    const mapped = mapWooVariation(variation);
+    const optimizedImage = mediaSources.get(variation.image?.id ?? -1);
+    return optimizedImage ? { ...mapped, image: optimizedImage } : mapped;
+  });
 }
 
 function mapWooCategory(category: WooCategory): Category {
@@ -799,7 +851,8 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
   }
 
   const data = (await response.json().catch(() => [])) as WooProduct[];
-  let products = await enrichCatalogProducts(data.map(mapWooProduct), data);
+  const mediaSources = await getMediaSources(data.flatMap((product) => product.images ?? []));
+  let products = await enrichCatalogProducts(data.map((product) => mapWooProduct(product, mediaSources)), data);
   products = products.filter((product) => product.price > 1 || Boolean(product.prices?.list || product.prices?.discount));
 
   if (options.size) {
@@ -958,7 +1011,8 @@ export async function getStoreProductBySlug(slug: string) {
 
   if (!data?.[0]) return undefined;
 
-  const product = mapWooProduct(data[0]);
+  const mediaSources = await getMediaSources(data[0].images ?? []);
+  const product = mapWooProduct(data[0], mediaSources);
   const variants = await getStoreProductVariations(product.id, 0);
   return mergeProductVariants(product, variants);
 }

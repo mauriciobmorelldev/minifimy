@@ -10,6 +10,35 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
+const COMPLEMENTARY_TERMS = {
+  body: ["pantalon", "babucha", "abrigo", "cardigan", "buzo"],
+  top: ["pantalon", "babucha"],
+  bottom: ["body", "remera"],
+  set: ["accesorio", "manta"],
+  outerwear: ["body", "remera", "pantalon", "babucha"],
+  accessory: ["body", "ajuar", "conjunto"],
+};
+
+function normalizeCategory(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function getComplementaryTerms(category: string) {
+  const value = normalizeCategory(category);
+  if (value.includes("body")) return COMPLEMENTARY_TERMS.body;
+  if (["remera", "camisa"].some((term) => value.includes(term))) return COMPLEMENTARY_TERMS.top;
+  if (["pantalon", "babucha"].some((term) => value.includes(term))) return COMPLEMENTARY_TERMS.bottom;
+  if (["ajuar", "conjunto"].some((term) => value.includes(term))) return COMPLEMENTARY_TERMS.set;
+  if (["abrigo", "buzo", "campera", "cardigan"].some((term) => value.includes(term))) return COMPLEMENTARY_TERMS.outerwear;
+  if (value.includes("accesorio")) return COMPLEMENTARY_TERMS.accessory;
+  return [];
+}
+
+function matchesComplementaryCategory(productCategory: string, terms: string[]) {
+  const value = normalizeCategory(productCategory);
+  return terms.some((term) => value.includes(term));
+}
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -51,9 +80,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   const category = categories.find((item) => item.slug === product.category);
-  const recommendations = allProducts
-    .filter((item) => item.id !== product.id && item.category !== product.category && productIsInStock(item))
-    .slice(0, 8);
+  const availableRecommendations = allProducts.filter(
+    (item) => item.id !== product.id && item.category !== product.category && productIsInStock(item),
+  );
+  const complementaryTerms = getComplementaryTerms(product.category);
+  const complementaryProducts = availableRecommendations.filter((item) =>
+    matchesComplementaryCategory(item.category, complementaryTerms),
+  );
+  const hasRealComplements = complementaryProducts.length > 0;
+  const recommendations = (hasRealComplements ? complementaryProducts : availableRecommendations).slice(0, 4);
   const productReviews = await getStoreProductReviews(product.id);
 
   return (
@@ -93,9 +128,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
       <div className="mt-14 md:mt-24">
         <ProductCarousel
-          title="Completá el look"
+          title={hasRealComplements ? "Completá el look" : "También te puede gustar"}
           eyebrow="Productos relacionados"
-          description="Combos suaves para cada momento, listos para sumar a la bolsita."
+          description={hasRealComplements ? "Prendas complementarias para combinar este producto." : "Una selección disponible para seguir mirando."}
           products={recommendations}
           ctaLabel="Ver colección"
         />

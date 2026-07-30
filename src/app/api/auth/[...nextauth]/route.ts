@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export function GET() {
   return NextResponse.json(
-    { message: "Esta ruta ya no esta disponible." },
+    { message: "Esta ruta ya no está disponible." },
     { status: 410 }
   );
 }

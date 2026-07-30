@@ -99,7 +99,7 @@ export function Header({ navLinks }: HeaderProps) {
                       <div className="rounded-[1.4rem] bg-white p-3 shadow-lift ring-1 ring-primary/10">
                       <div className="mb-2 rounded-[1rem] bg-[#f7efe3] px-4 py-3">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Categorías</p>
-                        <p className="mt-1 text-xs leading-5 text-on-surface-variant">Todo lo que esta cargado en Fimy.</p>
+                        <p className="mt-1 text-xs leading-5 text-on-surface-variant">Todo lo que está cargado en Fimy.</p>
                       </div>
                       <div className="grid gap-1">
                         {link.children.map((child) => (

@@ -51,6 +51,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
+    qualities: [55, 58, 70, 75],
     remotePatterns,
     minimumCacheTTL: 60 * 60 * 24 * 31,
     deviceSizes: [360, 420, 640, 768, 1024, 1280, 1536],

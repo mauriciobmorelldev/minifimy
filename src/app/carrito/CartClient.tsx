@@ -57,7 +57,7 @@ export default function CartClient() {
               height={170}
               className="mx-auto mb-6 h-40 w-auto opacity-80"
             />
-            <h2 className="font-headline text-3xl font-extrabold text-on-surface">Tu bolsita esta esperando algo suave.</h2>
+            <h2 className="font-headline text-3xl font-extrabold text-on-surface">Tu bolsita está esperando algo suave.</h2>
             <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-on-surface-variant">
               Suma regalos, ajuares o prendas para recién nacido y volvé cuando quieras.
             </p>

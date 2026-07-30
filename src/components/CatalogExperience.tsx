@@ -138,16 +138,28 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
     setFilter({ precio: serializePriceRange(draftPriceRange.min, draftPriceRange.max, priceMinLimit, priceMaxLimit) });
   };
 
+  const formatSizeCta = (value: string) => {
+    const normalized = value.replace(/\s*-\s*/g, "–");
+    const needsUnit = /\d+–\d+/.test(normalized) && !/mes|año/i.test(normalized);
+    return `Ver talle ${normalized}${needsUnit ? " meses" : ""}`;
+  };
+
   const quickFilters = [
-    ...filterOptions.categories.slice(0, 3).map((item) => ({
+    ...filterOptions.categories.slice(0, 5).map((item) => ({
       label: item.name,
+      cta: `Ver ${item.name.toLocaleLowerCase("es-AR")}`,
       icon: "category",
       action: () => setCategoryFilter(item.slug),
     })),
     ...(filterOptions.sizes[0]
-      ? [{ label: `Talle ${filterOptions.sizes[0]}`, icon: "straighten", action: () => setFilter({ talle: filterOptions.sizes[0] }) }]
+      ? [{
+          label: `Talle ${filterOptions.sizes[0]}`,
+          cta: formatSizeCta(filterOptions.sizes[0]),
+          icon: "straighten",
+          action: () => setFilter({ talle: filterOptions.sizes[0] }),
+        }]
       : []),
-  ].slice(0, 4);
+  ].slice(0, 6);
 
   const selectedCategoryName = categories.find((item) => item.slug === category)?.name ?? category;
   const selectedPriceName = !selectedPriceRange.isDefault ? `${formatPrice(selectedPriceRange.min)} - ${formatPrice(selectedPriceRange.max)}` : "";
@@ -266,7 +278,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                   <span className="material-symbols-outlined">{filter.icon}</span>
                 </span>
                 <span className="font-headline text-lg font-extrabold text-on-surface">{filter.label}</span>
-                <span className="mt-2 block text-sm text-on-surface-variant">Ver opciones reales</span>
+                <span className="mt-2 block text-sm font-bold text-secondary">{filter.cta}</span>
               </button>
             ))}
           </div>

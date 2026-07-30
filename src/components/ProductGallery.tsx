@@ -147,7 +147,7 @@ export function ProductGallery({ images, productName, selectedImage }: ProductGa
                 fill
                 sizes="100vw"
                 className="object-contain"
-                quality={82}
+                quality={75}
               />
               {hasManyImages && (
                 <>

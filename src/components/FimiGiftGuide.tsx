@@ -38,7 +38,7 @@ const intents: GuideIntent[] = [
     id: "cozy",
     label: "Algo abrigado",
     title: "Para dias tranquilos, iria por texturas suaves y mucho abrigo.",
-    note: "Pijamas, mantas y tejidos que acompanan siestas largas.",
+    note: "Pijamas, mantas y tejidos que acompañan siestas largas.",
     categories: ["dormir"],
     keywords: ["pijama", "manta", "brisa"],
   },
@@ -150,7 +150,6 @@ export function FimiGiftGuide({ products, title, intro }: FimiGiftGuideProps) {
                   />
                 </Link>
                 <div className="flex flex-1 flex-col p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{product.badge ?? "MiniFimy"}</p>
                   <h4 className="mt-2 font-headline text-lg font-extrabold leading-tight text-on-surface">
                     <Link href={`/producto/${product.slug}`}>{product.name}</Link>
                   </h4>
