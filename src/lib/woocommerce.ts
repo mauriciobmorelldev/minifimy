@@ -1,6 +1,6 @@
 import type { Category, Product, ProductFilterOptions, ProductVariant } from "@/models/product";
 import { CACHE_SECONDS, CACHE_TAGS, normalizeBaseUrl } from "@/lib/cache";
-import { normalizeAndSortColors, normalizeAndSortSizes } from "@/lib/catalog-taxonomy";
+import { normalizeAndSortColors, normalizeAndSortSizes, normalizeColor, normalizeSize } from "@/lib/catalog-taxonomy";
 import { productIsInStock } from "@/lib/product-stock";
 import { categories as fallbackCategories, products as fallbackProducts } from "@/lib/products";
 
@@ -641,8 +641,8 @@ function mapWooVariation(variation: WooVariation): ProductVariant {
 
   return {
     id: String(variation.id),
-    size: cleanText(getVariationOption(variation, ["talle", "size", "edad"])),
-    color: cleanText(getVariationOption(variation, ["color", "tono"])),
+    size: normalizeSize(cleanText(getVariationOption(variation, ["talle", "size", "edad"]))),
+    color: normalizeColor(cleanText(getVariationOption(variation, ["color", "tono"]))),
     model: cleanText(getVariationOption(variation, ["modelo", "model"])),
     variationAttributes,
     image: getSafeImage(variation.image?.src) ?? undefined,

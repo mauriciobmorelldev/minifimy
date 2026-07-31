@@ -23,5 +23,7 @@ describe("catalog taxonomy normalization", () => {
       "Especial",
     ]);
     expect(normalizeSize("4 anos")).toBe("4 años");
+    expect(normalizeSize("6-9 meses")).toBe("6–9 meses");
+    expect(normalizeSize("6–9 meses")).toBe("6–9 meses");
   });
 });

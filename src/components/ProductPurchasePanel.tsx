@@ -37,6 +37,8 @@ function normalizeOption(value?: string) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
+    .replace(/[\u2010-\u2015\u2212]/g, "-")
+    .replace(/\s*-\s*/g, "-")
     .replace(/\s+/g, " ")
     .trim();
 }
