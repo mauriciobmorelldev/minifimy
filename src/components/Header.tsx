@@ -242,7 +242,7 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
 
           <div
-            className={`fixed bottom-3 left-3 right-3 top-[5.5rem] z-[90] overflow-hidden overscroll-contain rounded-[1.6rem] border border-primary/10 bg-[#fffaf1] shadow-lift ring-1 ring-primary/10 transition-all duration-300 md:hidden ${
+            className={`absolute left-0 right-0 top-[calc(100%+0.75rem)] z-[90] h-[calc(100dvh-6.75rem)] overflow-hidden overscroll-contain rounded-[1.6rem] border border-primary/10 bg-[#fffaf1] shadow-lift ring-1 ring-primary/10 transition-all duration-300 md:hidden ${
               mobileOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
             }`}
           >
