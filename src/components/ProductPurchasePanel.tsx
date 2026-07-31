@@ -49,42 +49,49 @@ function variantMatchesSelection(variant: ProductVariant, selection: ProductSele
   if (selection.variationId && selection.variationId === variant.id) return true;
   const sizeMatches = !selection.size || !variant.size || optionEquals(selection.size, variant.size);
   const colorMatches = !selection.color || !variant.color || optionEquals(selection.color, variant.color);
-  return sizeMatches && colorMatches;
+  const modelMatches = !selection.model || !variant.model || optionEquals(selection.model, variant.model);
+  return sizeMatches && colorMatches && modelMatches;
 }
 
 function findCompatibleVariant(
   variants: ProductVariant[] | undefined,
   selection: ProductSelection,
-  changedField: "size" | "color",
+  changedField: "size" | "color" | "model",
 ) {
   if (!variants?.length) return undefined;
+
+  const availableVariants = variants.filter(variantIsInStock);
+  const exactAvailableVariant = availableVariants.find((variant) => variantMatchesSelection(variant, selection));
+  if (exactAvailableVariant) return exactAvailableVariant;
+
+  const changedValue = selection[changedField];
+  if (changedValue) {
+    const compatibleAvailableVariant = availableVariants.find((variant) => optionEquals(variant[changedField], changedValue));
+    if (compatibleAvailableVariant) return compatibleAvailableVariant;
+  }
 
   const exactVariant = variants.find((variant) => variantMatchesSelection(variant, selection));
   if (exactVariant) return exactVariant;
 
-  if (changedField === "color" && selection.color) {
-    return variants.find((variant) => optionEquals(variant.color, selection.color));
-  }
-
-  if (changedField === "size" && selection.size) {
-    return variants.find((variant) => optionEquals(variant.size, selection.size));
-  }
-
-  return undefined;
+  return changedValue
+    ? variants.find((variant) => optionEquals(variant[changedField], changedValue))
+    : undefined;
 }
 
 export function ProductPurchasePanel({ product, selection: controlledSelection, onSelectionChange, selectedVariant }: ProductPurchasePanelProps) {
   const [quantity, setQuantity] = useState(1);
   const selectedSize = controlledSelection?.size ?? product.sizes?.[0] ?? "";
   const selectedColor = controlledSelection?.color ?? product.colors?.[0] ?? "";
+  const selectedModel = controlledSelection?.model ?? product.models?.[0] ?? "";
   const selection: ProductSelection = {
     size: selectedSize || undefined,
     color: selectedColor || undefined,
+    model: selectedModel || undefined,
     variationId: selectedVariant?.id,
-    variationAttributes: selectedVariant?.variationAttributes,
+    variationAttributes: controlledSelection?.variationAttributes ?? selectedVariant?.variationAttributes,
   };
 
-  const updateSelection = (nextSelection: ProductSelection, changedField: "size" | "color") => {
+  const updateSelection = (nextSelection: ProductSelection, changedField: "size" | "color" | "model") => {
     const mergedSelection = { ...selection, ...nextSelection, variationId: undefined };
     const compatibleVariant = findCompatibleVariant(product.variants, mergedSelection, changedField);
 
@@ -92,7 +99,9 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
       ...mergedSelection,
       size: compatibleVariant?.size ?? mergedSelection.size,
       color: compatibleVariant?.color ?? mergedSelection.color,
-      variationId: undefined,
+      model: compatibleVariant?.model ?? mergedSelection.model,
+      variationId: compatibleVariant?.id,
+      variationAttributes: compatibleVariant?.variationAttributes,
     });
   };
 
@@ -160,6 +169,29 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
         </div>
       )}
 
+      {product.models && product.models.length > 0 && (
+        <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
+          <span className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+            Elegí modelo
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {product.models.map((model) => (
+              <button
+                key={model}
+                type="button"
+                onClick={() => updateSelection({ model }, "model")}
+                className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${
+                  selectedModel === model
+                    ? "border-primary bg-primary text-on-primary"
+                    : "border-outline-variant/30 bg-white text-primary hover:border-primary"
+                }`}
+              >
+                {model}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-4 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
         <div>
           <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Cantidad</span>

@@ -85,6 +85,7 @@ export interface StoreCheckoutItem {
   selection?: {
     size?: string;
     color?: string;
+    model?: string;
     variationId?: string;
   };
 }
@@ -586,6 +587,10 @@ function mapWooProduct(product: WooProduct, mediaSources = new Map<number, strin
   const colors = product.attributes?.find((attribute) =>
     attribute.name?.toLowerCase().includes("color")
   )?.options;
+  const models = product.attributes?.find((attribute) => {
+    const name = normalizeFilterName(attribute.name);
+    return name.includes("modelo") || name.includes("model");
+  })?.options;
 
   const prices = getMiniFimyPrices(product);
   const tagSlugs = product.tags?.map((tag) => tag.slug).filter(Boolean) as string[] | undefined;
@@ -615,6 +620,7 @@ function mapWooProduct(product: WooProduct, mediaSources = new Map<number, strin
     tagNames,
     sizes: normalizeAndSortSizes(sizes ?? []),
     colors: normalizeAndSortColors(colors ?? []),
+    models: getUniqueSortedValues(models ?? []),
   };
 }
 
@@ -637,6 +643,7 @@ function mapWooVariation(variation: WooVariation): ProductVariant {
     id: String(variation.id),
     size: cleanText(getVariationOption(variation, ["talle", "size", "edad"])),
     color: cleanText(getVariationOption(variation, ["color", "tono"])),
+    model: cleanText(getVariationOption(variation, ["modelo", "model"])),
     variationAttributes,
     image: getSafeImage(variation.image?.src) ?? undefined,
     price: getMiniFimyPrices(variation).base || undefined,
@@ -658,6 +665,7 @@ function mergeProductVariants(product: Product, variants: ProductVariant[]): Pro
   const images = Array.from(new Set([...product.images, ...variantImages]));
   const sizes = normalizeAndSortSizes([...(product.sizes ?? []), ...variants.map((variant) => variant.size)]);
   const colors = normalizeAndSortColors([...(product.colors ?? []), ...variants.map((variant) => variant.color)]);
+  const models = getUniqueSortedValues([...(product.models ?? []), ...variants.map((variant) => variant.model)]);
 
   const availableVariants = variants.filter((variant) => variant.stockStatus !== "outofstock" && (variant.stock === undefined || variant.stock > 0));
   const variantStock = variants.reduce((total, variant) => total + (variant.stock && variant.stock > 0 ? variant.stock : 0), 0);
@@ -667,6 +675,7 @@ function mergeProductVariants(product: Product, variants: ProductVariant[]): Pro
     images,
     sizes: sizes.length > 0 ? sizes : product.sizes,
     colors: colors.length > 0 ? colors : product.colors,
+    models: models.length > 0 ? models : product.models,
     price: bestPrice,
     prices: bestPrices ?? product.prices,
     stock: availableVariants.length > 0 ? Math.max(variantStock, 1) : 0,
@@ -1311,6 +1320,7 @@ export async function createStoreOrder(input: CreateStoreOrderInput) {
       meta_data: [
         ...(item.selection?.size ? [{ key: "Talle", value: item.selection.size }] : []),
         ...(item.selection?.color ? [{ key: "Color", value: item.selection.color }] : []),
+        ...(item.selection?.model ? [{ key: "Modelo", value: item.selection.model }] : []),
       ],
     })),
     shipping_lines: [

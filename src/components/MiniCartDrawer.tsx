@@ -113,7 +113,7 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
                           {item.product.name}
                         </h3>
                         <p className="mt-1 text-xs text-on-surface-variant">
-                          {item.product.category}{item.selection?.size ? ` · Talle ${item.selection.size}` : ""}{item.selection?.color ? ` · ${item.selection.color}` : ""}
+                          {item.product.category}{item.selection?.size ? ` · Talle ${item.selection.size}` : ""}{item.selection?.color ? ` · ${item.selection.color}` : ""}{item.selection?.model ? ` · Modelo ${item.selection.model}` : ""}
                         </p>
                       </div>
                       <button

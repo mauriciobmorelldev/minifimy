@@ -13,6 +13,7 @@ export interface ProductVariant {
   id: string;
   size?: string;
   color?: string;
+  model?: string;
   variationAttributes?: { attribute: string; value: string }[];
   image?: string;
   price?: number;
@@ -45,6 +46,7 @@ export interface Product {
   tagNames?: string[];
   sizes?: string[];
   colors?: string[];
+  models?: string[];
   variants?: ProductVariant[];
 }
 
@@ -68,6 +70,7 @@ export interface ProductFilterOptions {
 export interface ProductSelection {
   size?: string;
   color?: string;
+  model?: string;
   variationId?: string;
   variationAttributes?: { attribute: string; value: string }[];
 }

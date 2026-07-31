@@ -29,7 +29,11 @@ function optionsMatch(selected?: string, actual?: string) {
 
 function variantMatchesSelection(variant: ProductVariant, selection: ProductSelection) {
   if (selection.variationId && selection.variationId === variant.id) return true;
-  return optionsMatch(selection.size, variant.size) && optionsMatch(selection.color, variant.color);
+  return (
+    optionsMatch(selection.size, variant.size) &&
+    optionsMatch(selection.color, variant.color) &&
+    optionsMatch(selection.model, variant.model)
+  );
 }
 
 function scoreVariantForSelection(variant: ProductVariant, selection: ProductSelection) {
@@ -38,6 +42,8 @@ function scoreVariantForSelection(variant: ProductVariant, selection: ProductSel
   const variantColor = normalizeOption(variant.color);
   const selectedSize = normalizeOption(selection.size);
   const variantSize = normalizeOption(variant.size);
+  const selectedModel = normalizeOption(selection.model);
+  const variantModel = normalizeOption(variant.model);
 
   if (selectedColor && variantColor) {
     if (selectedColor !== variantColor) return -1;
@@ -47,6 +53,11 @@ function scoreVariantForSelection(variant: ProductVariant, selection: ProductSel
   if (selectedSize && variantSize) {
     if (selectedSize === variantSize) score += 5;
     else if (!selectedColor) return -1;
+  }
+
+  if (selectedModel && variantModel) {
+    if (selectedModel !== variantModel) return -1;
+    score += 7;
   }
 
   return score;
@@ -67,6 +78,7 @@ function getInitialSelection(product: Product): ProductSelection {
   return {
     size: firstVariant?.size ?? product.sizes?.[0],
     color: firstVariant?.color ?? product.colors?.[0],
+    model: firstVariant?.model ?? product.models?.[0],
     variationId: firstVariant?.id,
     variationAttributes: firstVariant?.variationAttributes,
   };

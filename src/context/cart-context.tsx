@@ -91,8 +91,12 @@ function mapStoreItem(item: StoreApiCartItem): CartItem {
   const minorUnit = item.prices?.currency_minor_unit ?? item.totals?.currency_minor_unit ?? 2;
   const image = item.images?.[0]?.src ?? item.images?.[0]?.thumbnail ?? "/brand/illustrations/jirafa.svg";
   const variation = item.variation ?? [];
+  const variationAttributes = variation.flatMap((entry) =>
+    entry.attribute && entry.value ? [{ attribute: entry.attribute, value: entry.value }] : []
+  );
   const size = variation.find((entry) => /talle|size|edad/i.test(entry.attribute ?? ""))?.value;
   const color = variation.find((entry) => /color|tono/i.test(entry.attribute ?? ""))?.value;
+  const model = variation.find((entry) => /modelo|model/i.test(entry.attribute ?? ""))?.value;
   const price = getMoneyValue(item.prices?.price ?? item.prices?.regular_price, minorUnit);
   const listPrice = getMoneyValue(item.prices?.regular_price, minorUnit);
   const storedPrices = getStoredCartPrices()[String(item.id ?? item.key)];
@@ -106,7 +110,7 @@ function mapStoreItem(item: StoreApiCartItem): CartItem {
   return {
     id: item.key,
     quantity: item.quantity ?? 1,
-    selection: { size, color, variationId: item.id ? String(item.id) : undefined },
+    selection: { size, color, model, variationId: item.id ? String(item.id) : undefined, variationAttributes },
     product: {
       id: String(item.id ?? item.key),
       name: item.name ?? "Producto",
@@ -151,6 +155,7 @@ function buildAddItemPayload(product: Product, quantity: number, selection?: Pro
     : [
         ...(selection?.size ? [{ attribute: "Talle", value: selection.size }] : []),
         ...(selection?.color ? [{ attribute: "Color", value: selection.color }] : []),
+        ...(selection?.model ? [{ attribute: "Modelo", value: selection.model }] : []),
       ];
 
   return {
