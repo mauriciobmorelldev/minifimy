@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { MiniCartDrawer } from "@/components/MiniCartDrawer";
 import { useCart } from "@/context/cart-context";
 
@@ -33,6 +33,20 @@ export function Header({ navLinks }: HeaderProps) {
     setMobileCatalogOpen(false);
   };
 
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.overscrollBehavior = previousOverscroll;
+    };
+  }, [mobileOpen]);
+
   if (hiddenRoutes.includes(pathname)) {
     return null;
   }
@@ -47,6 +61,15 @@ export function Header({ navLinks }: HeaderProps) {
 
   return (
     <>
+      {mobileOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-[70] cursor-default bg-on-surface/20 backdrop-blur-[2px] md:hidden"
+          onClick={closeMobileMenu}
+          aria-label="Cerrar menú"
+          tabIndex={-1}
+        />
+      )}
       <nav
         className="fixed inset-x-0 top-0 z-[80] px-3 pt-3 md:px-5"
         aria-label="Principal"
@@ -219,11 +242,11 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
 
           <div
-            className={`absolute left-2 right-2 top-[calc(100%+0.75rem)] z-[90] overflow-hidden rounded-[1.6rem] border border-primary/10 bg-[#fffaf1] shadow-lift ring-1 ring-primary/10 transition-all duration-300 md:hidden ${
-              mobileOpen ? "max-h-[calc(100vh-6rem)] opacity-100" : "pointer-events-none max-h-0 opacity-0"
+            className={`fixed bottom-3 left-3 right-3 top-[5.5rem] z-[90] overflow-hidden overscroll-contain rounded-[1.6rem] border border-primary/10 bg-[#fffaf1] shadow-lift ring-1 ring-primary/10 transition-all duration-300 md:hidden ${
+              mobileOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
             }`}
           >
-            <div className="max-h-[calc(100vh-7rem)] space-y-5 overflow-y-auto px-4 py-4">
+            <div className="h-full space-y-5 overflow-y-auto overscroll-contain px-4 py-4 pb-8 [scrollbar-gutter:stable]">
               <div className="rounded-[1.25rem] bg-[#f7efe3] px-4 py-3">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Menú MiniFimy</p>
                 <p className="mt-1 text-xs leading-5 text-on-surface-variant">Categorías y accesos de la tienda.</p>
@@ -246,7 +269,7 @@ export function Header({ navLinks }: HeaderProps) {
                           <span className={`material-symbols-outlined text-lg transition-transform duration-300 ${isCatalogOpen ? "rotate-180" : ""}`}>expand_more</span>
                         </button>
                         <div
-                          className={`ml-3 grid overflow-hidden rounded-[1.2rem] bg-white shadow-soft transition-all duration-300 ${isCatalogOpen ? "max-h-[420px] gap-2 p-3 opacity-100" : "max-h-0 gap-0 p-0 opacity-0"}`}
+                          className={`ml-3 grid overflow-y-auto overscroll-contain rounded-[1.2rem] bg-white shadow-soft transition-all duration-300 ${isCatalogOpen ? "max-h-[55dvh] gap-2 p-3 opacity-100" : "max-h-0 gap-0 p-0 opacity-0"}`}
                         >
                           {link.children?.map((child) => (
                             <Link key={`${child.href}-${child.label}`} href={child.href} onClick={closeMobileMenu} className="rounded-full bg-[#f7efe3] px-3 py-2 text-sm font-bold text-primary/90">
