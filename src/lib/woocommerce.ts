@@ -26,6 +26,30 @@ const WOO_PRODUCT_FIELDS = [
 
 const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description"].join(",");
 const WOO_VARIATION_FIELDS = ["id", "price", "regular_price", "minifimy_prices", "stock_quantity", "stock_status", "image", "attributes"].join(",");
+const MAX_CONCURRENT_CATALOG_VARIATION_REQUESTS = 2;
+
+let activeCatalogVariationRequests = 0;
+const pendingCatalogVariationRequests: Array<() => void> = [];
+const catalogVariationRequests = new Map<string, Promise<ProductVariant[]>>();
+
+async function withCatalogVariationRequestSlot<T>(request: () => Promise<T>): Promise<T> {
+  if (activeCatalogVariationRequests >= MAX_CONCURRENT_CATALOG_VARIATION_REQUESTS) {
+    await new Promise<void>((resolve) => pendingCatalogVariationRequests.push(resolve));
+  } else {
+    activeCatalogVariationRequests += 1;
+  }
+
+  try {
+    return await request();
+  } finally {
+    const nextRequest = pendingCatalogVariationRequests.shift();
+    if (nextRequest) {
+      nextRequest();
+    } else {
+      activeCatalogVariationRequests -= 1;
+    }
+  }
+}
 
 
 export interface StorePaymentMethod {
@@ -688,12 +712,28 @@ function shouldLoadVariationsForCatalog(product: Product, source?: WooProduct) {
   return product.price <= 1 || source?.type === "variable" || Boolean(product.sizes?.length || product.colors?.length);
 }
 
+function getCatalogProductVariations(productId: string) {
+  const existingRequest = catalogVariationRequests.get(productId);
+  if (existingRequest) return existingRequest;
+
+  const request = withCatalogVariationRequestSlot(() => getStoreProductVariations(productId));
+  catalogVariationRequests.set(productId, request);
+  const removeCompletedRequest = () => {
+    if (catalogVariationRequests.get(productId) === request) {
+      catalogVariationRequests.delete(productId);
+    }
+  };
+  void request.then(removeCompletedRequest, removeCompletedRequest);
+
+  return request;
+}
+
 async function enrichCatalogProducts(products: Product[], sources: WooProduct[]) {
   const sourceById = new Map(sources.map((source) => [String(source.id), source]));
   return Promise.all(
     products.map(async (product) => {
       if (!shouldLoadVariationsForCatalog(product, sourceById.get(product.id))) return product;
-      const variants = await getStoreProductVariations(product.id);
+      const variants = await getCatalogProductVariations(product.id);
       return mergeProductVariants(product, variants);
     })
   );
