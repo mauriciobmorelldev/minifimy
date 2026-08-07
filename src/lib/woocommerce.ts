@@ -26,30 +26,6 @@ const WOO_PRODUCT_FIELDS = [
 
 const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description"].join(",");
 const WOO_VARIATION_FIELDS = ["id", "price", "regular_price", "minifimy_prices", "stock_quantity", "stock_status", "image", "attributes"].join(",");
-const MAX_CONCURRENT_CATALOG_VARIATION_REQUESTS = 2;
-
-let activeCatalogVariationRequests = 0;
-const pendingCatalogVariationRequests: Array<() => void> = [];
-const catalogVariationRequests = new Map<string, Promise<ProductVariant[]>>();
-
-async function withCatalogVariationRequestSlot<T>(request: () => Promise<T>): Promise<T> {
-  if (activeCatalogVariationRequests >= MAX_CONCURRENT_CATALOG_VARIATION_REQUESTS) {
-    await new Promise<void>((resolve) => pendingCatalogVariationRequests.push(resolve));
-  } else {
-    activeCatalogVariationRequests += 1;
-  }
-
-  try {
-    return await request();
-  } finally {
-    const nextRequest = pendingCatalogVariationRequests.shift();
-    if (nextRequest) {
-      nextRequest();
-    } else {
-      activeCatalogVariationRequests -= 1;
-    }
-  }
-}
 
 
 export interface StorePaymentMethod {
@@ -82,6 +58,7 @@ export interface StoreShippingMethod {
 
 export interface StoreProductQuery {
   featured?: boolean;
+  onSale?: boolean;
   category?: string;
   perPage?: number;
   page?: number;
@@ -92,7 +69,6 @@ export interface StoreProductQuery {
   maxPrice?: number;
   order?: "asc" | "desc";
   orderby?: "date" | "price" | "title" | "menu_order";
-  inStockFirst?: boolean;
 }
 
 export interface StoreProductCollection {
@@ -409,6 +385,28 @@ type WooVariation = {
   attributes?: { name?: string; option?: string }[];
 };
 
+type WooStoreProductSummary = {
+  id: number;
+  on_sale?: boolean;
+  is_in_stock?: boolean;
+  prices?: {
+    price?: string;
+    regular_price?: string;
+    sale_price?: string;
+    currency_minor_unit?: number;
+  };
+};
+
+type WooStoreCollectionData = {
+  price_range?: {
+    min_price?: string;
+    max_price?: string;
+    currency_minor_unit?: number;
+  } | null;
+};
+
+const catalogPriceSummaryRequests = new Map<string, Promise<WooStoreProductSummary[]>>();
+
 const STORE_URL = normalizeBaseUrl(process.env.WOOCOMMERCE_URL ?? process.env.WORDPRESS_URL);
 const CONSUMER_KEY = process.env.WOOCOMMERCE_CONSUMER_KEY;
 const CONSUMER_SECRET = process.env.WOOCOMMERCE_CONSUMER_SECRET;
@@ -499,7 +497,7 @@ function getProductMeta(product: WooProduct, key: string) {
 
 function buildFilterOptionsFromProducts(products: Product[], categories: Category[]): ProductFilterOptions {
   const prices = products
-    .flatMap((product) => [product.price, product.prices?.discount, product.prices?.list])
+    .flatMap((product) => [product.price, product.prices?.sale, product.prices?.discount, product.prices?.list])
     .filter((price): price is number => Number.isFinite(price) && Number(price) > 0);
 
   return {
@@ -582,8 +580,11 @@ function getPriceNumber(value?: string | number | null) {
 }
 
 function getMiniFimyPrices(source: { price?: string; regular_price?: string; minifimy_prices?: WooMiniFimyPrices }) {
-  const base = getPriceNumber(source.price) || getPriceNumber(source.regular_price);
-  const list = getPriceNumber(source.minifimy_prices?.list_price) || getPriceNumber(source.regular_price) || base;
+  const current = getPriceNumber(source.price);
+  const regular = getPriceNumber(source.regular_price);
+  const sale = current > 0 && regular > 0 && current < regular ? current : undefined;
+  const base = sale ?? (current || regular);
+  const list = getPriceNumber(source.minifimy_prices?.list_price) || regular || base;
   const discount = getPriceNumber(source.minifimy_prices?.discount_price);
   const validDiscount = discount > 0 && list > 0 && discount < list ? discount : undefined;
   const displayBase = validDiscount ?? (list > 1 ? list : base);
@@ -591,6 +592,7 @@ function getMiniFimyPrices(source: { price?: string; regular_price?: string; min
   return {
     base: displayBase,
     list: list > 0 ? list : undefined,
+    sale,
     discount: validDiscount,
     discountGatewayIds: Array.isArray(source.minifimy_prices?.discount_gateway_ids)
       ? source.minifimy_prices.discount_gateway_ids
@@ -708,19 +710,33 @@ function mergeProductVariants(product: Product, variants: ProductVariant[]): Pro
   };
 }
 
-function shouldLoadVariationsForCatalog(product: Product, source?: WooProduct) {
-  return product.price <= 1 || source?.type === "variable" || Boolean(product.sizes?.length || product.colors?.length);
+function getStoreMoneyValue(value?: string, minorUnit = 2) {
+  const amount = Number(value ?? 0) / (10 ** minorUnit);
+  return Number.isFinite(amount) && amount > 0 ? amount : 0;
 }
 
-function getCatalogProductVariations(productId: string) {
-  const existingRequest = catalogVariationRequests.get(productId);
+function getCatalogPriceSummaries(productIds: string[]) {
+  const ids = Array.from(new Set(productIds.filter(Boolean))).sort((first, second) => Number(first) - Number(second));
+  if (ids.length === 0) return Promise.resolve([]);
+
+  const requestKey = ids.join(",");
+  const existingRequest = catalogPriceSummaryRequests.get(requestKey);
   if (existingRequest) return existingRequest;
 
-  const request = withCatalogVariationRequestSlot(() => getStoreProductVariations(productId));
-  catalogVariationRequests.set(productId, request);
+  const params = new URLSearchParams({
+    include: requestKey,
+    per_page: String(Math.min(ids.length, 100)),
+  });
+  const request = fetchWordPressJson<WooStoreProductSummary[]>(
+    `wp-json/wc/store/v1/products?${params.toString()}`,
+    CACHE_SECONDS.products,
+    [CACHE_TAGS.products],
+  ).then((products) => products ?? []);
+  catalogPriceSummaryRequests.set(requestKey, request);
+
   const removeCompletedRequest = () => {
-    if (catalogVariationRequests.get(productId) === request) {
-      catalogVariationRequests.delete(productId);
+    if (catalogPriceSummaryRequests.get(requestKey) === request) {
+      catalogPriceSummaryRequests.delete(requestKey);
     }
   };
   void request.then(removeCompletedRequest, removeCompletedRequest);
@@ -728,15 +744,39 @@ function getCatalogProductVariations(productId: string) {
   return request;
 }
 
-async function enrichCatalogProducts(products: Product[], sources: WooProduct[]) {
-  const sourceById = new Map(sources.map((source) => [String(source.id), source]));
-  return Promise.all(
-    products.map(async (product) => {
-      if (!shouldLoadVariationsForCatalog(product, sourceById.get(product.id))) return product;
-      const variants = await getCatalogProductVariations(product.id);
-      return mergeProductVariants(product, variants);
-    })
-  );
+function mergeCatalogPriceSummary(product: Product, summary?: WooStoreProductSummary): Product {
+  if (!summary?.prices) return product;
+
+  const minorUnit = summary.prices.currency_minor_unit ?? 2;
+  const current = getStoreMoneyValue(summary.prices.price, minorUnit);
+  const regular = getStoreMoneyValue(summary.prices.regular_price, minorUnit);
+  const saleCandidate = getStoreMoneyValue(summary.prices.sale_price, minorUnit);
+  const sale = summary.on_sale && saleCandidate > 0 && regular > saleCandidate ? saleCandidate : undefined;
+  const base = sale ?? (current > 1 ? current : product.prices?.base ?? product.price);
+  const list = regular > 1 ? regular : product.prices?.list;
+
+  return {
+    ...product,
+    price: base,
+    prices: {
+      ...product.prices,
+      base,
+      list,
+      sale: sale ?? product.prices?.sale,
+    },
+    stock: typeof summary.is_in_stock === "boolean"
+      ? (summary.is_in_stock ? Math.max(product.stock, 1) : 0)
+      : product.stock,
+    stockStatus: typeof summary.is_in_stock === "boolean"
+      ? (summary.is_in_stock ? "instock" : "outofstock")
+      : product.stockStatus,
+  };
+}
+
+async function hydrateCatalogProductPrices(products: Product[]) {
+  const summaries = await getCatalogPriceSummaries(products.map((product) => product.id));
+  const summariesById = new Map(summaries.map((summary) => [String(summary.id), summary]));
+  return products.map((product) => mergeCatalogPriceSummary(product, summariesById.get(product.id)));
 }
 
 async function getStoreProductVariations(productId: string, revalidate = CACHE_SECONDS.products) {
@@ -860,6 +900,7 @@ function getProductQueryParams(options: StoreProductQuery = {}) {
     status: "publish",
     _fields: WOO_PRODUCT_FIELDS,
     ...(options.featured ? { featured: true } : {}),
+    ...(options.onSale ? { on_sale: true } : {}),
     ...(options.category ? { category: options.category } : {}),
     ...(options.search ? { search: options.search } : {}),
     ...(options.minPrice ? { min_price: options.minPrice } : {}),
@@ -885,7 +926,7 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
     };
   }
 
-  const needsLocalPagination = Boolean(options.size || options.color || options.inStockFirst);
+  const needsLocalPagination = Boolean(options.size || options.color);
   const requestPage = needsLocalPagination ? 1 : page;
   const requestPerPage = needsLocalPagination ? 100 : perPage;
   const response = await fetchWooResponse(
@@ -901,8 +942,8 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
 
   const data = (await response.json().catch(() => [])) as WooProduct[];
   const mediaSources = await getMediaSources(data.flatMap((product) => product.images ?? []));
-  let products = await enrichCatalogProducts(data.map((product) => mapWooProduct(product, mediaSources)), data);
-  products = products.filter((product) => product.price > 1 || Boolean(product.prices?.list || product.prices?.discount));
+  let products = await hydrateCatalogProductPrices(data.map((product) => mapWooProduct(product, mediaSources)));
+  products = products.filter((product) => product.price > 1 || Boolean(product.prices?.sale || product.prices?.list || product.prices?.discount));
 
   if (options.size) {
     products = products.filter((product) => product.sizes?.includes(options.size!));
@@ -910,13 +951,6 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
 
   if (options.color) {
     products = products.filter((product) => product.colors?.includes(options.color!));
-  }
-
-  if (options.inStockFirst) {
-    products = products
-      .map((product, index) => ({ product, index, inStock: productIsInStock(product) }))
-      .sort((first, second) => Number(second.inStock) - Number(first.inStock) || first.index - second.index)
-      .map(({ product }) => product);
   }
 
   if (needsLocalPagination) {
@@ -948,8 +982,10 @@ export async function getStoreProducts(options: StoreProductQuery = {}) {
 }
 
 export async function getFeaturedStoreProducts() {
-  const collection = await getStoreProductCollection({ perPage: 48 });
-  const featuredCollection = await getStoreProductCollection({ featured: true, perPage: 12 });
+  const [collection, featuredCollection] = await Promise.all([
+    getStoreProductCollection({ perPage: 48 }),
+    getStoreProductCollection({ featured: true, perPage: 12 }),
+  ]);
   const homeTaggedProducts = collection.products.filter((product) =>
     product.tagSlugs?.some((tag) => tag.startsWith("home-"))
   );
@@ -975,6 +1011,17 @@ export async function getNewestStoreProducts(limit = 15) {
   return canUseWooCommerce() ? [] : fallbackProducts.slice(0, limit);
 }
 
+export async function getDiscountedStoreProducts(limit = 8) {
+  const products = await getStoreProducts({
+    perPage: Math.min(Math.max(limit, 1), 24),
+    onSale: true,
+  });
+
+  return products
+    .filter((product) => Boolean(product.prices?.sale && product.prices.sale < (product.prices.list ?? Infinity)))
+    .slice(0, limit);
+}
+
 async function getWooAttributeTerms(attribute: WooProductAttribute | undefined) {
   if (!attribute) return [];
 
@@ -988,22 +1035,37 @@ async function getWooAttributeTerms(attribute: WooProductAttribute | undefined) 
   return getUniqueSortedValues((terms ?? []).map((term) => term.name));
 }
 
-export async function getStoreProductFilters(): Promise<ProductFilterOptions> {
-  const [products, categories] = await Promise.all([
-    getStoreProducts({ perPage: 100 }),
-    getStoreCategories(),
-  ]);
+async function getStoreCatalogPriceRange() {
+  const data = await fetchWordPressJson<WooStoreCollectionData>(
+    "wp-json/wc/store/v1/products/collection-data?calculate_price_range=true",
+    CACHE_SECONDS.products,
+    [CACHE_TAGS.products],
+  );
+  const range = data?.price_range;
+  if (!range) return null;
 
+  const minorUnit = range.currency_minor_unit ?? 2;
+  const min = getStoreMoneyValue(range.min_price, minorUnit);
+  const max = getStoreMoneyValue(range.max_price, minorUnit);
+  return max > min ? { min, max } : null;
+}
+
+export async function getStoreProductFilters(): Promise<ProductFilterOptions> {
+  const fallback = buildFilterOptionsFromProducts(fallbackProducts, fallbackCategories);
   if (!canUseWooCommerce()) {
-    return buildFilterOptionsFromProducts(products, categories);
+    return fallback;
   }
 
-  const attributes = await fetchWoo<WooProductAttribute[]>(
-    "products/attributes",
-    { per_page: 100 },
-    CACHE_SECONDS.categories,
-    [CACHE_TAGS.categories]
-  );
+  const [categories, attributes, priceRange] = await Promise.all([
+    getStoreCategories(),
+    fetchWoo<WooProductAttribute[]>(
+      "products/attributes",
+      { per_page: 100 },
+      CACHE_SECONDS.categories,
+      [CACHE_TAGS.categories],
+    ),
+    getStoreCatalogPriceRange(),
+  ]);
 
   const sizeAttribute = (attributes ?? []).find((attribute) => {
     const name = normalizeFilterName(`${attribute.name} ${attribute.slug}`);
@@ -1018,13 +1080,12 @@ export async function getStoreProductFilters(): Promise<ProductFilterOptions> {
     getWooAttributeTerms(sizeAttribute),
     getWooAttributeTerms(colorAttribute),
   ]);
-  const fallback = buildFilterOptionsFromProducts(products, categories);
 
   return {
     categories,
     sizes: normalizeAndSortSizes(sizesFromWoo.length > 0 ? sizesFromWoo : fallback.sizes),
     colors: normalizeAndSortColors(colorsFromWoo.length > 0 ? colorsFromWoo : fallback.colors),
-    price: fallback.price,
+    price: priceRange ?? fallback.price,
   };
 }
 
@@ -1041,6 +1102,21 @@ export async function getStoreCategories() {
   return data?.map(mapWooCategory) ?? fallbackCategories;
 }
 
+export async function getStoreProductIdBySlug(slug: string) {
+  if (!canUseWooCommerce()) {
+    return fallbackProducts.find((product) => product.slug === slug)?.id;
+  }
+
+  const data = await fetchWoo<Array<{ id: number }>>(
+    "products",
+    { slug, per_page: 1, status: "publish", _fields: "id" },
+    CACHE_SECONDS.products,
+    [CACHE_TAGS.products]
+  );
+
+  return data?.[0] ? String(data[0].id) : undefined;
+}
+
 export async function getStoreProductBySlug(slug: string) {
   if (!canUseWooCommerce()) {
     return fallbackProducts.find((product) => product.slug === slug);
@@ -1054,7 +1130,7 @@ export async function getStoreProductBySlug(slug: string) {
       status: "publish",
       _fields: WOO_PRODUCT_FIELDS,
     },
-    0,
+    CACHE_SECONDS.products,
     [CACHE_TAGS.products]
   );
 
@@ -1062,7 +1138,7 @@ export async function getStoreProductBySlug(slug: string) {
 
   const mediaSources = await getMediaSources(data[0].images ?? []);
   const product = mapWooProduct(data[0], mediaSources);
-  const variants = await getStoreProductVariations(product.id, 0);
+  const variants = await getStoreProductVariations(product.id, CACHE_SECONDS.products);
   return mergeProductVariants(product, variants);
 }
 

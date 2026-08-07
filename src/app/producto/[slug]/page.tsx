@@ -39,8 +39,7 @@ function matchesComplementaryCategory(productCategory: string, terms: string[]) 
   return terms.some((term) => value.includes(term));
 }
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 900;
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -63,7 +62,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const [product, categories, allProducts] = await Promise.all([
     getStoreProductBySlug(slug),
     getStoreCategories(),
-    getStoreProducts({ perPage: 100 }),
+    getStoreProducts({ perPage: 24 }),
   ]);
 
   if (!product) {

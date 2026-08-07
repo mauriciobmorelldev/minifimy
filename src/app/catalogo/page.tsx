@@ -48,7 +48,6 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       search: getParam(params, "q"),
       size: getParam(params, "talle"),
       color: getParam(params, "color"),
-      inStockFirst: true,
       ...getPriceRange(getParam(params, "precio")),
       ...getSort(getParam(params, "orden")),
     }),

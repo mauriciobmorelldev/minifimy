@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
-import { ProductPrice } from "@/components/ProductPrice";
+import { getDisplayPrice, ProductPrice } from "@/components/ProductPrice";
 import { productNeedsOptions } from "@/lib/product-options";
 import { productIsInStock } from "@/lib/product-stock";
 import type { Product } from "@/models/product";
@@ -35,6 +35,8 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
   const image = product.images[0] ?? "/brand/illustrations/jirafa.svg";
   const needsOptions = productNeedsOptions(product);
   const inStock = productIsInStock(product);
+  const displayPrice = getDisplayPrice(product.price, product.prices);
+  const discountBadge = displayPrice.hasSale ? displayPrice.saleDiscountPercent : 0;
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] bg-[#fffaf1] shadow-soft ring-1 ring-[#eadfcb]/80 transition-all duration-500 hover:-translate-y-1 hover:shadow-lift">
@@ -53,8 +55,14 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
 
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#2f2a22]/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
+          {discountBadge > 0 && (
+            <div className="absolute left-3 top-3 rounded-full bg-secondary px-3 py-2 text-center text-[10px] font-black uppercase leading-none tracking-[0.12em] text-on-secondary shadow-lift ring-2 ring-white/80">
+              {discountBadge}% OFF
+            </div>
+          )}
+
           {!inStock && (
-            <div className="absolute left-3 top-3 max-w-[72%] truncate rounded-full bg-[#f7efe3] px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-secondary shadow-soft ring-1 ring-secondary/20">
+            <div className={`absolute left-3 max-w-[72%] truncate rounded-full bg-[#f7efe3] px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-secondary shadow-soft ring-1 ring-secondary/20 ${discountBadge > 0 ? "top-16" : "top-3"}`}>
               Sin stock
             </div>
           )}

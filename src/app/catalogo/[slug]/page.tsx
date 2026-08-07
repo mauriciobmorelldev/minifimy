@@ -8,7 +8,7 @@ interface CategoryPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export const revalidate = 300;
+export const revalidate = 900;
 
 function getParam(params: Record<string, string | string[] | undefined>, key: string) {
   const value = params[key];
@@ -76,7 +76,6 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       search: getParam(query, "q"),
       size: getParam(query, "talle"),
       color: getParam(query, "color"),
-      inStockFirst: true,
       ...getPriceRange(getParam(query, "precio")),
       ...getSort(getParam(query, "orden")),
     }),

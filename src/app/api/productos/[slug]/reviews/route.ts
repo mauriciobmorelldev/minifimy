@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createStoreProductReview, getStoreProductBySlug, getStoreProductReviews } from "@/lib/woocommerce";
+import { createStoreProductReview, getStoreProductIdBySlug, getStoreProductReviews } from "@/lib/woocommerce";
 
 function isValidEmail(value?: string) {
   return Boolean(value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
@@ -7,17 +7,17 @@ function isValidEmail(value?: string) {
 
 export async function GET(_request: NextRequest, context: { params: Promise<{ slug: string }> }) {
   const { slug } = await context.params;
-  const product = await getStoreProductBySlug(slug);
-  if (!product) return NextResponse.json({ message: "Producto no encontrado." }, { status: 404 });
+  const productId = await getStoreProductIdBySlug(slug);
+  if (!productId) return NextResponse.json({ message: "Producto no encontrado." }, { status: 404 });
 
-  const reviews = await getStoreProductReviews(product.id);
+  const reviews = await getStoreProductReviews(productId);
   return NextResponse.json({ reviews });
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<{ slug: string }> }) {
   const { slug } = await context.params;
-  const product = await getStoreProductBySlug(slug);
-  if (!product) return NextResponse.json({ message: "Producto no encontrado." }, { status: 404 });
+  const productId = await getStoreProductIdBySlug(slug);
+  if (!productId) return NextResponse.json({ message: "Producto no encontrado." }, { status: 404 });
 
   const payload = await request.json().catch(() => null) as {
     reviewer?: string;
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ sl
   }
 
   const review = await createStoreProductReview({
-    productId: product.id,
+    productId,
     reviewer: payload.reviewer,
     email: payload.email!,
     review: payload.review,

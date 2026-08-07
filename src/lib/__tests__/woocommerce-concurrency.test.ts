@@ -1,6 +1,6 @@
 const originalEnvironment = process.env;
 
-describe("WooCommerce catalog variation requests", () => {
+describe("WooCommerce catalog load", () => {
   beforeEach(() => {
     jest.resetModules();
     process.env = {
@@ -16,7 +16,7 @@ describe("WooCommerce catalog variation requests", () => {
     jest.restoreAllMocks();
   });
 
-  it("limits concurrent variation requests and deduplicates overlapping catalog renders", async () => {
+  it("hydrates catalog prices in one shared request without loading variations", async () => {
     const products = Array.from({ length: 6 }, (_, index) => {
       const id = index + 1;
       return {
@@ -32,34 +32,35 @@ describe("WooCommerce catalog variation requests", () => {
         type: "variable",
       };
     });
-    let activeVariationRequests = 0;
-    let peakVariationRequests = 0;
     let variationRequestCount = 0;
+    let priceSummaryRequestCount = 0;
 
     global.fetch = jest.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
-      const variationMatch = url.pathname.match(/products\/(\d+)\/variations$/);
 
-      if (variationMatch) {
-        const productId = Number(variationMatch[1]);
+      if (/\/products\/\d+\/variations$/.test(url.pathname)) {
         variationRequestCount += 1;
-        activeVariationRequests += 1;
-        peakVariationRequests = Math.max(peakVariationRequests, activeVariationRequests);
-        await new Promise((resolve) => setTimeout(resolve, 10));
-        activeVariationRequests -= 1;
+        throw new Error("Catalog listings must not request variations");
+      }
 
+      if (url.pathname.endsWith("/wc/store/v1/products")) {
+        priceSummaryRequestCount += 1;
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return {
           ok: true,
           status: 200,
           headers: new Headers(),
-          json: async () => [{
-            id: productId * 10,
-            price: String(1_000 + productId),
-            regular_price: String(1_000 + productId),
-            stock_quantity: 3,
-            stock_status: "instock",
-            attributes: [{ name: "Talle", option: "3-6 meses" }],
-          }],
+          json: async () => products.map((product) => ({
+            id: product.id,
+            on_sale: true,
+            is_in_stock: true,
+            prices: {
+              price: String(80_000 + product.id * 100),
+              regular_price: String(100_000 + product.id * 100),
+              sale_price: String(80_000 + product.id * 100),
+              currency_minor_unit: 2,
+            },
+          })),
         } as Response;
       }
 
@@ -71,21 +72,82 @@ describe("WooCommerce catalog variation requests", () => {
       } as Response;
     }) as typeof fetch;
 
-    const { getStoreProductCollection } = await import("@/lib/woocommerce");
+    const { getDiscountedStoreProducts, getStoreProductCollection } = await import("@/lib/woocommerce");
     const [firstCollection, secondCollection] = await Promise.all([
       getStoreProductCollection({ perPage: 6, search: "first" }),
       getStoreProductCollection({ perPage: 6, search: "second" }),
     ]);
 
-    expect(variationRequestCount).toBe(6);
-    expect(peakVariationRequests).toBeLessThanOrEqual(2);
+    expect(variationRequestCount).toBe(0);
+    expect(priceSummaryRequestCount).toBe(1);
     expect(firstCollection.products).toHaveLength(6);
     expect(secondCollection.products).toHaveLength(6);
     expect(firstCollection.products[0]).toMatchObject({
-      price: 1_001,
-      sizes: ["3–6 meses"],
-      stock: 3,
+      price: 801,
+      prices: { base: 801, list: 1001, sale: 801 },
+      stock: 1,
+      stockStatus: "instock",
     });
-    expect(firstCollection.products[0].variants).toHaveLength(1);
+    expect(firstCollection.products[0].variants).toBeUndefined();
+
+    const discountedProducts = await getDiscountedStoreProducts(4);
+    const requestedUrls = (global.fetch as jest.Mock).mock.calls.map(([input]) => new URL(String(input)));
+    expect(discountedProducts).toHaveLength(4);
+    expect(requestedUrls.some((url) => url.pathname.endsWith("/wc/v3/products") && url.searchParams.get("on_sale") === "true"))
+      .toBe(true);
+  });
+
+  it("builds filters from metadata and an aggregate price range", async () => {
+    global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+
+      if (url.pathname.endsWith("/wc/store/v1/products/collection-data")) {
+        return {
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: async () => ({
+            price_range: { min_price: "120000", max_price: "450000", currency_minor_unit: 2 },
+          }),
+        } as Response;
+      }
+
+      if (url.pathname.endsWith("/products/categories")) {
+        return { ok: true, status: 200, headers: new Headers(), json: async () => [] } as Response;
+      }
+
+      if (url.pathname.endsWith("/products/attributes")) {
+        return {
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: async () => [
+            { id: 1, name: "Talle", slug: "pa_talle" },
+            { id: 2, name: "Color", slug: "pa_color" },
+          ],
+        } as Response;
+      }
+
+      if (url.pathname.endsWith("/products/attributes/1/terms")) {
+        return { ok: true, status: 200, headers: new Headers(), json: async () => [{ id: 1, name: "3-6 meses", slug: "3-6-meses" }] } as Response;
+      }
+
+      if (url.pathname.endsWith("/products/attributes/2/terms")) {
+        return { ok: true, status: 200, headers: new Headers(), json: async () => [{ id: 2, name: "Azul", slug: "azul" }] } as Response;
+      }
+
+      throw new Error(`Unexpected request: ${url}`);
+    }) as typeof fetch;
+
+    const { getStoreProductFilters } = await import("@/lib/woocommerce");
+    const filters = await getStoreProductFilters();
+    const requestedUrls = (global.fetch as jest.Mock).mock.calls.map(([input]) => new URL(String(input)));
+
+    expect(filters).toMatchObject({
+      sizes: ["3–6 meses"],
+      colors: ["Azul"],
+      price: { min: 1200, max: 4500 },
+    });
+    expect(requestedUrls.some((url) => url.pathname.endsWith("/wc/v3/products"))).toBe(false);
   });
 });
