@@ -9,6 +9,8 @@ const product: Product = {
   name: "Body Nube",
   slug: "body-nube",
   description: "Algodón orgánico.",
+  prices: { base: 12900, list: 12900 },
+  colors: ["Azul"],
   price: 12900,
   images: ["/brand/banners/banner-foto.jpg"],
   category: "recien-nacido",
@@ -20,7 +22,7 @@ describe("ProductCard", () => {
     render(
       <FeedbackProvider>
         <CartProvider>
-          <ProductCard product={product} />
+          <ProductCard product={product} compact />
         </CartProvider>
       </FeedbackProvider>
     );
@@ -29,5 +31,7 @@ describe("ProductCard", () => {
     expect(screen.getByRole("link", { name: "Body Nube" })).toHaveAttribute("href", "/producto/body-nube");
     expect(screen.getByText(/\$12\.900/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Agregar al carrito/i })).toBeEnabled();
+    expect(screen.getByText("Precio de lista")).toBeInTheDocument();
+    expect(screen.getByTitle("Azul")).toBeInTheDocument();
   });
 });

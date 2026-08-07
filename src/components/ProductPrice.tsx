@@ -33,11 +33,9 @@ export function ProductPrice({ price, prices, compact = false, className = "" }:
   if (compact) {
     return (
       <div className={`leading-tight ${className}`}>
-        {hasDiscount && (
-          <div className="font-headline text-sm font-bold text-primary/75">
-            Lista {formatPrice(listPrice)}
-          </div>
-        )}
+        <div className="font-headline text-sm font-bold text-primary/75">
+          {hasDiscount ? `Lista ${formatPrice(listPrice)}` : "Precio de lista"}
+        </div>
         <div className={`font-headline font-extrabold text-secondary ${hasDiscount ? "mt-1 text-[1.55rem]" : "text-xl"}`}>
           {hasDiscount ? formatPrice(finalPrice) : formatPrice(listPrice)}
         </div>

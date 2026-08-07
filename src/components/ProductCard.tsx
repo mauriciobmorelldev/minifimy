@@ -31,7 +31,7 @@ function colorValue(color: string) {
   return Object.entries(palette).find(([name]) => normalized.includes(name))?.[1] ?? "#d8c7aa";
 }
 
-export function ProductCard({ product, compact = false }: ProductCardProps) {
+export function ProductCard({ product }: ProductCardProps) {
   const image = product.images[0] ?? "/brand/illustrations/jirafa.svg";
   const needsOptions = productNeedsOptions(product);
   const inStock = productIsInStock(product);
@@ -85,8 +85,8 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
           <ProductPrice price={product.price} prices={product.prices} compact className="text-center" />
         </div>
 
-        {!compact && product.colors && product.colors.length > 0 && (
-          <div className="mb-5 hidden items-center justify-between gap-3 rounded-[1rem] sm:flex bg-[#f7efe3]/70 px-3 py-2">
+        {product.colors && product.colors.length > 0 && (
+          <div className="mb-5 flex items-center justify-between gap-3 rounded-[1rem] bg-[#f7efe3]/70 px-3 py-2">
             <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary/70">Colores</span>
             <div className="flex items-center -space-x-1.5">
               {product.colors.slice(0, 5).map((color) => (
