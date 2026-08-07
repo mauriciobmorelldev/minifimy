@@ -30,20 +30,4 @@ describe("ProductCard", () => {
     expect(screen.getByText(/\$12\.900/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Agregar al carrito/i })).toBeEnabled();
   });
-
-  it("shows the WooCommerce discount label and sale price", () => {
-    render(
-      <FeedbackProvider>
-        <CartProvider>
-          <ProductCard
-            product={{ ...product, price: 10_000, prices: { base: 10_000, list: 10_000, sale: 8_000 } }}
-          />
-        </CartProvider>
-      </FeedbackProvider>,
-    );
-
-    expect(screen.getAllByText("20% OFF").length).toBeGreaterThan(0);
-    expect(screen.getByText("Antes $10.000")).toBeInTheDocument();
-    expect(screen.getByText("$8.000")).toBeInTheDocument();
-  });
 });

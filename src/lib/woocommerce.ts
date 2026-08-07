@@ -58,7 +58,6 @@ export interface StoreShippingMethod {
 
 export interface StoreProductQuery {
   featured?: boolean;
-  onSale?: boolean;
   category?: string;
   perPage?: number;
   page?: number;
@@ -387,14 +386,17 @@ type WooVariation = {
 
 type WooStoreProductSummary = {
   id: number;
-  on_sale?: boolean;
   is_in_stock?: boolean;
   prices?: {
     price?: string;
     regular_price?: string;
-    sale_price?: string;
     currency_minor_unit?: number;
   };
+  attributes?: Array<{
+    name?: string;
+    taxonomy?: string;
+    terms?: Array<{ name?: string }>;
+  }>;
 };
 
 type WooStoreCollectionData = {
@@ -497,7 +499,7 @@ function getProductMeta(product: WooProduct, key: string) {
 
 function buildFilterOptionsFromProducts(products: Product[], categories: Category[]): ProductFilterOptions {
   const prices = products
-    .flatMap((product) => [product.price, product.prices?.sale, product.prices?.discount, product.prices?.list])
+    .flatMap((product) => [product.price, product.prices?.discount, product.prices?.list])
     .filter((price): price is number => Number.isFinite(price) && Number(price) > 0);
 
   return {
@@ -580,11 +582,8 @@ function getPriceNumber(value?: string | number | null) {
 }
 
 function getMiniFimyPrices(source: { price?: string; regular_price?: string; minifimy_prices?: WooMiniFimyPrices }) {
-  const current = getPriceNumber(source.price);
-  const regular = getPriceNumber(source.regular_price);
-  const sale = current > 0 && regular > 0 && current < regular ? current : undefined;
-  const base = sale ?? (current || regular);
-  const list = getPriceNumber(source.minifimy_prices?.list_price) || regular || base;
+  const base = getPriceNumber(source.price) || getPriceNumber(source.regular_price);
+  const list = getPriceNumber(source.minifimy_prices?.list_price) || getPriceNumber(source.regular_price) || base;
   const discount = getPriceNumber(source.minifimy_prices?.discount_price);
   const validDiscount = discount > 0 && list > 0 && discount < list ? discount : undefined;
   const displayBase = validDiscount ?? (list > 1 ? list : base);
@@ -592,7 +591,6 @@ function getMiniFimyPrices(source: { price?: string; regular_price?: string; min
   return {
     base: displayBase,
     list: list > 0 ? list : undefined,
-    sale,
     discount: validDiscount,
     discountGatewayIds: Array.isArray(source.minifimy_prices?.discount_gateway_ids)
       ? source.minifimy_prices.discount_gateway_ids
@@ -607,15 +605,17 @@ function mapWooProduct(product: WooProduct, mediaSources = new Map<number, strin
   const categoryIds = product.categories?.map((category) => String(category.id)).filter(Boolean) ?? [];
   const category = categorySlugs[0] ?? "catalogo";
   const images = product.images?.map((image) => getSafeImage(mediaSources.get(image.id ?? -1) ?? image.src)).filter(Boolean) as string[] | undefined;
-  const sizes = product.attributes?.find((attribute) =>
-    attribute.name?.toLowerCase().includes("talle") || attribute.name?.toLowerCase().includes("size")
-  )?.options;
-  const colors = product.attributes?.find((attribute) =>
-    attribute.name?.toLowerCase().includes("color")
-  )?.options;
+  const sizes = product.attributes?.find((attribute) => {
+    const name = normalizeFilterName(attribute.name);
+    return name.includes("talle") || name.includes("size") || name.includes("edad");
+  })?.options;
+  const colors = product.attributes?.find((attribute) => {
+    const name = normalizeFilterName(attribute.name);
+    return name.includes("color") || name.includes("tono") || name.includes("colour");
+  })?.options;
   const models = product.attributes?.find((attribute) => {
     const name = normalizeFilterName(attribute.name);
-    return name.includes("modelo") || name.includes("model");
+    return name.includes("modelo") || name.includes("model") || name.includes("diseno") || name.includes("estampa") || name.includes("dibujo");
   })?.options;
 
   const prices = getMiniFimyPrices(product);
@@ -669,7 +669,7 @@ function mapWooVariation(variation: WooVariation): ProductVariant {
     id: String(variation.id),
     size: normalizeSize(cleanText(getVariationOption(variation, ["talle", "size", "edad"]))),
     color: normalizeColor(cleanText(getVariationOption(variation, ["color", "tono"]))),
-    model: cleanText(getVariationOption(variation, ["modelo", "model"])),
+    model: cleanText(getVariationOption(variation, ["modelo", "model", "diseno", "estampa", "dibujo"])),
     variationAttributes,
     image: getSafeImage(variation.image?.src) ?? undefined,
     price: getMiniFimyPrices(variation).base || undefined,
@@ -750,19 +750,32 @@ function mergeCatalogPriceSummary(product: Product, summary?: WooStoreProductSum
   const minorUnit = summary.prices.currency_minor_unit ?? 2;
   const current = getStoreMoneyValue(summary.prices.price, minorUnit);
   const regular = getStoreMoneyValue(summary.prices.regular_price, minorUnit);
-  const saleCandidate = getStoreMoneyValue(summary.prices.sale_price, minorUnit);
-  const sale = summary.on_sale && saleCandidate > 0 && regular > saleCandidate ? saleCandidate : undefined;
-  const base = sale ?? (current > 1 ? current : product.prices?.base ?? product.price);
+  const base = regular > 1 ? regular : current > 1 ? current : product.prices?.base ?? product.price;
   const list = regular > 1 ? regular : product.prices?.list;
+  const getAttributeTerms = (names: string[]) => summary.attributes
+    ?.find((attribute) => {
+      const attributeLabel = [attribute.name, attribute.taxonomy].filter(Boolean).join(" ");
+      const name = normalizeFilterName(attributeLabel);
+      return names.some((candidate) => name.includes(candidate));
+    })
+    ?.terms?.map((term) => cleanText(term.name)).filter(Boolean) ?? [];
+  const sizes = normalizeAndSortSizes([...(product.sizes ?? []), ...getAttributeTerms(["talle", "size", "edad"])]);
+  const colors = normalizeAndSortColors([...(product.colors ?? []), ...getAttributeTerms(["color", "tono", "colour"])]);
+  const models = getUniqueSortedValues([
+    ...(product.models ?? []),
+    ...getAttributeTerms(["modelo", "model", "diseno", "estampa", "dibujo"]),
+  ]);
 
   return {
     ...product,
     price: base,
+    sizes,
+    colors,
+    models,
     prices: {
       ...product.prices,
       base,
       list,
-      sale: sale ?? product.prices?.sale,
     },
     stock: typeof summary.is_in_stock === "boolean"
       ? (summary.is_in_stock ? Math.max(product.stock, 1) : 0)
@@ -900,7 +913,6 @@ function getProductQueryParams(options: StoreProductQuery = {}) {
     status: "publish",
     _fields: WOO_PRODUCT_FIELDS,
     ...(options.featured ? { featured: true } : {}),
-    ...(options.onSale ? { on_sale: true } : {}),
     ...(options.category ? { category: options.category } : {}),
     ...(options.search ? { search: options.search } : {}),
     ...(options.minPrice ? { min_price: options.minPrice } : {}),
@@ -943,7 +955,7 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
   const data = (await response.json().catch(() => [])) as WooProduct[];
   const mediaSources = await getMediaSources(data.flatMap((product) => product.images ?? []));
   let products = await hydrateCatalogProductPrices(data.map((product) => mapWooProduct(product, mediaSources)));
-  products = products.filter((product) => product.price > 1 || Boolean(product.prices?.sale || product.prices?.list || product.prices?.discount));
+  products = products.filter((product) => product.price > 1 || Boolean(product.prices?.list || product.prices?.discount));
 
   if (options.size) {
     products = products.filter((product) => product.sizes?.includes(options.size!));
@@ -1011,16 +1023,7 @@ export async function getNewestStoreProducts(limit = 15) {
   return canUseWooCommerce() ? [] : fallbackProducts.slice(0, limit);
 }
 
-export async function getDiscountedStoreProducts(limit = 8) {
-  const products = await getStoreProducts({
-    perPage: Math.min(Math.max(limit, 1), 24),
-    onSale: true,
-  });
 
-  return products
-    .filter((product) => Boolean(product.prices?.sale && product.prices.sale < (product.prices.list ?? Infinity)))
-    .slice(0, limit);
-}
 
 async function getWooAttributeTerms(attribute: WooProductAttribute | undefined) {
   if (!attribute) return [];

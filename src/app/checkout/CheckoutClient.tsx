@@ -86,7 +86,7 @@ function getCheckoutUnitPrice(item: CheckoutCartItem, paymentMethodId: string) {
   if (isDiscountPaymentMethod(paymentMethodId, prices?.discountGatewayIds) && prices?.discount) {
     return prices.discount;
   }
-  return prices?.sale ?? prices?.list ?? prices?.base ?? item.product.price;
+  return prices?.list ?? prices?.base ?? item.product.price;
 }
 
 function getStockIssues(items: CheckoutCartItem[]) {

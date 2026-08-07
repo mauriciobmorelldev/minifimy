@@ -16,96 +16,67 @@ function formatInstallment(value: number) {
 }
 
 export function getDisplayPrice(price: number, prices?: ProductPriceSet) {
-  const listPrice = prices?.list && prices.list > 0 ? prices.list : prices?.base ?? price;
-  const saleCandidate = prices?.sale && prices.sale > 0 ? prices.sale : undefined;
-  const salePrice = saleCandidate && saleCandidate < listPrice ? saleCandidate : undefined;
-  const cardPrice = salePrice ?? listPrice;
+  const listPrice = prices?.list && prices.list > 0 ? prices.list : undefined;
   const discountPrice = prices?.discount && prices.discount > 0 ? prices.discount : undefined;
+  const cardPrice = listPrice ?? prices?.base ?? price;
   const transferPrice = discountPrice && discountPrice < cardPrice ? discountPrice : undefined;
-  const hasSale = Boolean(salePrice);
-  const hasTransferDiscount = Boolean(transferPrice);
-  const hasDiscount = hasSale || hasTransferDiscount;
-  const saleDiscountPercent = hasSale ? Math.round(((listPrice - salePrice!) / listPrice) * 100) : 0;
-  const discountPercent = hasTransferDiscount ? Math.round(((cardPrice - transferPrice!) / cardPrice) * 100) : saleDiscountPercent;
+  const hasDiscount = Boolean(transferPrice);
+  const discountPercent = hasDiscount ? Math.round(((cardPrice - transferPrice!) / cardPrice) * 100) : 0;
   const installmentAmount = cardPrice / 3;
 
-  return {
-    listPrice,
-    cardPrice,
-    finalPrice: transferPrice ?? cardPrice,
-    salePrice,
-    transferPrice,
-    hasSale,
-    hasTransferDiscount,
-    hasDiscount,
-    saleDiscountPercent,
-    discountPercent,
-    installmentAmount,
-  };
+  return { listPrice: cardPrice, finalPrice: transferPrice ?? cardPrice, transferPrice, hasDiscount, discountPercent, installmentAmount };
 }
 
 export function ProductPrice({ price, prices, compact = false, className = "" }: ProductPriceProps) {
-  const display = getDisplayPrice(price, prices);
+  const { listPrice, finalPrice, transferPrice, hasDiscount, discountPercent, installmentAmount } = getDisplayPrice(price, prices);
 
   if (compact) {
     return (
       <div className={`leading-tight ${className}`}>
-        {display.hasSale && (
-          <div className="font-headline text-xs font-bold text-primary/60 line-through">
-            Antes {formatPrice(display.listPrice)}
-          </div>
-        )}
-        {display.hasTransferDiscount && !display.hasSale && (
+        {hasDiscount && (
           <div className="font-headline text-sm font-bold text-primary/75">
-            Lista {formatPrice(display.cardPrice)}
+            Lista {formatPrice(listPrice)}
           </div>
         )}
-        <div className={`font-headline font-extrabold text-secondary ${display.hasDiscount ? "mt-1 text-[1.55rem]" : "text-xl"}`}>
-          {formatPrice(display.finalPrice)}
+        <div className={`font-headline font-extrabold text-secondary ${hasDiscount ? "mt-1 text-[1.55rem]" : "text-xl"}`}>
+          {hasDiscount ? formatPrice(finalPrice) : formatPrice(listPrice)}
         </div>
-        {display.hasTransferDiscount ? (
+        {hasDiscount && (
           <div className="mt-0.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-secondary/80">
             con transferencia
           </div>
-        ) : display.hasSale ? (
-          <div className="mt-0.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-secondary/80">
-            {display.saleDiscountPercent}% OFF
-          </div>
-        ) : null}
-        <div className="mt-1.5 text-[11px] font-semibold text-primary/75">3x {formatInstallment(display.installmentAmount)}</div>
+        )}
+        <div className="mt-1.5 text-[11px] font-semibold text-primary/75">3x {formatInstallment(installmentAmount)}</div>
       </div>
     );
   }
 
   return (
     <section className={`space-y-2 ${className}`} aria-label="Precios y formas de pago">
-      {display.hasSale && (
-        <div className="font-headline text-base font-bold leading-none text-primary/60 line-through md:text-lg">
-          Antes {formatPrice(display.listPrice)}
-        </div>
-      )}
-      {display.hasTransferDiscount && !display.hasSale && (
+      {hasDiscount && (
         <div className="font-headline text-lg font-bold leading-none text-primary/80 md:text-xl">
-          {formatPrice(display.cardPrice)}
+          {formatPrice(listPrice)}
         </div>
       )}
 
-      <div className={`font-headline font-extrabold leading-none text-secondary ${display.hasDiscount ? "text-[2.25rem] md:text-[2.7rem]" : "text-[1.95rem] md:text-[2.35rem]"}`}>
-        {formatPrice(display.finalPrice)}
-        {display.hasTransferDiscount && (
-          <span className="ml-2 align-middle text-base font-extrabold text-secondary/80 md:text-lg">con Transferencia</span>
+      <div className={`font-headline font-extrabold leading-none text-secondary ${hasDiscount ? "text-[2.25rem] md:text-[2.7rem]" : "text-[1.95rem] md:text-[2.35rem]"}`}>
+        {hasDiscount ? (
+          <>
+            {formatPrice(transferPrice!)}
+            <span className="ml-2 align-middle text-base font-extrabold text-secondary/80 md:text-lg">con Transferencia</span>
+          </>
+        ) : (
+          formatPrice(listPrice)
         )}
       </div>
 
       <div className="space-y-1 pt-1 text-sm text-on-surface-variant">
-        <p className="font-medium">3 x {formatInstallment(display.installmentAmount)} sin interés</p>
-        {display.hasTransferDiscount ? (
+        <p className="font-medium">3 x {formatInstallment(installmentAmount)} sin interés</p>
+        {hasDiscount && (
           <p className="font-medium text-primary">
-            {display.discountPercent}% de descuento pagando con Transferencia
+            {discountPercent}% de descuento pagando con Transferencia
           </p>
-        ) : display.hasSale ? (
-          <p className="font-bold text-secondary">Oferta WooCommerce: {display.saleDiscountPercent}% OFF</p>
-        ) : null}
+        )}
       </div>
 
       <button type="button" className="text-sm font-semibold text-secondary underline underline-offset-4">

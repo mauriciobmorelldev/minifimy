@@ -3,11 +3,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { BenefitsBar } from "@/components/BenefitsBar";
-import { DiscountHighlights } from "@/components/DiscountHighlights";
 import { NewArrivalsCarousel } from "@/components/NewArrivalsCarousel";
 import { ProductPrice } from "@/components/ProductPrice";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { getDiscountedStoreProducts, getFeaturedStoreProducts, getNewestStoreProducts, getStoreProductFilters, getWordPressNewsletterUrl } from "@/lib/woocommerce";
+import { getFeaturedStoreProducts, getNewestStoreProducts, getStoreProductFilters, getWordPressNewsletterUrl } from "@/lib/woocommerce";
 import { productNeedsOptions } from "@/lib/product-options";
 import { getHomeContent } from "@/lib/wordpress";
 
@@ -33,11 +32,10 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const newsletterUrl = getWordPressNewsletterUrl();
-  const [home, featured, newestProducts, discountedProducts, filterOptions] = await Promise.all([
+  const [home, featured, newestProducts, filterOptions] = await Promise.all([
     getHomeContent(),
     getFeaturedStoreProducts(),
     getNewestStoreProducts(15),
-    getDiscountedStoreProducts(8),
     getStoreProductFilters(),
   ]);
   const taggedHero = pickProductsByTags(featured, ["home-fimy"], [])[0];
@@ -203,8 +201,6 @@ export default async function HomePage() {
           </div>
         </ScrollReveal>
       </section>
-
-      <DiscountHighlights products={discountedProducts} />
 
       <NewArrivalsCarousel products={newestProducts} />
 

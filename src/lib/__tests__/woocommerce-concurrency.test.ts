@@ -52,7 +52,6 @@ describe("WooCommerce catalog load", () => {
           headers: new Headers(),
           json: async () => products.map((product) => ({
             id: product.id,
-            on_sale: true,
             is_in_stock: true,
             prices: {
               price: String(80_000 + product.id * 100),
@@ -60,6 +59,10 @@ describe("WooCommerce catalog load", () => {
               sale_price: String(80_000 + product.id * 100),
               currency_minor_unit: 2,
             },
+            attributes: [
+              { name: "Color", taxonomy: "pa_color", terms: [{ name: "Azul" }, { name: "Rosa bebé" }] },
+              { name: "Diseño", taxonomy: "pa_diseno", terms: [{ name: "Conejitos" }] },
+            ],
           })),
         } as Response;
       }
@@ -72,7 +75,7 @@ describe("WooCommerce catalog load", () => {
       } as Response;
     }) as typeof fetch;
 
-    const { getDiscountedStoreProducts, getStoreProductCollection } = await import("@/lib/woocommerce");
+    const { getStoreProductCollection } = await import("@/lib/woocommerce");
     const [firstCollection, secondCollection] = await Promise.all([
       getStoreProductCollection({ perPage: 6, search: "first" }),
       getStoreProductCollection({ perPage: 6, search: "second" }),
@@ -83,18 +86,15 @@ describe("WooCommerce catalog load", () => {
     expect(firstCollection.products).toHaveLength(6);
     expect(secondCollection.products).toHaveLength(6);
     expect(firstCollection.products[0]).toMatchObject({
-      price: 801,
-      prices: { base: 801, list: 1001, sale: 801 },
+      price: 1001,
+      prices: { base: 1001, list: 1001 },
+      colors: ["Azul", "Rosa bebé"],
+      models: ["Conejitos"],
       stock: 1,
       stockStatus: "instock",
     });
     expect(firstCollection.products[0].variants).toBeUndefined();
 
-    const discountedProducts = await getDiscountedStoreProducts(4);
-    const requestedUrls = (global.fetch as jest.Mock).mock.calls.map(([input]) => new URL(String(input)));
-    expect(discountedProducts).toHaveLength(4);
-    expect(requestedUrls.some((url) => url.pathname.endsWith("/wc/v3/products") && url.searchParams.get("on_sale") === "true"))
-      .toBe(true);
   });
 
   it("builds filters from metadata and an aggregate price range", async () => {

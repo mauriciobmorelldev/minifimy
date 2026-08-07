@@ -1,37 +1,21 @@
 import { getDisplayPrice } from "@/components/ProductPrice";
 
 describe("getDisplayPrice", () => {
-  it("recognizes a standard WooCommerce sale", () => {
-    expect(getDisplayPrice(800, { base: 800, list: 1_000, sale: 800 })).toMatchObject({
-      listPrice: 1_000,
-      cardPrice: 800,
-      finalPrice: 800,
-      hasSale: true,
-      hasTransferDiscount: false,
+  it("keeps the configured list price above the transfer price", () => {
+    expect(getDisplayPrice(19_200, { base: 19_200, list: 34_300, discount: 24_010 })).toMatchObject({
+      listPrice: 34_300,
+      finalPrice: 24_010,
+      transferPrice: 24_010,
       hasDiscount: true,
-      saleDiscountPercent: 20,
+      discountPercent: 30,
     });
   });
 
-  it("keeps transfer discounts separate from standard sales", () => {
-    expect(getDisplayPrice(1_000, { base: 1_000, list: 1_000, discount: 800 })).toMatchObject({
-      cardPrice: 1_000,
-      finalPrice: 800,
-      hasSale: false,
-      hasTransferDiscount: true,
-      discountPercent: 20,
-    });
-  });
-
-  it("applies a transfer benefit over an existing sale price", () => {
-    expect(getDisplayPrice(900, { base: 900, list: 1_000, sale: 900, discount: 810 })).toMatchObject({
-      listPrice: 1_000,
-      cardPrice: 900,
-      finalPrice: 810,
-      hasSale: true,
-      hasTransferDiscount: true,
-      saleDiscountPercent: 10,
-      discountPercent: 10,
+  it("falls back to the base product price when no separate list exists", () => {
+    expect(getDisplayPrice(14_900, { base: 14_900 })).toMatchObject({
+      listPrice: 14_900,
+      finalPrice: 14_900,
+      hasDiscount: false,
     });
   });
 });

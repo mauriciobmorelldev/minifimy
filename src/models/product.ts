@@ -1,7 +1,6 @@
 export interface ProductPriceSet {
   base: number;
   list?: number;
-  sale?: number;
   discount?: number;
   discountGatewayIds?: string[];
   discountLabel?: string;
