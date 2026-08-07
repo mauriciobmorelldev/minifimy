@@ -389,6 +389,34 @@ const STORE_URL = normalizeBaseUrl(process.env.WOOCOMMERCE_URL ?? process.env.WO
 const CONSUMER_KEY = process.env.WOOCOMMERCE_CONSUMER_KEY;
 const CONSUMER_SECRET = process.env.WOOCOMMERCE_CONSUMER_SECRET;
 
+const MAX_CONCURRENT_WOO_READS = (() => {
+  const configured = Number(process.env.WOOCOMMERCE_MAX_CONCURRENT_READS ?? 4);
+  return Number.isFinite(configured) ? Math.min(Math.max(Math.floor(configured), 1), 8) : 4;
+})();
+let activeWooReads = 0;
+const pendingWooReads: Array<() => void> = [];
+
+async function withWooReadSlot<T>(request: () => Promise<T>): Promise<T> {
+  if (activeWooReads >= MAX_CONCURRENT_WOO_READS) {
+    await new Promise<void>((resolve) => {
+      pendingWooReads.push(resolve);
+    });
+  } else {
+    activeWooReads += 1;
+  }
+
+  try {
+    return await request();
+  } finally {
+    const nextRequest = pendingWooReads.shift();
+    if (nextRequest) {
+      nextRequest();
+    } else {
+      activeWooReads -= 1;
+    }
+  }
+}
+
 function canUseWooCommerce() {
   return Boolean(STORE_URL && CONSUMER_KEY && CONSUMER_SECRET);
 }
@@ -684,20 +712,6 @@ function mergeProductVariants(product: Product, variants: ProductVariant[]): Pro
   };
 }
 
-function shouldLoadVariationsForCatalog(product: Product, source?: WooProduct) {
-  return product.price <= 1 || source?.type === "variable" || Boolean(product.sizes?.length || product.colors?.length);
-}
-
-async function enrichCatalogProducts(products: Product[], sources: WooProduct[]) {
-  const sourceById = new Map(sources.map((source) => [String(source.id), source]));
-  return Promise.all(
-    products.map(async (product) => {
-      if (!shouldLoadVariationsForCatalog(product, sourceById.get(product.id))) return product;
-      const variants = await getStoreProductVariations(product.id);
-      return mergeProductVariants(product, variants);
-    })
-  );
-}
 
 async function getStoreProductVariations(productId: string, revalidate = CACHE_SECONDS.products) {
   if (!canUseWooCommerce()) return [];
@@ -752,9 +766,9 @@ async function fetchWooResponse(path: string, params: Record<string, string | nu
   if (!url) return null;
 
   try {
-    const response = await fetch(url, {
+    const response = await withWooReadSlot(() => fetch(url, {
       next: { revalidate, tags },
-    });
+    }));
 
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
@@ -845,7 +859,9 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
     };
   }
 
-  const needsLocalPagination = Boolean(options.size || options.color || options.inStockFirst);
+  // Talle y color se filtran con los atributos ya incluidos en el producto.
+  // Ordenar por stock no debe convertir una pagina de 12 tarjetas en una consulta de 100.
+  const needsLocalPagination = Boolean(options.size || options.color);
   const requestPage = needsLocalPagination ? 1 : page;
   const requestPerPage = needsLocalPagination ? 100 : perPage;
   const response = await fetchWooResponse(
@@ -861,7 +877,9 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
 
   const data = (await response.json().catch(() => [])) as WooProduct[];
   const mediaSources = await getMediaSources(data.flatMap((product) => product.images ?? []));
-  let products = await enrichCatalogProducts(data.map((product) => mapWooProduct(product, mediaSources)), data);
+  // Las tarjetas usan los datos del endpoint de productos. Las variaciones completas
+  // se consultan solo en la ficha para no abrir una solicitud por cada tarjeta.
+  let products = data.map((product) => mapWooProduct(product, mediaSources));
   products = products.filter((product) => product.price > 1 || Boolean(product.prices?.list || product.prices?.discount));
 
   if (options.size) {
@@ -1014,7 +1032,7 @@ export async function getStoreProductBySlug(slug: string) {
       status: "publish",
       _fields: WOO_PRODUCT_FIELDS,
     },
-    0,
+    CACHE_SECONDS.products,
     [CACHE_TAGS.products]
   );
 
@@ -1022,7 +1040,7 @@ export async function getStoreProductBySlug(slug: string) {
 
   const mediaSources = await getMediaSources(data[0].images ?? []);
   const product = mapWooProduct(data[0], mediaSources);
-  const variants = await getStoreProductVariations(product.id, 0);
+  const variants = await getStoreProductVariations(product.id);
   return mergeProductVariants(product, variants);
 }
 
