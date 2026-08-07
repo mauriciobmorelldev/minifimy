@@ -27,6 +27,7 @@ const WOO_PRODUCT_FIELDS = [
 
 const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description"].join(",");
 const WOO_VARIATION_FIELDS = ["id", "price", "regular_price", "minifimy_prices", "stock_quantity", "stock_status", "image", "attributes"].join(",");
+const WOO_VARIATION_PRICE_FIELDS = ["price", "regular_price", "minifimy_prices"].join(",");
 
 
 export interface StorePaymentMethod {
@@ -387,21 +388,6 @@ type WooVariation = {
   attributes?: { name?: string; option?: string }[];
 };
 
-type WooStoreProductPrices = {
-  currency_minor_unit?: number;
-  price?: string;
-  regular_price?: string;
-  sale_price?: string;
-  price_range?: {
-    min_amount?: string;
-    max_amount?: string;
-  } | null;
-};
-
-type WooStoreProduct = {
-  id: number;
-  prices?: WooStoreProductPrices;
-};
 
 type WooStoreCollectionData = {
   price_range?: {
@@ -635,53 +621,31 @@ function getStoreApiPrice(value: string | undefined, minorUnit: number) {
   return Number.isFinite(amount) && amount > 0 ? amount : 0;
 }
 
-function mapStoreApiPrices(source: WooStoreProductPrices | undefined): Product["prices"] | undefined {
-  if (!source) return undefined;
+async function getStoreProductVariationPrices(productId: string) {
+  const data = await fetchWoo<WooVariation[]>(
+    `products/${productId}/variations`,
+    { per_page: 100, _fields: WOO_VARIATION_PRICE_FIELDS },
+    CACHE_SECONDS.products,
+    [CACHE_TAGS.products],
+  );
 
-  const minorUnit = Number.isFinite(source.currency_minor_unit) ? Math.max(0, source.currency_minor_unit ?? 0) : 0;
-  const rangeMinimum = getStoreApiPrice(source.price_range?.min_amount, minorUnit);
-  const current = rangeMinimum || getStoreApiPrice(source.price, minorUnit);
-  const regular = getStoreApiPrice(source.regular_price, minorUnit);
-  const sale = getStoreApiPrice(source.sale_price, minorUnit);
-  const list = regular > 1 ? Math.max(regular, current) : current;
-  const discount = sale > 1 && sale < list ? sale : undefined;
-  const base = discount ?? list;
+  const validPrices = (data ?? [])
+    .map((variation) => getMiniFimyPrices(variation))
+    .filter((prices) => prices.base > 1)
+    .sort((first, second) => first.base - second.base);
 
-  return base > 1 ? { base, list, discount } : undefined;
+  return validPrices[0];
 }
 
 async function enrichCatalogProductPrices(products: Product[]) {
-  const productIds = products.filter((product) => product.price <= 1).map((product) => product.id);
-  if (productIds.length === 0) return products;
+  return Promise.all(
+    products.map(async (product) => {
+      if (product.price > 1) return product;
 
-  const params = new URLSearchParams({
-    include: productIds.join(","),
-    per_page: String(productIds.length),
-    return_price_range: "true",
-  });
-  const url = buildWordPressUrl(`wp-json/wc/store/v1/products?${params.toString()}`);
-  if (!url) return products;
-
-  try {
-    const response = await withWooReadSlot(() => fetch(url, {
-      next: { revalidate: CACHE_SECONDS.products, tags: [CACHE_TAGS.products] },
-    }));
-    if (!response.ok) return products;
-
-    const data = (await response.json().catch(() => [])) as WooStoreProduct[];
-    const pricesById = new Map(
-      data
-        .map((product) => [String(product.id), mapStoreApiPrices(product.prices)] as const)
-        .filter((entry): entry is readonly [string, NonNullable<Product["prices"]>] => Boolean(entry[1])),
-    );
-
-    return products.map((product) => {
-      const prices = pricesById.get(product.id);
+      const prices = await getStoreProductVariationPrices(product.id);
       return prices ? { ...product, price: prices.base, prices } : product;
-    });
-  } catch {
-    return products;
-  }
+    }),
+  );
 }
 
 function mapWooProduct(product: WooProduct, mediaSources = new Map<number, string>()): Product {
@@ -1037,7 +1001,7 @@ export async function getNewestStoreProducts(limit = 15) {
 
 export async function getHomeStorefrontData(limit = 15) {
   const [collection, categories] = await Promise.all([
-    getStoreProductCollection({ perPage: 100, orderby: "date", order: "desc" }),
+    getStoreProductCollection({ perPage: 48, orderby: "date", order: "desc" }),
     getStoreCategories(),
   ]);
   const products = collection.products.length > 0 ? collection.products : fallbackProducts;
