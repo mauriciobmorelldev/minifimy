@@ -49,7 +49,7 @@ describe("WooCommerce request fan-out", () => {
     jest.restoreAllMocks();
   });
 
-  it("loads only variation price fields for underpriced catalog products", async () => {
+  it("loads real variable prices in one batch without expanding the catalog request", async () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValueOnce(wooResponse([underpricedWooProduct], {
@@ -57,12 +57,13 @@ describe("WooCommerce request fan-out", () => {
         "x-wp-totalpages": "3",
       }))
       .mockResolvedValueOnce(wooResponse([{
-        id: 4201,
-        price: "12500",
-        regular_price: "15000",
-        minifimy_prices: {
-          list_price: 15000,
-          discount_price: 12500,
+        id: 42,
+        prices: {
+          currency_minor_unit: 2,
+          price: "1250000",
+          regular_price: "1500000",
+          sale_price: "1250000",
+          price_range: { min_amount: "1250000", max_amount: "1500000" },
         },
       }]));
     global.fetch = fetchMock;
@@ -81,11 +82,10 @@ describe("WooCommerce request fan-out", () => {
     expect(requestUrl).toContain("page=2");
     expect(requestUrl).not.toContain("variations");
     const priceRequestUrl = String(fetchMock.mock.calls[1][0]);
-    expect(priceRequestUrl).toContain("/products/42/variations");
-    expect(priceRequestUrl).toContain("_fields=price%2Cregular_price%2Cminifimy_prices");
-    expect(priceRequestUrl).not.toContain("stock_quantity");
-    expect(priceRequestUrl).not.toContain("image");
-    expect(priceRequestUrl).not.toContain("attributes");
+    expect(priceRequestUrl).toContain("/wp-json/wc/store/v1/products?");
+    expect(priceRequestUrl).toContain("include=42");
+    expect(priceRequestUrl).toContain("return_price_range=true");
+    expect(priceRequestUrl).not.toContain("variations");
 
     expect(collection).toMatchObject({
       total: 25,
@@ -169,12 +169,16 @@ describe("WooCommerce request fan-out", () => {
       if (url.includes("/wc/v3/products/categories")) {
         return Promise.resolve(wooResponse([{ id: 7, name: "Bodies", slug: "bodies" }]));
       }
-      if (url.includes("/products/42/variations")) {
+      if (url.includes("/wc/store/v1/products?")) {
         return Promise.resolve(wooResponse([{
-          id: 4201,
-          price: "12500",
-          regular_price: "15000",
-          minifimy_prices: { list_price: 15000, discount_price: 12500 },
+          id: 42,
+          prices: {
+            currency_minor_unit: 2,
+            price: "1250000",
+            regular_price: "1500000",
+            sale_price: "1250000",
+            price_range: { min_amount: "1250000", max_amount: "1500000" },
+          },
         }]));
       }
       if (url.includes("/wc/v3/products?")) {
@@ -194,7 +198,7 @@ describe("WooCommerce request fan-out", () => {
       .map(([input]) => String(input))
       .filter((url) => url.includes("/wc/v3/products?"));
     expect(collectionRequests).toHaveLength(1);
-    expect(collectionRequests[0]).toContain("per_page=48");
+    expect(collectionRequests[0]).toContain("per_page=100");
     expect(collectionRequests[0]).toContain("orderby=date");
     expect(collectionRequests[0]).not.toContain("featured=true");
     expect(storefront.featured[0]).toMatchObject({ id: "42", price: 12500 });
