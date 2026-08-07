@@ -601,12 +601,12 @@ function getMiniFimyPrices(source: { price?: string; regular_price?: string; min
   const base = getPriceNumber(source.price) || getPriceNumber(source.regular_price);
   const list = getPriceNumber(source.minifimy_prices?.list_price) || getPriceNumber(source.regular_price) || base;
   const discount = getPriceNumber(source.minifimy_prices?.discount_price);
-  const validDiscount = discount > 0 && list > 0 && discount < list ? discount : undefined;
+  const validDiscount = discount > 1 && list > 1 && discount < list ? discount : undefined;
   const displayBase = validDiscount ?? (list > 1 ? list : base);
 
   return {
     base: displayBase,
-    list: list > 0 ? list : undefined,
+    list: list > 1 ? list : undefined,
     discount: validDiscount,
     discountGatewayIds: Array.isArray(source.minifimy_prices?.discount_gateway_ids)
       ? source.minifimy_prices.discount_gateway_ids

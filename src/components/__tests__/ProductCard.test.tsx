@@ -10,6 +10,7 @@ const product: Product = {
   slug: "body-nube",
   description: "Algodón orgánico.",
   price: 12900,
+  prices: { base: 12900, list: 1 },
   images: ["/brand/banners/banner-foto.jpg"],
   category: "recien-nacido",
   stock: 5,

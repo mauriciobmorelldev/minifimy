@@ -16,8 +16,8 @@ function formatInstallment(value: number) {
 }
 
 export function getDisplayPrice(price: number, prices?: ProductPriceSet) {
-  const listPrice = prices?.list && prices.list > 0 ? prices.list : undefined;
-  const discountPrice = prices?.discount && prices.discount > 0 ? prices.discount : undefined;
+  const listPrice = prices?.list && prices.list > 1 ? prices.list : undefined;
+  const discountPrice = prices?.discount && prices.discount > 1 ? prices.discount : undefined;
   const cardPrice = listPrice ?? prices?.base ?? price;
   const transferPrice = discountPrice && discountPrice < cardPrice ? discountPrice : undefined;
   const hasDiscount = Boolean(transferPrice);
