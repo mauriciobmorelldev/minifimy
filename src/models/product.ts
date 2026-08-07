@@ -34,6 +34,8 @@ export interface Product {
   price: number;
   prices?: ProductPriceSet;
   type?: "simple" | "variable" | "grouped" | "external" | string;
+  featured?: boolean;
+  dateCreated?: string;
   images: string[];
   category: string;
   categoryId?: string;

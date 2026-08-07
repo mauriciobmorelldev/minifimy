@@ -6,19 +6,20 @@ import { BenefitsBar } from "@/components/BenefitsBar";
 import { NewArrivalsCarousel } from "@/components/NewArrivalsCarousel";
 import { ProductPrice } from "@/components/ProductPrice";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { getFeaturedStoreProducts, getNewestStoreProducts, getStoreProductFilters, getWordPressNewsletterUrl } from "@/lib/woocommerce";
+import { getHomeStorefrontData, getWordPressNewsletterUrl } from "@/lib/woocommerce";
 import { productNeedsOptions } from "@/lib/product-options";
 import { getHomeContent } from "@/lib/wordpress";
+import type { Product } from "@/models/product";
 
-function pickProductsBySlugs(products: Awaited<ReturnType<typeof getFeaturedStoreProducts>>, slugs: string[], fallback: typeof products) {
+function pickProductsBySlugs(products: Product[], slugs: string[], fallback: Product[]) {
   const picked = slugs
     .map((slug) => products.find((product) => product.slug === slug))
-    .filter((product): product is (typeof products)[number] => Boolean(product));
+    .filter((product): product is Product => Boolean(product));
 
   return picked.length > 0 ? picked : fallback;
 }
 
-function pickProductsByTags(products: Awaited<ReturnType<typeof getFeaturedStoreProducts>>, tags: string[], fallback: typeof products) {
+function pickProductsByTags(products: Product[], tags: string[], fallback: Product[]) {
   const picked = products.filter((product) => product.tagSlugs?.some((tag) => tags.includes(tag)));
 
   return picked.length > 0 ? picked : fallback;
@@ -32,12 +33,11 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const newsletterUrl = getWordPressNewsletterUrl();
-  const [home, featured, newestProducts, filterOptions] = await Promise.all([
+  const [home, storefront] = await Promise.all([
     getHomeContent(),
-    getFeaturedStoreProducts(),
-    getNewestStoreProducts(15),
-    getStoreProductFilters(),
+    getHomeStorefrontData(15),
   ]);
+  const { featured, newestProducts, filterOptions } = storefront;
   const taggedHero = pickProductsByTags(featured, ["home-fimy"], [])[0];
   const configuredHero = home.heroFeaturedProductSlug
     ? featured.find((product) => product.slug === home.heroFeaturedProductSlug)
