@@ -397,6 +397,9 @@ type WooStoreProductSummary = {
     taxonomy?: string;
     terms?: Array<{ name?: string }>;
   }>;
+  extensions?: {
+    minifimy?: WooMiniFimyPrices;
+  };
 };
 
 type WooStoreCollectionData = {
@@ -750,8 +753,20 @@ function mergeCatalogPriceSummary(product: Product, summary?: WooStoreProductSum
   const minorUnit = summary.prices.currency_minor_unit ?? 2;
   const current = getStoreMoneyValue(summary.prices.price, minorUnit);
   const regular = getStoreMoneyValue(summary.prices.regular_price, minorUnit);
-  const base = regular > 1 ? regular : current > 1 ? current : product.prices?.base ?? product.price;
-  const list = regular > 1 ? regular : product.prices?.list;
+  const extendedList = getPriceNumber(summary.extensions?.minifimy?.list_price);
+  const extendedDiscount = getPriceNumber(summary.extensions?.minifimy?.discount_price);
+  const list = extendedList > 1
+    ? extendedList
+    : regular > 1
+      ? regular
+      : product.prices?.list;
+  const existingDiscount = product.prices?.discount ?? 0;
+  const discount = extendedDiscount > 0 && list && extendedDiscount < list
+    ? extendedDiscount
+    : existingDiscount > 0 && list && existingDiscount < list
+      ? existingDiscount
+      : undefined;
+  const base = discount ?? (list && list > 1 ? list : current > 1 ? current : product.prices?.base ?? product.price);
   const getAttributeTerms = (names: string[]) => summary.attributes
     ?.find((attribute) => {
       const attributeLabel = [attribute.name, attribute.taxonomy].filter(Boolean).join(" ");
@@ -776,6 +791,7 @@ function mergeCatalogPriceSummary(product: Product, summary?: WooStoreProductSum
       ...product.prices,
       base,
       list,
+      discount,
     },
     stock: typeof summary.is_in_stock === "boolean"
       ? (summary.is_in_stock ? Math.max(product.stock, 1) : 0)

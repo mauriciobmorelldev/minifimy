@@ -63,6 +63,12 @@ describe("WooCommerce catalog load", () => {
               { name: "Color", taxonomy: "pa_color", terms: [{ name: "Azul" }, { name: "Rosa bebé" }] },
               { name: "Diseño", taxonomy: "pa_diseno", terms: [{ name: "Conejitos" }] },
             ],
+            extensions: {
+              minifimy: {
+                list_price: String(1001 + product.id),
+                discount_price: String(701 + product.id),
+              },
+            },
           })),
         } as Response;
       }
@@ -86,8 +92,8 @@ describe("WooCommerce catalog load", () => {
     expect(firstCollection.products).toHaveLength(6);
     expect(secondCollection.products).toHaveLength(6);
     expect(firstCollection.products[0]).toMatchObject({
-      price: 1001,
-      prices: { base: 1001, list: 1001 },
+      price: 702,
+      prices: { base: 702, list: 1002, discount: 702 },
       colors: ["Azul", "Rosa bebé"],
       models: ["Conejitos"],
       stock: 1,
