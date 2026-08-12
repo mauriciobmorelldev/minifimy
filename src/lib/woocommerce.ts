@@ -411,6 +411,10 @@ type WooStoreCollectionData = {
 };
 
 const catalogPriceSummaryRequests = new Map<string, Promise<WooStoreProductSummary[]>>();
+// Bump this value only when the Store API price contract changes. It becomes
+// part of Next.js' persistent fetch-cache key, so a deployment cannot keep
+// serving responses cached before the WooCommerce extension was enabled.
+const CATALOG_PRICE_CONTRACT_VERSION = "2";
 
 const STORE_URL = normalizeBaseUrl(process.env.WOOCOMMERCE_URL ?? process.env.WORDPRESS_URL);
 const CONSUMER_KEY = process.env.WOOCOMMERCE_CONSUMER_KEY;
@@ -729,6 +733,7 @@ function getCatalogPriceSummaries(productIds: string[]) {
   const params = new URLSearchParams({
     include: requestKey,
     per_page: String(Math.min(ids.length, 100)),
+    minifimy_price_contract: CATALOG_PRICE_CONTRACT_VERSION,
   });
   const request = fetchWordPressJson<WooStoreProductSummary[]>(
     `wp-json/wc/store/v1/products?${params.toString()}`,

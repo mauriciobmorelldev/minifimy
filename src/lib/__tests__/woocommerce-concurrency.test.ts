@@ -86,9 +86,13 @@ describe("WooCommerce catalog load", () => {
       getStoreProductCollection({ perPage: 6, search: "first" }),
       getStoreProductCollection({ perPage: 6, search: "second" }),
     ]);
+    const priceSummaryUrl = (global.fetch as jest.Mock).mock.calls
+      .map(([input]) => new URL(String(input)))
+      .find((url) => url.pathname.endsWith("/wc/store/v1/products"));
 
     expect(variationRequestCount).toBe(0);
     expect(priceSummaryRequestCount).toBe(1);
+    expect(priceSummaryUrl?.searchParams.get("minifimy_price_contract")).toBe("2");
     expect(firstCollection.products).toHaveLength(6);
     expect(secondCollection.products).toHaveLength(6);
     expect(firstCollection.products[0]).toMatchObject({
