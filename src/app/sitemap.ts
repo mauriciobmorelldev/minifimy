@@ -14,7 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/legales`, lastModified: new Date() },
     { url: `${baseUrl}/privacidad`, lastModified: new Date() },
     { url: `${baseUrl}/cookies`, lastModified: new Date() },
-    ...categories.map((category) => ({
+    ...categories.filter((category) => category.slug !== "sin-categorizar").map((category) => ({
       url: `${baseUrl}/catalogo/${category.slug}`,
       lastModified: new Date(),
     })),

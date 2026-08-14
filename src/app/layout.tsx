@@ -34,14 +34,38 @@ export const metadata: Metadata = {
   },
   description:
     "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MiniFimy.",
+  alternates: {
+    canonical: "/",
+  },
+  icons: {
+    icon: [{ url: "/icon", type: "image/png", sizes: "256x256" }],
+    apple: [{ url: "/icon", type: "image/png", sizes: "256x256" }],
+  },
   openGraph: {
     title: "MiniFimy | Ropa para bebés",
     description:
       "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MiniFimy.",
+    url: "/",
+    siteName: "MiniFimy",
     type: "website",
     locale: "es_AR",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "MiniFimy | Ropa para bebés",
+    description:
+      "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MiniFimy.",
+  },
 };
+
+function isHiddenCatalogMenuItem(href: string) {
+  try {
+    const url = new URL(href, "https://minifimy.com");
+    return url.pathname.replace(/\/$/, "") === "/catalogo/sin-categorizar";
+  } catch {
+    return false;
+  }
+}
 
 const siteLocked =
   process.env.NEXT_PUBLIC_SITE_LOCKED === "true" ||
@@ -58,7 +82,8 @@ export default async function RootLayout({
     href: `/catalogo/${category.slug}`,
     label: category.name,
   }));
-  const featuredMenu = siteSettings.featuredMenuItems.length > 0 ? siteSettings.featuredMenuItems.slice(0, 3) : automaticFeaturedMenu;
+  const configuredFeaturedMenu = siteSettings.featuredMenuItems.filter((item) => !isHiddenCatalogMenuItem(item.href));
+  const featuredMenu = configuredFeaturedMenu.length > 0 ? configuredFeaturedMenu.slice(0, 3) : automaticFeaturedMenu;
   const featuredHrefs = new Set(featuredMenu.map((item) => item.href));
   const catalogChildren = storeCategories
     .map((category) => ({
@@ -72,7 +97,7 @@ export default async function RootLayout({
     ...featuredMenu,
   ];
   const extraMenu = siteSettings.menusFromWordPress
-    ? siteSettings.mainMenu.filter((item) => !baseMenu.some((baseItem) => baseItem.href === item.href))
+    ? siteSettings.mainMenu.filter((item) => !isHiddenCatalogMenuItem(item.href) && !baseMenu.some((baseItem) => baseItem.href === item.href))
     : [];
   const mainMenu = [...baseMenu, ...extraMenu].slice(0, 6);
 
@@ -101,7 +126,10 @@ export default async function RootLayout({
             <MiniFimyIntroLoader />
             <Header navLinks={mainMenu} />
             <div id="main-content">{children}</div>
-            <Footer exploreLinks={siteSettings.footerExploreMenu} supportLinks={siteSettings.footerSupportMenu} />
+            <Footer
+              exploreLinks={siteSettings.footerExploreMenu.filter((item) => !isHiddenCatalogMenuItem(item.href))}
+              supportLinks={siteSettings.footerSupportMenu.filter((item) => !isHiddenCatalogMenuItem(item.href))}
+            />
             <WhatsAppFimy phone={siteSettings.whatsappPhone} message={siteSettings.whatsappMessage} messages={siteSettings.whatsappMessages} />
           </CartProvider>
         </FeedbackProvider>

@@ -44,14 +44,30 @@ export const revalidate = 900;
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
   const product = await getStoreProductBySlug(slug);
+  const description = product?.description ?? "Detalle de producto MiniFimy.";
+  const socialImage = product?.images[0];
+
   return {
     title: product ? product.name : "Producto",
-    description: product?.description ?? "Detalle de producto MiniFimy.",
+    description,
+    alternates: { canonical: `/producto/${slug}` },
     openGraph: product
       ? {
           title: product.name,
-          description: product.description,
-          images: [{ url: product.images[0] }],
+          description,
+          url: `/producto/${slug}`,
+          siteName: "MiniFimy",
+          type: "website",
+          locale: "es_AR",
+          images: socialImage ? [{ url: socialImage, alt: product.name }] : undefined,
+        }
+      : undefined,
+    twitter: product
+      ? {
+          card: "summary_large_image",
+          title: product.name,
+          description,
+          images: socialImage ? [{ url: socialImage, alt: product.name }] : undefined,
         }
       : undefined,
   };

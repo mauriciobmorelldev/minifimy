@@ -9,7 +9,10 @@ export function MiniFimyIntroLoader() {
 
   useEffect(() => {
     const leaveTimer = window.setTimeout(() => setLeaving(true), 1750);
-    const hideTimer = window.setTimeout(() => setVisible(false), 2200);
+    const hideTimer = window.setTimeout(() => {
+      setVisible(false);
+      window.dispatchEvent(new Event("minifimy:intro-complete"));
+    }, 2200);
 
     return () => {
       window.clearTimeout(leaveTimer);

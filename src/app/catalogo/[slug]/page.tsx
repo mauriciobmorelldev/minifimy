@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { notFound } from "next/navigation";
 import { CatalogExperience } from "@/components/CatalogExperience";
 import { getStoreCategories, getStoreProductCollection, getStoreProductFilters } from "@/lib/woocommerce";
 
@@ -45,9 +45,17 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   const { slug } = await params;
   const categories = await getStoreCategories();
   const category = categories.find((item) => item.slug === slug);
+
+  if (!category) {
+    return {
+      title: "Página no encontrada",
+      robots: { index: false, follow: false },
+    };
+  }
+
   return {
-    title: category ? category.name : "Categoría",
-    description: category?.description ?? "Productos para cada etapa del bebé.",
+    title: category.name,
+    description: category.description ?? "Productos para cada etapa del bebé.",
   };
 }
 
@@ -57,14 +65,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const category = categories.find((item) => item.slug === slug);
 
   if (!category) {
-    return (
-      <main className="mx-auto w-full max-w-6xl px-6 py-24">
-        <p className="text-sm text-on-surface-variant">Categoría no encontrada.</p>
-        <Link href="/catalogo" className="btn-ghost mt-6 inline-flex">
-          Volver al catálogo
-        </Link>
-      </main>
-    );
+    notFound();
   }
 
   const page = getPage(getParam(query, "page"));

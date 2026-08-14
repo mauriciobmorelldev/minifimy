@@ -3,11 +3,14 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { BenefitsBar } from "@/components/BenefitsBar";
+import { HomeHeroCarousel } from "@/components/HomeHeroCarousel";
+import { HomeOpportunities } from "@/components/HomeOpportunities";
 import { NewArrivalsCarousel } from "@/components/NewArrivalsCarousel";
 import { ProductPrice } from "@/components/ProductPrice";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { getFeaturedStoreProducts, getNewestStoreProducts, getStoreProductFilters, getWordPressNewsletterUrl } from "@/lib/woocommerce";
+import { getFeaturedStoreProducts, getNewestStoreProducts, getStoreProductFilters, getStoreProductsByCategory, getWordPressNewsletterUrl } from "@/lib/woocommerce";
 import { productNeedsOptions } from "@/lib/product-options";
+import { productIsInStock } from "@/lib/product-stock";
 import { getHomeContent } from "@/lib/wordpress";
 
 function pickProductsBySlugs(products: Awaited<ReturnType<typeof getFeaturedStoreProducts>>, slugs: string[], fallback: typeof products) {
@@ -32,21 +35,19 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const newsletterUrl = getWordPressNewsletterUrl();
-  const [home, featured, newestProducts, filterOptions] = await Promise.all([
+  const [home, featured, newestProducts, filterOptions, opportunityProducts] = await Promise.all([
     getHomeContent(),
     getFeaturedStoreProducts(),
     getNewestStoreProducts(15),
     getStoreProductFilters(),
+    getStoreProductsByCategory("ultimas-oportunidades"),
   ]);
+  const inStockOpportunityProducts = opportunityProducts.filter(productIsInStock).slice(0, 8);
   const taggedHero = pickProductsByTags(featured, ["home-fimy"], [])[0];
   const configuredHero = home.heroFeaturedProductSlug
     ? featured.find((product) => product.slug === home.heroFeaturedProductSlug)
     : undefined;
   const heroProduct = configuredHero ?? taggedHero ?? featured[0];
-  const configuredCompanion = home.heroCompanionProductSlug
-    ? featured.find((product) => product.slug === home.heroCompanionProductSlug)
-    : undefined;
-  const heroCompanion = configuredCompanion ?? featured.find((product) => product.id !== heroProduct?.id) ?? heroProduct;
   const featuredProductsBySlug = pickProductsBySlugs(featured, home.featuredProductSlugs, []);
   const featuredSectionProducts = pickProductsByTags(featured, ["home-destacados"], featuredProductsBySlug.length > 0 ? featuredProductsBySlug : featured);
   const sectionHeroProduct = featuredSectionProducts[0] ?? heroProduct;
@@ -68,111 +69,9 @@ export default async function HomePage() {
     <main className="minifimy-story overflow-hidden bg-background pt-20">
       <BenefitsBar />
 
-      <section className="nursery-hero relative px-5 pb-16 pt-10 sm:px-8 lg:px-10">
-        <div className="mx-auto grid min-h-[calc(100vh-8rem)] max-w-7xl items-center gap-10 lg:grid-cols-[0.72fr_1.28fr]">
-          <ScrollReveal className="relative z-10 max-w-xl space-y-7">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/78 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary shadow-soft">
-              <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-              LO QUE EMPEZÓ COMO UNA IDEA, HOY ES REAL
-            </span>
-            <div className="space-y-5">
-              <h1 className="font-headline text-5xl font-extrabold leading-[0.96] text-on-surface sm:text-6xl lg:text-7xl">
-                Mini ropa. Maxi amor.
-              </h1>
-              <p className="max-w-md text-base leading-8 text-on-surface-variant sm:text-lg">
-                Después de meses de imaginar, crear y compartir este camino, MiniFimy ya está acá. Prendas pensadas para acompañar sus primeros momentos.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link href="/catalogo" className="btn-primary gap-2 rounded-full px-7">
-                Ver catálogo completo
-                <span className="material-symbols-outlined text-lg">arrow_forward</span>
-              </Link>
-            </div>
-          </ScrollReveal>
+      <HomeHeroCarousel />
 
-          <ScrollReveal delayMs={120} className="relative">
-            <div className="hero-showcase relative overflow-hidden bg-[#eadfcb]/90 p-5 shadow-lift sm:p-7">
-              <Image
-                src="/brand/illustrations/nube.svg"
-                alt=""
-                width={150}
-                height={92}
-                className="fimy-drift pointer-events-none absolute right-8 top-6 w-28 opacity-45 sm:w-36"
-                priority
-              />
-              <div className="relative grid gap-5 md:grid-cols-[1.02fr_0.98fr]">
-                {heroProduct && (
-                  <Link href={`/producto/${heroProduct.slug}`} className="hero-feature-card order-2 group overflow-hidden bg-white p-3 shadow-soft md:order-1">
-                    <div className="relative aspect-[4/5] overflow-hidden rounded-[1.4rem] bg-surface-container">
-                      <Image
-                        src={heroProduct.images[0]}
-                        alt={heroProduct.name}
-                        fill
-                        sizes="(min-width: 1024px) 430px, 90vw"
-                        className="object-cover transition duration-700 group-hover:scale-105"
-                        priority
-                      />
-                    </div>
-                    <div className="flex items-center justify-between gap-4 px-2 pb-2 pt-4">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">EL PRIMER FAVORITO DE FIMY</p>
-                        <h2 className="mt-1 font-headline text-2xl font-extrabold leading-tight text-on-surface">{heroProduct.name}</h2>
-                      </div>
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition group-hover:translate-x-1" aria-label="Ver producto">
-                        <span className="material-symbols-outlined text-lg">arrow_forward</span>
-                      </span>
-                    </div>
-                  </Link>
-                )}
-
-                <div className="order-1 grid content-between gap-5 md:order-2">
-                  <div className="hero-fimy-note bg-white/92 p-5 shadow-soft">
-                    <div className="flex items-start gap-4">
-                      <Image src="/brand/illustrations/jirafa.svg" alt="Fimy" width={74} height={105} className="fimy-float mt-1 w-14 shrink-0" />
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">¡Hola! Soy Fimy 💛</p>
-                        <p className="mt-2 text-base font-semibold leading-7 text-on-surface-variant">
-                          Mirá esta colección especial que elegí para vos.
-                        </p>
-                        <Link
-                          href="/catalogo/seleccion-importada"
-                          className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-bold text-primary shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
-                        >
-                          Descubrir importados
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-
-                  {heroCompanion && (
-                    <Link href={`/producto/${heroCompanion.slug}`} className="hero-side-product group grid grid-cols-[0.72fr_1fr] gap-4 bg-[#f8efdf] p-4 shadow-soft">
-                      <div className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-surface-container">
-                        <Image
-                          src={heroCompanion.images[0]}
-                          alt={heroCompanion.name}
-                          fill
-                          sizes="(min-width: 1024px) 210px, 45vw"
-                          className="object-cover transition duration-700 group-hover:scale-105"
-                        />
-                      </div>
-                      <div className="flex flex-col justify-center">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">También puede gustarte</p>
-                        <h3 className="mt-2 font-headline text-xl font-extrabold leading-tight text-on-surface">{heroCompanion.name}</h3>
-                        <ProductPrice price={heroCompanion.price} prices={heroCompanion.prices} compact className="mt-3 text-left" />
-                      </div>
-                    </Link>
-                  )}
-
-                  <div className="rounded-full bg-white/72 px-5 py-3 text-sm font-bold text-primary shadow-soft">
-                    Para sus primeros días, sus pequeñas aventuras y esos momentos que se quedan para siempre.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
+      <HomeOpportunities products={inStockOpportunityProducts} />
 
       <section aria-labelledby="shop-by-need" className="mx-auto max-w-7xl px-5 pb-8 sm:px-8 lg:px-10">
         <ScrollReveal>

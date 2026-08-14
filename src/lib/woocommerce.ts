@@ -25,6 +25,7 @@ const WOO_PRODUCT_FIELDS = [
 ].join(",");
 
 const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description"].join(",");
+const HIDDEN_CATEGORY_SLUGS = new Set(["sin-categorizar"]);
 const WOO_VARIATION_FIELDS = ["id", "price", "regular_price", "minifimy_prices", "stock_quantity", "stock_status", "image", "attributes"].join(",");
 
 
@@ -608,8 +609,11 @@ function getMiniFimyPrices(source: { price?: string; regular_price?: string; min
 }
 
 function mapWooProduct(product: WooProduct, mediaSources = new Map<number, string>()): Product {
-  const categorySlugs = product.categories?.map((category) => category.slug).filter(Boolean) ?? [];
-  const categoryIds = product.categories?.map((category) => String(category.id)).filter(Boolean) ?? [];
+  const visibleCategories = product.categories?.filter(
+    (category) => !HIDDEN_CATEGORY_SLUGS.has(category.slug),
+  ) ?? [];
+  const categorySlugs = visibleCategories.map((category) => category.slug).filter(Boolean);
+  const categoryIds = visibleCategories.map((category) => String(category.id)).filter(Boolean);
   const category = categorySlugs[0] ?? "catalogo";
   const images = product.images?.map((image) => getSafeImage(mediaSources.get(image.id ?? -1) ?? image.src)).filter(Boolean) as string[] | undefined;
   const sizes = product.attributes?.find((attribute) => {
@@ -1114,7 +1118,9 @@ export async function getStoreProductFilters(): Promise<ProductFilterOptions> {
 }
 
 export async function getStoreCategories() {
-  if (!canUseWooCommerce()) return fallbackCategories;
+  if (!canUseWooCommerce()) {
+    return fallbackCategories.filter((category) => !HIDDEN_CATEGORY_SLUGS.has(category.slug));
+  }
 
   const data = await fetchWoo<WooCategory[]>(
     "products/categories",
@@ -1123,7 +1129,8 @@ export async function getStoreCategories() {
     [CACHE_TAGS.categories]
   );
 
-  return data?.map(mapWooCategory) ?? fallbackCategories;
+  const categories = data?.map(mapWooCategory) ?? fallbackCategories;
+  return categories.filter((category) => !HIDDEN_CATEGORY_SLUGS.has(category.slug));
 }
 
 export async function getStoreProductIdBySlug(slug: string) {
