@@ -4,24 +4,21 @@
 
 import Script from "next/script";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
-
-declare global {
-  interface Window {
-    fbq?: (...args: unknown[]) => void;
-  }
-}
+import { useEffect, useRef, useState } from "react";
+import { trackMetaEvent } from "@/lib/meta-events";
 
 export function Analytics() {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
+  const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "1130501562085721";
   const pathname = usePathname();
-  const previousPathname = useRef(pathname);
+  const [pixelReady, setPixelReady] = useState(false);
+  const trackedPathname = useRef<string | null>(null);
 
   useEffect(() => {
-    if (pathname === previousPathname.current) return;
-    previousPathname.current = pathname;
-    window.fbq?.("track", "PageView");
-  }, [pathname]);
+    if (!pixelReady || pathname === trackedPathname.current) return;
+    trackedPathname.current = pathname;
+    trackMetaEvent("PageView");
+  }, [pathname, pixelReady]);
 
   return (
     <>
@@ -41,7 +38,7 @@ export function Analytics() {
           </Script>
         </>
       )}
-      <Script id="meta-pixel" strategy="afterInteractive">
+      <Script id="meta-pixel" strategy="afterInteractive" onReady={() => setPixelReady(true)}>
         {`
           !function(f,b,e,v,n,t,s)
           {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -51,8 +48,8 @@ export function Analytics() {
           t.src=v;s=b.getElementsByTagName(e)[0];
           s.parentNode.insertBefore(t,s)}(window, document,'script',
           'https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init', '1130501562085721');
-          fbq('track', 'PageView');
+          fbq('init', ${JSON.stringify(pixelId)});
+          fbq('set', 'autoConfig', false, ${JSON.stringify(pixelId)});
         `}
       </Script>
       <noscript>
@@ -60,7 +57,7 @@ export function Analytics() {
           height="1"
           width="1"
           style={{ display: "none" }}
-          src="https://www.facebook.com/tr?id=1130501562085721&ev=PageView&noscript=1"
+          src={`https://www.facebook.com/tr?id=${encodeURIComponent(pixelId)}&ev=PageView&noscript=1`}
           alt=""
         />
       </noscript>

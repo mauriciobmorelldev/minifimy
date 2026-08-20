@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CatalogExperience } from "@/components/CatalogExperience";
+import { MetaEvent } from "@/components/MetaEvent";
 import { getStoreCategories, getStoreProductCollection, getStoreProductFilters } from "@/lib/woocommerce";
 
 interface CategoryPageProps {
@@ -84,14 +85,27 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   ]);
 
   return (
-    <CatalogExperience
-      products={collection.products}
-      categories={filterOptions.categories}
-      filterOptions={filterOptions}
-      totalProducts={collection.total}
-      totalPages={collection.totalPages}
-      currentPage={collection.page}
-      perPage={collection.perPage}
-    />
+    <>
+      <MetaEvent
+        name="ViewCategory"
+        eventKey={`category-${category.id}`}
+        data={{
+          content_name: category.name,
+          content_category: category.name,
+          content_ids: collection.products.map((product) => product.id),
+          content_type: "product",
+          num_items: collection.total,
+        }}
+      />
+      <CatalogExperience
+        products={collection.products}
+        categories={filterOptions.categories}
+        filterOptions={filterOptions}
+        totalProducts={collection.total}
+        totalPages={collection.totalPages}
+        currentPage={collection.page}
+        perPage={collection.perPage}
+      />
+    </>
   );
 }

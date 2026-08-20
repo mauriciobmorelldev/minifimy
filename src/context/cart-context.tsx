@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { CartItem, Product, ProductSelection } from "@/models/product";
+import { getMetaProductData, trackMetaEvent } from "@/lib/meta-events";
 
 interface CartContextValue {
   items: CartItem[];
@@ -205,30 +206,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
         method: "POST",
         body: JSON.stringify(buildAddItemPayload(product, quantity, selection)),
       }));
+      trackMetaEvent("AddToCart", getMetaProductData(product, quantity, selection));
     } finally {
       setLoading(false);
     }
   };
 
   const updateQuantity = async (itemId: string, quantity: number) => {
+    const currentItem = items.find((item) => item.id === itemId);
+    const nextQuantity = Math.max(1, quantity);
     setLoading(true);
     try {
       applyCart(await storeFetch("/api/woo/cart/update", {
         method: "POST",
-        body: JSON.stringify({ key: itemId, quantity: Math.max(1, quantity) }),
+        body: JSON.stringify({ key: itemId, quantity: nextQuantity }),
       }));
+      if (currentItem && nextQuantity !== currentItem.quantity) {
+        const difference = Math.abs(nextQuantity - currentItem.quantity);
+        trackMetaEvent(
+          nextQuantity > currentItem.quantity ? "AddToCart" : "RemoveFromCart",
+          getMetaProductData(currentItem.product, difference, currentItem.selection),
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const removeFromCart = async (itemId: string) => {
+    const currentItem = items.find((item) => item.id === itemId);
     setLoading(true);
     try {
       applyCart(await storeFetch("/api/woo/cart/remove", {
         method: "POST",
         body: JSON.stringify({ key: itemId }),
       }));
+      if (currentItem) trackMetaEvent("RemoveFromCart", getMetaProductData(currentItem.product, currentItem.quantity, currentItem.selection));
     } finally {
       setLoading(false);
     }
@@ -243,6 +256,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           method: "POST",
           body: JSON.stringify({ key: item.id }),
         });
+        trackMetaEvent("RemoveFromCart", getMetaProductData(item.product, item.quantity, item.selection));
       }
       await refreshCart();
     } finally {

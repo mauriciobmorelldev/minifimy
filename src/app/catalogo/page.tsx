@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CatalogExperience } from "@/components/CatalogExperience";
+import { MetaEvent } from "@/components/MetaEvent";
 import { getStoreProductCollection, getStoreProductFilters } from "@/lib/woocommerce";
 
 export const metadata: Metadata = {
@@ -56,6 +57,17 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
   return (
     <Suspense fallback={<main className="min-h-screen bg-[#fff8ef] pt-28" />}>
+      <MetaEvent
+        name="ViewCategory"
+        eventKey="category-all"
+        data={{
+          content_name: "Catálogo",
+          content_category: "Todos los productos",
+          content_ids: collection.products.map((product) => product.id),
+          content_type: "product",
+          num_items: collection.total,
+        }}
+      />
       <CatalogExperience
         products={collection.products}
         categories={filterOptions.categories}

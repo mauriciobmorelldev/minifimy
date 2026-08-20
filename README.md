@@ -26,6 +26,13 @@ Crea `.env.local` para desarrollo y las mismas variables en el proveedor de depl
 ```bash
 NEXT_PUBLIC_SITE_URL=https://minifimy.com
 NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_META_PIXEL_ID=1130501562085721
+META_PIXEL_ID=1130501562085721
+META_CONVERSIONS_API_TOKEN=token_generado_en_meta
+META_GRAPH_API_VERSION=v23.0
+# Solo mientras se prueba en Events Manager; quitar en producción:
+# META_TEST_EVENT_CODE=TEST12345
+
 NEXTAUTH_SECRET=tu_secreto
 STRIPE_SECRET_KEY=sk_test_xxx
 

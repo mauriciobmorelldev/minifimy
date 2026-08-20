@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { getWooStoreRequestHeaders, useCart } from "@/context/cart-context";
+import { getMetaCartData, trackMetaEvent } from "@/lib/meta-events";
 
 interface CheckoutFormValues {
   name: string;
@@ -107,6 +108,7 @@ async function getCheckoutErrorMessage(response: Response) {
 
 export default function CheckoutClient() {
   const { items, total, refreshCart, updateQuantity } = useCart();
+  const checkoutTracked = useRef(false);
   const [status, setStatus] = useState<string | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<CheckoutPaymentMethod[]>([]);
   const [shippingMethods, setShippingMethods] = useState<CheckoutShippingMethod[]>([]);
@@ -146,6 +148,12 @@ export default function CheckoutClient() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (checkoutTracked.current || items.length === 0) return;
+    checkoutTracked.current = true;
+    trackMetaEvent("InitiateCheckout", getMetaCartData(items, total));
+  }, [items, total]);
 
   const selectedShippingMethod = useMemo(
     () => shippingMethods.find((method) => method.id === shippingMethodId),
@@ -215,6 +223,11 @@ export default function CheckoutClient() {
       order_key?: string;
       payment_result?: { redirect_url?: string; payment_status?: string };
     };
+    trackMetaEvent(
+      "AddPaymentInfo",
+      { ...getMetaCartData(latestItems, grandTotal), payment_method: paymentMethodId },
+      payload.order_id ? { eventId: `add-payment-info-${payload.order_id}` } : undefined,
+    );
     const redirectUrl = payload.payment_result?.redirect_url;
     const manualPayment = isManualPaymentMethod(paymentMethodId);
 

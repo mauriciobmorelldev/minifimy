@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { MetaEvent } from "@/components/MetaEvent";
 import { ProductCarousel } from "@/components/ProductCarousel";
 import { ProductDetailClient } from "@/components/ProductDetailClient";
 import { ProductReviews } from "@/components/ProductReviews";
+import { getMetaProductData } from "@/lib/meta-events";
 import { productIsInStock } from "@/lib/product-stock";
 import { getStoreCategories, getStoreProductBySlug, getStoreProductReviews, getStoreProducts } from "@/lib/woocommerce";
 
@@ -108,6 +110,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <main className="mobile-soft-page mx-auto max-w-7xl px-4 pb-12 pt-24 md:px-6">
+      <MetaEvent name="ViewContent" eventKey={`product-${product.id}`} data={getMetaProductData(product)} />
       <nav className="mb-6 flex items-center gap-2 overflow-x-auto whitespace-nowrap rounded-full bg-white/64 px-4 py-2 text-[10px] font-medium uppercase tracking-widest text-on-surface-variant/70 shadow-soft md:mb-8 md:text-xs" aria-label="Breadcrumb">
         <Link href="/" className="transition-colors hover:text-primary">
           Inicio

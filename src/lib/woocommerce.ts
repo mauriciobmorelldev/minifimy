@@ -142,13 +142,15 @@ export interface StoreOrderSummary {
 
 export interface StoreOrderPaymentDetails extends StoreOrderSummary {
   orderKey?: string;
+  datePaid?: string;
   paymentMethod: string;
   paymentMethodTitle: string;
   paymentInstructions?: string;
   paymentUrl?: string;
   manualPayment?: StoreManualPaymentDetails;
   customerEmail?: string;
-  items: { id: number; name: string; quantity: number; total: string }[];
+  customerPhone?: string;
+  items: { id: number; productId?: number; variationId?: number; name: string; quantity: number; total: string }[];
   shippingLines: { id: number; title: string; total: string }[];
 }
 
@@ -226,11 +228,14 @@ type WooOrderSummary = {
   total?: string;
   currency?: string;
   date_created?: string;
-  billing?: { email?: string };
+  date_paid?: string;
+  billing?: { email?: string; phone?: string };
 };
 
 type WooLineItem = {
   id: number;
+  product_id?: number;
+  variation_id?: number;
   name?: string;
   quantity?: number;
   total?: string;
@@ -246,7 +251,7 @@ type WooOrderPaymentDetails = WooOrderSummary & {
   order_key?: string;
   payment_method?: string;
   payment_method_title?: string;
-  billing?: { email?: string };
+  billing?: { email?: string; phone?: string };
   line_items?: WooLineItem[];
   shipping_lines?: WooShippingLine[];
   payment_url?: string;
@@ -1408,14 +1413,18 @@ export async function getStoreOrderForPayment(orderId: string, orderKey?: string
   return {
     ...mapWooOrderSummary(order),
     orderKey: order.order_key,
+    datePaid: order.date_paid,
     paymentMethod: order.payment_method ?? "",
     paymentMethodTitle: cleanText(order.payment_method_title) || order.payment_method || "Pago pendiente",
     paymentInstructions: selectedPaymentMethod?.instructions || selectedPaymentMethod?.description,
     paymentUrl: getSafePaymentUrl(order.payment_url ?? order.checkout_payment_url),
     manualPayment: isManualPayment ? manualPayment : undefined,
     customerEmail: order.billing?.email,
+    customerPhone: order.billing?.phone,
     items: (order.line_items ?? []).map((item) => ({
       id: item.id,
+      productId: item.product_id,
+      variationId: item.variation_id,
       name: item.name ?? "Producto",
       quantity: item.quantity ?? 1,
       total: item.total ?? "0",

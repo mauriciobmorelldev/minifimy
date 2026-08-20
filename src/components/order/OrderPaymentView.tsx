@@ -181,7 +181,7 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
               Enviar comprobante
             </a>
           ) : (
-            <Link href={`/gracias?order=${order.id}`} className="mt-4 flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-primary shadow-soft">
+            <Link href={`/gracias?pedido=${order.id}${order.orderKey ? `&key=${encodeURIComponent(order.orderKey)}` : ""}`} className="mt-4 flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-primary shadow-soft">
               Ver confirmación
             </Link>
           )}
