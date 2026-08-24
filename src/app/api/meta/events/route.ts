@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import type { MetaCustomData, MetaEventName } from "@/lib/meta-events";
+import { getMetaPurchaseData, isMetaPurchaseOrder } from "@/lib/meta-order";
 import { getStoreOrderForPayment } from "@/lib/woocommerce";
 
 const ALLOWED_EVENTS = new Set<MetaEventName>([
@@ -65,6 +66,7 @@ function sanitizeCustomData(value: MetaCustomData | undefined): MetaCustomData {
     "model",
     "variant",
     "payment_method",
+    "order_id",
   ];
   const numberKeys = ["value", "quantity", "num_items"];
   const result: MetaCustomData = {};
@@ -101,22 +103,10 @@ async function getPurchaseData(payload: MetaEventRequest) {
   if (!Number.isInteger(orderId) || orderId <= 0 || !orderKey) return null;
 
   const order = await getStoreOrderForPayment(String(orderId), orderKey);
-  if (!order || order.orderKey !== orderKey || (!order.datePaid && order.status !== "completed")) return null;
+  if (!order || order.orderKey !== orderKey || !isMetaPurchaseOrder(order)) return null;
 
   return {
-    customData: {
-      content_ids: order.items.map((item) => String(item.productId || item.id)),
-      content_name: `Pedido #${order.id}`,
-      content_type: "product",
-      contents: order.items.map((item) => ({
-        id: String(item.productId || item.id),
-        quantity: item.quantity,
-        item_price: item.quantity > 0 ? Number(item.total) / item.quantity : Number(item.total),
-      })),
-      currency: order.currency || "ARS",
-      value: Number(order.total),
-      num_items: order.items.reduce((sum, item) => sum + item.quantity, 0),
-    },
+    customData: getMetaPurchaseData(order),
     email: order.customerEmail,
     phone: order.customerPhone,
   };

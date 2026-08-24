@@ -4,19 +4,19 @@
 
 import Script from "next/script";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { trackMetaEvent } from "@/lib/meta-events";
+
+let lastTrackedPathname: string | null = null;
 
 export function Analytics() {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "1130501562085721";
   const pathname = usePathname();
   const [pixelReady, setPixelReady] = useState(false);
-  const trackedPathname = useRef<string | null>(null);
-
   useEffect(() => {
-    if (!pixelReady || pathname === trackedPathname.current) return;
-    trackedPathname.current = pathname;
+    if (!pixelReady || pathname === lastTrackedPathname) return;
+    lastTrackedPathname = pathname;
     trackMetaEvent("PageView");
   }, [pathname, pixelReady]);
 

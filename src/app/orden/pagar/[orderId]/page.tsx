@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { MetaEvent } from "@/components/MetaEvent";
 import { OrderPaymentView } from "@/components/order/OrderPaymentView";
+import { getMetaPurchaseData, isMetaPurchaseOrder } from "@/lib/meta-order";
 import { getStoreOrderForPayment } from "@/lib/woocommerce";
 
 interface OrderPayPageProps {
@@ -62,10 +64,28 @@ export default async function OrderPayPage({ params, searchParams }: OrderPayPag
   const query = await searchParams;
   const order = await getStoreOrderForPayment(orderId, query.key);
   const paymentUrl = getPaymentUrl(query.pay) ?? order?.paymentUrl;
+  const verifiedOrder = order && query.key && order.orderKey === query.key ? order : null;
+  const purchaseData = verifiedOrder && isMetaPurchaseOrder(verifiedOrder)
+    ? getMetaPurchaseData(verifiedOrder)
+    : null;
 
   if (paymentUrl && !isManualPaymentMethod(order?.paymentMethod)) {
     redirect(paymentUrl);
   }
 
-  return <OrderPaymentView order={order} paymentUrl={paymentUrl} />;
+  return (
+    <>
+      {purchaseData && verifiedOrder?.orderKey ? (
+        <MetaEvent
+          name="Purchase"
+          eventKey={`purchase-${verifiedOrder.id}`}
+          eventId={`purchase-${verifiedOrder.id}`}
+          persistKey={`purchase-${verifiedOrder.id}`}
+          data={purchaseData}
+          order={{ id: verifiedOrder.id, key: verifiedOrder.orderKey }}
+        />
+      ) : null}
+      <OrderPaymentView order={order} paymentUrl={paymentUrl} />
+    </>
+  );
 }
