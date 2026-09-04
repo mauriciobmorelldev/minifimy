@@ -9,6 +9,8 @@ import type { Product } from "@/models/product";
 interface ProductCardProps {
   product: Product;
   compact?: boolean;
+  eager?: boolean;
+  sizes?: string;
 }
 
 function colorValue(color: string) {
@@ -31,7 +33,7 @@ function colorValue(color: string) {
   return Object.entries(palette).find(([name]) => normalized.includes(name))?.[1] ?? "#d8c7aa";
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, eager = false, sizes = "(min-width: 1280px) 280px, (min-width: 640px) 44vw, 86vw" }: ProductCardProps) {
   const image = product.images[0] ?? "/brand/illustrations/jirafa.svg";
   const needsOptions = productNeedsOptions(product);
   const inStock = productIsInStock(product);
@@ -45,7 +47,8 @@ export function ProductCard({ product }: ProductCardProps) {
               src={image}
               alt={product.name}
               fill
-              sizes="(min-width: 1280px) 280px, (min-width: 768px) 30vw, 86vw"
+              sizes={sizes}
+              loading={eager ? "eager" : "lazy"}
               className="object-cover transition-transform duration-700 ease-soft-spring group-hover:scale-[1.045]"
               quality={70}
             />

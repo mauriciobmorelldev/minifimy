@@ -3,7 +3,6 @@ import { Be_Vietnam_Pro, Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@/components/Analytics";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { MiniFimyIntroLoader } from "@/components/MiniFimyIntroLoader";
 import { SiteLockedScreen } from "@/components/SiteLockedScreen";
 import { WhatsAppFimy } from "@/components/WhatsAppFimy";
 import { CartProvider } from "@/context/cart-context";
@@ -123,7 +122,6 @@ export default async function RootLayout({
             >
               Saltar al contenido
             </a>
-            <MiniFimyIntroLoader />
             <Header navLinks={mainMenu} />
             <div id="main-content">{children}</div>
             <Footer

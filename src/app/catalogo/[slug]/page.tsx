@@ -1,3 +1,4 @@
+import { facetValues } from "@/lib/catalog-facets";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CatalogExperience } from "@/components/CatalogExperience";
@@ -76,8 +77,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       perPage: 12,
       category: category.id,
       search: getParam(query, "q"),
-      size: getParam(query, "talle"),
-      color: getParam(query, "color"),
+      size: facetValues(query.talle),
+      color: facetValues(query.color),
       ...getPriceRange(getParam(query, "precio")),
       ...getSort(getParam(query, "orden")),
     }),

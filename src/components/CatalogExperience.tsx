@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { catalogUrl, facetValues, toggleFacet, type CatalogSelection } from "@/lib/catalog-facets";
 import { ProductCard } from "@/components/ProductCard";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import type { Category, Product, ProductFilterOptions } from "@/models/product";
@@ -44,68 +45,45 @@ function serializePriceRange(min: number, max: number, limitMin: number, limitMa
 export function CatalogExperience({ products, categories, filterOptions, totalProducts, totalPages, currentPage }: CatalogExperienceProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const routeCategory = pathname.startsWith("/catalogo/") ? pathname.split("/").filter(Boolean)[1] ?? "all" : "all";
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
-  const [category, setCategory] = useState(searchParams.get("categoria") ?? routeCategory);
-  const [size, setSize] = useState(searchParams.get("talle") ?? "all");
-  const [color, setColor] = useState(searchParams.get("color") ?? "all");
+  const [category, setCategory] = useState(() => facetValues(searchParams.getAll("categoria").length ? searchParams.getAll("categoria") : routeCategory));
+  const [size, setSize] = useState(() => facetValues(searchParams.getAll("talle")));
+  const [color, setColor] = useState(() => facetValues(searchParams.getAll("color")));
   const [priceRange, setPriceRange] = useState(searchParams.get("precio") ?? "all");
   const [sort, setSort] = useState(searchParams.get("orden") ?? "featured");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     setQuery(searchParams.get("q") ?? "");
-    setCategory(searchParams.get("categoria") ?? routeCategory);
-    setSize(searchParams.get("talle") ?? "all");
-    setColor(searchParams.get("color") ?? "all");
+    setCategory(facetValues(searchParams.getAll("categoria").length ? searchParams.getAll("categoria") : routeCategory));
+    setSize(facetValues(searchParams.getAll("talle")));
+    setColor(facetValues(searchParams.getAll("color")));
     setPriceRange(searchParams.get("precio") ?? "all");
     setSort(searchParams.get("orden") ?? "featured");
   }, [routeCategory, searchParams]);
 
-  const updateUrl = (next: Record<string, string | number | null>) => {
-    const nextCategory = String(next.categoria ?? category);
-    const basePath = nextCategory && nextCategory !== "all" ? `/catalogo/${nextCategory}` : "/catalogo";
-    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : searchParams.toString());
-    params.delete("categoria");
-    Object.entries(next).forEach(([key, value]) => {
-      if (key === "categoria") return;
-      if (!value || value === "all" || value === "featured" || value === 1) {
-        params.delete(key);
-      } else {
-        params.set(key, String(value));
-      }
-    });
+  const selection: CatalogSelection = { q: query, categoria: category, talle: size, color, precio: priceRange, orden: sort };
 
-    const queryString = params.toString();
-    const nextUrl = queryString ? `${basePath}?${queryString}` : basePath;
-    window.location.assign(nextUrl);
+  const navigate = (next: CatalogSelection, page = 1) => {
+    startTransition(() => router.push(catalogUrl(next, page), { scroll: false }));
   };
 
-  const setFilter = (next: Partial<{ q: string; categoria: string; talle: string; color: string; precio: string; orden: string }>) => {
-    const nextQuery = next.q ?? query;
-    const nextCategory = next.categoria ?? category;
-    const nextSize = next.talle ?? size;
-    const nextColor = next.color ?? color;
-    const nextPriceRange = next.precio ?? priceRange;
-    const nextSort = next.orden ?? sort;
-
-    setQuery(nextQuery);
-    setCategory(nextCategory);
-    setSize(nextSize);
-    setColor(nextColor);
-    setPriceRange(nextPriceRange);
-    setSort(nextSort);
-    updateUrl({ q: nextQuery, categoria: nextCategory, talle: nextSize, color: nextColor, precio: nextPriceRange, orden: nextSort, page: 1 });
+  const setFilter = (next: Partial<CatalogSelection>) => {
+    const updated = { ...selection, ...next };
+    setQuery(updated.q);
+    setCategory(updated.categoria);
+    setSize(updated.talle);
+    setColor(updated.color);
+    setPriceRange(updated.precio);
+    setSort(updated.orden);
+    navigate(updated);
   };
 
-  const setCategoryFilter = (nextCategory: string) => {
-    setQuery("");
-    setCategory(nextCategory);
-    setSize("all");
-    setColor("all");
-    setPriceRange("all");
-    setSort("featured");
-    updateUrl({ q: "", categoria: nextCategory, talle: "all", color: "all", precio: "all", orden: "featured", page: 1 });
+  const setCategoryFilter = (value: string) => {
+    setFilter({ categoria: value === "all" ? [] : toggleFacet(category, value) });
   };
 
   const priceMinLimit = Math.floor((filterOptions.price.min || 0) / 100) * 100;
@@ -156,24 +134,29 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
           label: `Talle ${filterOptions.sizes[0]}`,
           cta: formatSizeCta(filterOptions.sizes[0]),
           icon: "straighten",
-          action: () => setFilter({ talle: filterOptions.sizes[0] }),
+          action: () => setFilter({ talle: toggleFacet(size, filterOptions.sizes[0]) }),
         }]
       : []),
   ].slice(0, 6);
 
-  const selectedCategoryName = categories.find((item) => item.slug === category)?.name ?? category;
   const selectedPriceName = !selectedPriceRange.isDefault ? `${formatPrice(selectedPriceRange.min)} - ${formatPrice(selectedPriceRange.max)}` : "";
-  const activeFilters = [query, category !== "all" ? selectedCategoryName : "", size !== "all" ? size : "", color !== "all" ? color : "", selectedPriceName].filter(Boolean);
+  const activeFilters = [
+    ...(query ? [{ key: "q", label: query, remove: () => setFilter({ q: "" }) }] : []),
+    ...category.map((value) => ({ key: `category-${value}`, label: categories.find((item) => item.slug === value)?.name ?? value, remove: () => setFilter({ categoria: toggleFacet(category, value) }) })),
+    ...size.map((value) => ({ key: `size-${value}`, label: value, remove: () => setFilter({ talle: toggleFacet(size, value) }) })),
+    ...color.map((value) => ({ key: `color-${value}`, label: value, remove: () => setFilter({ color: toggleFacet(color, value) }) })),
+    ...(selectedPriceName ? [{ key: "price", label: selectedPriceName, remove: () => setFilter({ precio: "all" }) }] : []),
+  ];
   const paginatedProducts = products;
 
   const goToPage = (nextPage: number) => {
     const boundedPage = Math.min(Math.max(nextPage, 1), totalPages);
-    updateUrl({ page: boundedPage });
+    navigate(selection, boundedPage);
   };
 
   const resetFilters = () => {
     setMobileFiltersOpen(false);
-    setFilter({ q: "", categoria: "all", talle: "all", color: "all", precio: "all", orden: "featured" });
+    setFilter({ q: "", categoria: [], talle: [], color: [], precio: "all", orden: "featured" });
   };
 
   return (
@@ -243,7 +226,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                     width={230}
                     height={280}
                     className="h-72 w-56 rounded-[1.5rem] object-cover"
-                    priority
+                    fetchPriority="high"
                   />
                   <p className="mt-3 px-2 pb-2 font-headline text-lg font-extrabold text-on-surface">
                     {products[0]?.name ?? "Pequeña joyita"}
@@ -258,7 +241,6 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                   width={120}
                   height={180}
                   className="absolute bottom-0 left-14 h-44 w-auto opacity-80"
-                  priority
                 />
               </div>
             </div>
@@ -310,9 +292,9 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
               )}
             </div>
 
-            <div className={`${mobileFiltersOpen ? "block" : "hidden"} space-y-5 lg:block`}>
+            <fieldset disabled={isPending} className={`${mobileFiltersOpen ? "block" : "hidden"} min-w-0 space-y-5 lg:block disabled:opacity-70`}>
               <p className="rounded-[1.2rem] bg-[#f7efe3] px-4 py-3 text-xs font-semibold leading-5 text-primary/85">
-                Usamos las categorías, talles, colores y precios reales cargados en MiniFimy.
+                Podés elegir varias categorías, talles y colores. Las opciones de cada grupo se combinan con los demás filtros.
               </p>
               <div>
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">Categoría</h3>
@@ -320,16 +302,18 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                   <button
                     type="button"
                     onClick={() => setCategoryFilter("all")}
-                    className={`rounded-full px-4 py-2 text-sm font-bold transition ${category === "all" ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
+                    aria-pressed={category.length === 0}
+                    className={`rounded-full px-4 py-2 text-sm font-bold transition ${category.length === 0 ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
                   >
                     Todo MiniFimy
                   </button>
-                  {categories.slice(0, 10).map((item) => (
+                  {categories.map((item) => (
                     <button
                       key={item.id}
                       type="button"
                       onClick={() => setCategoryFilter(item.slug)}
-                      className={`rounded-full px-4 py-2 text-sm font-bold transition ${category === item.slug ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
+                      aria-pressed={category.includes(item.slug)}
+                      className={`rounded-full px-4 py-2 text-sm font-bold transition ${category.includes(item.slug) ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
                     >
                       {item.name}
                     </button>
@@ -342,8 +326,9 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => setFilter({ talle: "all" })}
-                    className={`rounded-full px-4 py-2 text-sm font-bold ${size === "all" ? "bg-secondary text-on-secondary" : "bg-[#f7efe3] text-primary"}`}
+                    onClick={() => setFilter({ talle: [] })}
+                    aria-pressed={size.length === 0}
+                    className={`rounded-full px-4 py-2 text-sm font-bold ${size.length === 0 ? "bg-secondary text-on-secondary" : "bg-[#f7efe3] text-primary"}`}
                   >
                     Todos
                   </button>
@@ -351,8 +336,9 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                     <button
                       key={item}
                       type="button"
-                      onClick={() => setFilter({ talle: item })}
-                      className={`rounded-full px-4 py-2 text-sm font-bold ${size === item ? "bg-secondary text-on-secondary" : "bg-[#f7efe3] text-primary"}`}
+                      onClick={() => setFilter({ talle: toggleFacet(size, item) })}
+                      aria-pressed={size.includes(item)}
+                      className={`rounded-full px-4 py-2 text-sm font-bold ${size.includes(item) ? "bg-secondary text-on-secondary" : "bg-[#f7efe3] text-primary"}`}
                     >
                       {item}
                     </button>
@@ -366,8 +352,9 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => setFilter({ color: "all" })}
-                      className={`rounded-full px-4 py-2 text-sm font-bold ${color === "all" ? "bg-secondary text-on-secondary" : "bg-[#f7efe3] text-primary"}`}
+                      onClick={() => setFilter({ color: [] })}
+                    aria-pressed={color.length === 0}
+                      className={`rounded-full px-4 py-2 text-sm font-bold ${color.length === 0 ? "bg-secondary text-on-secondary" : "bg-[#f7efe3] text-primary"}`}
                     >
                       Todos
                     </button>
@@ -375,8 +362,9 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                       <button
                         key={item}
                         type="button"
-                        onClick={() => setFilter({ color: item })}
-                        className={`rounded-full px-4 py-2 text-sm font-bold ${color === item ? "bg-secondary text-on-secondary" : "bg-[#f7efe3] text-primary"}`}
+                        onClick={() => setFilter({ color: toggleFacet(color, item) })}
+                      aria-pressed={color.includes(item)}
+                        className={`rounded-full px-4 py-2 text-sm font-bold ${color.includes(item) ? "bg-secondary text-on-secondary" : "bg-[#f7efe3] text-primary"}`}
                       >
                         {item}
                       </button>
@@ -464,10 +452,11 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                   Limpiar filtros
                 </button>
               )}
-            </div>
+            </fieldset>
           </aside>
 
-          <section id="catalog-products" className="scroll-mt-28">
+          <section id="catalog-products" className="scroll-mt-28" aria-busy={isPending}>
+            <p role="status" className="mb-2 text-sm font-semibold text-primary">{isPending ? "Actualizando productos…" : ""}</p>
             <div className="mb-5 flex flex-col justify-between gap-3 rounded-[1.35rem] bg-white/66 px-4 py-3 shadow-soft sm:flex-row sm:items-center md:mb-6 md:rounded-[1.6rem] md:px-5 md:py-4">
               <div>
                 <p className="text-sm font-bold text-on-surface">
@@ -479,9 +468,9 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
               </div>
               <div className="flex flex-wrap gap-2">
                 {activeFilters.map((filter) => (
-                  <span key={filter} className="rounded-full bg-[#f7efe3] px-3 py-1 text-xs font-bold text-primary">
-                    {filter}
-                  </span>
+                  <button type="button" key={filter.key} onClick={filter.remove} disabled={isPending} aria-label={`Quitar ${filter.label}`} className="rounded-full bg-[#f7efe3] px-3 py-1 text-xs font-bold text-primary">
+                    {filter.label} <span aria-hidden="true">×</span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -490,9 +479,9 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
               <>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-7 xl:grid-cols-3">
                   {paginatedProducts.map((product, index) => (
-                    <ScrollReveal key={product.id} delayMs={Math.min(index * 45, 260)}>
-                      <ProductCard product={product} />
-                    </ScrollReveal>
+                    <div key={product.id}>
+                      <ProductCard product={product} eager={index < 3} sizes="(min-width: 1280px) 264px, (min-width: 1024px) calc((100vw - 440px) / 2), (min-width: 768px) calc((100vw - 132px) / 2), (min-width: 640px) calc((100vw - 96px) / 2), calc(100vw - 56px)" />
+                    </div>
                   ))}
                 </div>
 

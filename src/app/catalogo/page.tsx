@@ -1,8 +1,9 @@
+import { facetValues } from "@/lib/catalog-facets";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CatalogExperience } from "@/components/CatalogExperience";
 import { MetaEvent } from "@/components/MetaEvent";
-import { getStoreProductCollection, getStoreProductFilters } from "@/lib/woocommerce";
+import { getStoreCategories, getStoreProductCollection, getStoreProductFilters } from "@/lib/woocommerce";
 
 export const metadata: Metadata = {
   title: "Catálogo",
@@ -41,14 +42,18 @@ function getSort(value?: string) {
 
 export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const params = await searchParams;
+  const selectedCategories = facetValues(params.categoria);
+  const categories = selectedCategories.length ? await getStoreCategories() : [];
+  const categoryIds = categories.filter((category) => selectedCategories.includes(category.slug)).map((category) => category.id);
   const page = getPage(getParam(params, "page"));
   const [collection, filterOptions] = await Promise.all([
     getStoreProductCollection({
       page,
       perPage: 12,
+      category: selectedCategories.length ? categoryIds.join(",") || "0" : undefined,
       search: getParam(params, "q"),
-      size: getParam(params, "talle"),
-      color: getParam(params, "color"),
+      size: facetValues(params.talle),
+      color: facetValues(params.color),
       ...getPriceRange(getParam(params, "precio")),
       ...getSort(getParam(params, "orden")),
     }),

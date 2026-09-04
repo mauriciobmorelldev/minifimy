@@ -1,3 +1,4 @@
+import { facetValues } from "@/lib/catalog-facets";
 import type { Category, Product, ProductFilterOptions, ProductVariant } from "@/models/product";
 import { CACHE_SECONDS, CACHE_TAGS, normalizeBaseUrl } from "@/lib/cache";
 import { normalizeAndSortColors, normalizeAndSortSizes, normalizeColor, normalizeSize } from "@/lib/catalog-taxonomy";
@@ -63,8 +64,8 @@ export interface StoreProductQuery {
   perPage?: number;
   page?: number;
   search?: string;
-  size?: string;
-  color?: string;
+  size?: string | string[];
+  color?: string | string[];
   minPrice?: number;
   maxPrice?: number;
   order?: "asc" | "desc";
@@ -816,12 +817,6 @@ function mergeCatalogPriceSummary(product: Product, summary?: WooStoreProductSum
   };
 }
 
-async function hydrateCatalogProductPrices(products: Product[]) {
-  const summaries = await getCatalogPriceSummaries(products.map((product) => product.id));
-  const summariesById = new Map(summaries.map((summary) => [String(summary.id), summary]));
-  return products.map((product) => mergeCatalogPriceSummary(product, summariesById.get(product.id)));
-}
-
 async function getStoreProductVariations(productId: string, revalidate = CACHE_SECONDS.products) {
   if (!canUseWooCommerce()) return [];
 
@@ -952,64 +947,97 @@ function getProductQueryParams(options: StoreProductQuery = {}) {
   };
 }
 
+/** Resolve canonical storefront labels to Woo taxonomy term IDs, never to variations. */
+async function getFacetQuery(options: StoreProductQuery) {
+  const selected = [
+    { values: facetValues(options.size).map(normalizeSize), names: ["talle", "size", "edad"], normalize: normalizeSize },
+    { values: facetValues(options.color).map(normalizeColor), names: ["color", "tono", "colour"], normalize: normalizeColor },
+  ].filter((facet) => facet.values.length > 0);
+  const params = new URLSearchParams({ attribute_relation: "and" });
+  if (!selected.length) return params;
+  const attributes = await fetchWoo<WooProductAttribute[]>("products/attributes", { per_page: 100 }, CACHE_SECONDS.categories, [CACHE_TAGS.categories]);
+  for (const [index, facet] of selected.entries()) {
+    const attribute = attributes?.find((item) => facet.names.some((name) => normalizeFilterName(`${item.name} ${item.slug}`).includes(name)));
+    if (!attribute) return null;
+    const terms = await fetchWoo<WooProductAttributeTerm[]>(`products/attributes/${attribute.id}/terms`, { per_page: 100 }, CACHE_SECONDS.categories, [CACHE_TAGS.categories]);
+    const ids = (terms ?? []).filter((term) => facet.values.includes(facet.normalize(term.name))).map((term) => term.id);
+    // An unknown facet must not silently broaden the result set.
+    if (!ids.length) return null;
+    params.set(`attributes[${index}][attribute]`, attribute.slug.startsWith("pa_") ? attribute.slug : `pa_${attribute.slug}`);
+    params.set(`attributes[${index}][operator]`, "in");
+    ids.forEach((id) => params.append(`attributes[${index}][term_id][]`, String(id)));
+  }
+  return params;
+}
+
 export async function getStoreProductCollection(options: StoreProductQuery = {}): Promise<StoreProductCollection> {
-  const page = Math.max(1, Math.floor(options.page ?? 1));
-  const perPage = Math.min(Math.max(Math.floor(options.perPage ?? 12), 1), 100);
+  const page = Number.isFinite(options.page) ? Math.max(1, Math.floor(options.page!)) : 1;
+  const perPage = Number.isFinite(options.perPage) ? Math.min(Math.max(Math.floor(options.perPage!), 1), 100) : 12;
+  const empty = { products: [], total: 0, totalPages: 1, page, perPage };
+  const sizes = facetValues(options.size).map(normalizeSize);
+  const colors = facetValues(options.color).map(normalizeColor);
 
   if (!canUseWooCommerce()) {
-    const total = fallbackProducts.length;
-    const start = (page - 1) * perPage;
-    return {
-      products: fallbackProducts.slice(start, start + perPage),
-      total,
-      totalPages: Math.max(1, Math.ceil(total / perPage)),
-      page,
-      perPage,
-    };
-  }
-
-  const needsLocalPagination = Boolean(options.size || options.color);
-  const requestPage = needsLocalPagination ? 1 : page;
-  const requestPerPage = needsLocalPagination ? 100 : perPage;
-  const response = await fetchWooResponse(
-    "products",
-    getProductQueryParams({ ...options, page: requestPage, perPage: requestPerPage }),
-    CACHE_SECONDS.products,
-    [CACHE_TAGS.products]
-  );
-
-  if (!response) {
-    return { products: [], total: 0, totalPages: 1, page, perPage };
-  }
-
-  const data = (await response.json().catch(() => [])) as WooProduct[];
-  const mediaSources = await getMediaSources(data.flatMap((product) => product.images ?? []));
-  let products = await hydrateCatalogProductPrices(data.map((product) => mapWooProduct(product, mediaSources)));
-  products = products.filter((product) => product.price > 1 || Boolean(product.prices?.list || product.prices?.discount));
-
-  if (options.size) {
-    products = products.filter((product) => product.sizes?.includes(options.size!));
-  }
-
-  if (options.color) {
-    products = products.filter((product) => product.colors?.includes(options.color!));
-  }
-
-  if (needsLocalPagination) {
+    const categoryIds = options.category?.split(",") ?? [];
+    let products = fallbackProducts.filter((product) =>
+      (!categoryIds.length || categoryIds.some((id) => product.categoryId === id || product.categoryIds?.includes(id))) &&
+      (!sizes.length || product.sizes?.some((size) => sizes.includes(normalizeSize(size)))) &&
+      (!colors.length || product.colors?.some((color) => colors.includes(normalizeColor(color)))) &&
+      (!options.search || normalizeFilterName(`${product.name} ${product.description}`).includes(normalizeFilterName(options.search))) &&
+      (options.minPrice === undefined || (product.prices?.list ?? product.price) >= options.minPrice) &&
+      (options.maxPrice === undefined || (product.prices?.list ?? product.price) <= options.maxPrice)
+    );
+    if (options.orderby === "price" || options.orderby === "title") {
+      products = [...products].sort((a, b) => (options.orderby === "price"
+        ? (a.prices?.list ?? a.price) - (b.prices?.list ?? b.price)
+        : a.name.localeCompare(b.name, "es")) * (options.order === "desc" ? -1 : 1));
+    }
     const total = products.length;
-    const start = (page - 1) * perPage;
-    return {
-      products: products.slice(start, start + perPage),
-      total,
-      totalPages: Math.max(1, Math.ceil(total / perPage)),
-      page,
-      perPage,
-    };
+    return { products: products.slice((page - 1) * perPage, page * perPage), total, totalPages: Math.max(1, Math.ceil(total / perPage)), page, perPage };
   }
 
-  const total = Number(response.headers.get("x-wp-total") ?? products.length);
-  const totalPages = Number(response.headers.get("x-wp-totalpages") ?? Math.max(1, Math.ceil(total / perPage)));
+  let summaries: WooStoreProductSummary[] | undefined;
+  let filteredTotal: number | undefined;
+  let filteredPages: number | undefined;
+  let query = getProductQueryParams({ ...options, page, perPage });
+  if (sizes.length || colors.length || options.category?.includes(",")) {
+    const params = await getFacetQuery(options);
+    if (!params) return empty;
+    params.set("page", String(page));
+    params.set("per_page", String(perPage));
+    params.set("minifimy_price_contract", CATALOG_PRICE_CONTRACT_VERSION);
+    if (options.category) params.set("category", options.category);
+    if (options.search) params.set("search", options.search);
+    if (options.featured) params.set("featured", "true");
+    if (options.order) params.set("order", options.order);
+    if (options.orderby) params.set("orderby", options.orderby);
+    // MiniFimy sells in ARS: the Store API expects centavos for price filters.
+    if (options.minPrice !== undefined) params.set("min_price", String(Math.round(options.minPrice * 100)));
+    if (options.maxPrice !== undefined) params.set("max_price", String(Math.round(options.maxPrice * 100)));
+    const url = buildWordPressUrl(`wp-json/wc/store/v1/products?${params}`);
+    if (!url) return empty;
+    const response = await fetch(url, { next: { revalidate: CACHE_SECONDS.products, tags: [CACHE_TAGS.products, CACHE_TAGS.categories] }, signal: AbortSignal.timeout(12000) }).catch(() => null);
+    if (!response?.ok) return empty;
+    summaries = await response.json().catch(() => []) as WooStoreProductSummary[];
+    if (!summaries.length) return empty;
+    filteredTotal = Number(response.headers.get("x-wp-total") ?? summaries.length);
+    filteredPages = Number(response.headers.get("x-wp-totalpages") ?? Math.ceil(filteredTotal / perPage));
+    // Hydrate only this page, in Store API order. Keep the established price/meta contract.
+    query = { per_page: perPage, page: 1, status: "publish", _fields: WOO_PRODUCT_FIELDS, include: summaries.map((item) => item.id).join(","), orderby: "include" } as typeof query;
+  }
 
+  const response = await fetchWooResponse("products", query, CACHE_SECONDS.products, [CACHE_TAGS.products]);
+  if (!response) return empty;
+  const data = (await response.json().catch(() => [])) as WooProduct[];
+  const [mediaSources, priceSummaries] = await Promise.all([
+    getMediaSources(data.flatMap((product) => product.images ?? [])),
+    summaries ? Promise.resolve(summaries) : getCatalogPriceSummaries(data.map((product) => String(product.id))),
+  ]);
+  const summariesById = new Map(priceSummaries.map((summary) => [String(summary.id), summary]));
+  const products = data.map((product) => mergeCatalogPriceSummary(mapWooProduct(product, mediaSources), summariesById.get(String(product.id))))
+    .filter((product) => product.price > 1 || Boolean(product.prices?.list || product.prices?.discount));
+  const total = filteredTotal ?? Number(response.headers.get("x-wp-total") ?? products.length);
+  const totalPages = filteredPages ?? Number(response.headers.get("x-wp-totalpages") ?? Math.ceil(total / perPage));
   return { products, total, totalPages: Math.max(1, totalPages), page, perPage };
 }
 

@@ -37,7 +37,6 @@ export function HomeHeroCarousel() {
     let context: { revert: () => void } | undefined;
     let cancelled = false;
     let started = false;
-    let fallbackTimer: number | undefined;
 
     fimy.style.opacity = "0";
     fimy.style.visibility = "hidden";
@@ -49,7 +48,6 @@ export function HomeHeroCarousel() {
     const playHeroAnimation = () => {
       if (started || cancelled) return;
       started = true;
-      if (fallbackTimer) window.clearTimeout(fallbackTimer);
 
       void import("gsap").then(({ gsap }) => {
         if (cancelled) return;
@@ -89,18 +87,10 @@ export function HomeHeroCarousel() {
       });
     };
 
-    const loaderIsVisible = document.querySelector(".intro-loader");
-    if (loaderIsVisible) {
-      window.addEventListener("minifimy:intro-complete", playHeroAnimation, { once: true });
-      fallbackTimer = window.setTimeout(playHeroAnimation, 2700);
-    } else {
-      playHeroAnimation();
-    }
+    playHeroAnimation();
 
     return () => {
       cancelled = true;
-      window.removeEventListener("minifimy:intro-complete", playHeroAnimation);
-      if (fallbackTimer) window.clearTimeout(fallbackTimer);
       context?.revert();
     };
   }, []);
@@ -153,8 +143,8 @@ export function HomeHeroCarousel() {
             fill
             sizes="(min-width: 1280px) 1280px, (min-width: 640px) calc(100vw - 4rem), calc(100vw - 2.5rem)"
             className={`home-banner-image object-cover ${index === activeSlide ? "is-active" : ""}`}
-            priority={index === 0}
-            unoptimized
+            preload={index === 0}
+            quality={75}
             aria-hidden={index !== activeSlide}
           />
         ))}
