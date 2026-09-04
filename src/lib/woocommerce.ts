@@ -999,7 +999,11 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
   let summaries: WooStoreProductSummary[] | undefined;
   let filteredTotal: number | undefined;
   let filteredPages: number | undefined;
-  let query = getProductQueryParams({ ...options, page, perPage });
+  // The API can preserve an explicit ID order; this is not a storefront sort option.
+  let query: Omit<ReturnType<typeof getProductQueryParams>, "orderby"> & {
+    include?: string;
+    orderby?: StoreProductQuery["orderby"] | "include";
+  } = getProductQueryParams({ ...options, page, perPage });
   if (sizes.length || colors.length || options.category?.includes(",")) {
     const params = await getFacetQuery(options);
     if (!params) return empty;
@@ -1023,7 +1027,7 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
     filteredTotal = Number(response.headers.get("x-wp-total") ?? summaries.length);
     filteredPages = Number(response.headers.get("x-wp-totalpages") ?? Math.ceil(filteredTotal / perPage));
     // Hydrate only this page, in Store API order. Keep the established price/meta contract.
-    query = { per_page: perPage, page: 1, status: "publish", _fields: WOO_PRODUCT_FIELDS, include: summaries.map((item) => item.id).join(","), orderby: "include" } as typeof query;
+    query = { per_page: perPage, page: 1, status: "publish", _fields: WOO_PRODUCT_FIELDS, include: summaries.map((item) => item.id).join(","), orderby: "include" };
   }
 
   const response = await fetchWooResponse("products", query, CACHE_SECONDS.products, [CACHE_TAGS.products]);
