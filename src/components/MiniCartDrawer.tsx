@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useCart } from "@/context/cart-context";
 
 interface MiniCartDrawerProps {
@@ -17,10 +17,20 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
     [items],
   );
 
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
   return (
     <div
-      className={`fixed inset-0 z-[70] transition ${open ? "pointer-events-auto" : "pointer-events-none"}`}
+      className={`fixed inset-0 z-[100] transition ${open ? "pointer-events-auto" : "pointer-events-none"}`}
       aria-hidden={!open}
+      inert={!open}
     >
       <button
         type="button"
@@ -32,14 +42,14 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
       />
 
       <aside
-        className={`absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-[#fffaf1] shadow-[0_24px_80px_rgba(49,43,30,0.22)] transition-transform duration-500 ease-soft-spring ${
+        className={`absolute right-0 top-0 flex h-dvh w-full max-w-md flex-col bg-[#fffaf1] shadow-[0_24px_80px_rgba(49,43,30,0.22)] transition-transform duration-500 ease-soft-spring ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
         aria-modal="true"
         aria-label="Mini carrito"
       >
-        <header className="border-b border-outline-variant/30 px-6 py-5">
+        <header className="shrink-0 border-b border-outline-variant/30 px-6 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
           <div className="flex items-start justify-between gap-4">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
@@ -57,16 +67,16 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary shadow-soft transition-transform hover:scale-105"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-soft transition-transform hover:scale-105"
               aria-label="Cerrar carrito"
             >
-              <span className="material-symbols-outlined">close</span>
+              <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m6 6 12 12M18 6 6 18" /></svg>
             </button>
           </div>
         </header>
 
         {items.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-8 text-center">
             <div className="mb-6 rounded-[2rem] bg-[#eadfcb] p-8">
               <Image
                 src="/brand/illustrations/jirafa.svg"
@@ -93,7 +103,7 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
           </div>
         ) : (
           <>
-            <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-6 py-5">
               {items.map((item) => (
                 <article
                   key={item.id}
@@ -154,7 +164,7 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
               ))}
             </div>
 
-            <footer className="border-t border-outline-variant/30 bg-white/72 px-6 py-5">
+            <footer className="shrink-0 border-t border-outline-variant/30 bg-white/72 px-6 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
               <div className="mb-4 flex items-center justify-between font-headline text-xl font-extrabold">
                 <span>Total</span>
                 <span className="text-primary">AR$ {total.toLocaleString("es-AR")}</span>
