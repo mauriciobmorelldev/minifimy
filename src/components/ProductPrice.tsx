@@ -9,7 +9,7 @@ interface ProductPriceProps {
 }
 
 function formatPrice(value: number) {
-  return `$$${Math.round(value).toLocaleString("es-AR")}`;
+  return `$${Math.round(value).toLocaleString("es-AR")}`;
 }
 
 function formatInstallment(value: number) {
@@ -17,7 +17,7 @@ function formatInstallment(value: number) {
 }
 
 function formatRoundedInstallment(value: number) {
-  return `${Math.round(value).toLocaleString("es-AR")}`;
+  return `$${Math.round(value).toLocaleString("es-AR")}`;
 }
 
 export function getDisplayPrice(price: number, prices?: ProductPriceSet) {

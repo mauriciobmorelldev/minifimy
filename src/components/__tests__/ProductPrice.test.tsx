@@ -1,4 +1,5 @@
-import { getDisplayPrice } from "@/components/ProductPrice";
+import { render, screen } from "@testing-library/react";
+import { getDisplayPrice, ProductPrice } from "@/components/ProductPrice";
 
 describe("getDisplayPrice", () => {
   it("keeps the configured list price above the transfer price", () => {
@@ -17,5 +18,18 @@ describe("getDisplayPrice", () => {
       finalPrice: 14_900,
       hasDiscount: false,
     });
+  });
+});
+
+describe("ProductPrice", () => {
+  it("renders every monetary amount with a single currency symbol", () => {
+    const { container } = render(
+      <ProductPrice price={24_010} prices={{ base: 24_010, list: 34_300, discount: 24_010 }} />,
+    );
+
+    expect(screen.getByText("Precio de lista: $34.300")).toBeInTheDocument();
+    expect(screen.getByText("Precio por transferencia: $24.010")).toBeInTheDocument();
+    expect(screen.getByText("3 cuotas sin interés de $11.433")).toBeInTheDocument();
+    expect(container.textContent).not.toContain("$$");
   });
 });
