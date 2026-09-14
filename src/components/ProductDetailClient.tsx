@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ProductGallery } from "@/components/ProductGallery";
+import { ProductInfoModal } from "@/components/ProductInfoModal";
 import { ProductPrice } from "@/components/ProductPrice";
 import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
 import { productIsInStock, variantIsInStock } from "@/lib/product-stock";
@@ -88,6 +89,7 @@ function getInitialSelection(product: Product): ProductSelection {
 
 export function ProductDetailClient({ product, categoryName }: ProductDetailClientProps) {
   const [selection, setSelection] = useState<ProductSelection>(() => getInitialSelection(product));
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const selectedVariant = useMemo(() => {
     return product.variants?.find((variant) => variantMatchesSelection(variant, selection));
@@ -120,9 +122,9 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
           <h1 className="font-headline text-[2.15rem] font-bold leading-tight text-on-surface md:text-4xl">
             {product.name}
           </h1>
-          <div className="mt-4 flex items-center justify-between gap-4">
-            <ProductPrice price={selectedPrice} prices={selectedPrices} />
-            <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-bold text-on-primary-container">
+          <div className="mt-4 flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+            <ProductPrice price={selectedPrice} prices={selectedPrices} onShowPaymentMethods={() => setPaymentModalOpen(true)} />
+            <span className="shrink-0 rounded-full bg-primary-container px-3 py-1 text-xs font-bold text-on-primary-container">
               {selectedStock > 0 ? "Stock disponible" : "Sin stock"}
             </span>
           </div>
@@ -130,32 +132,6 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
 
         <ProductPurchasePanel product={product} selection={selection} onSelectionChange={setSelection} selectedVariant={selectedVariant} />
 
-        <div className="grid gap-3 rounded-[1.5rem] bg-surface-container-low p-5 md:p-6">
-          <div className="flex items-start gap-4">
-            <span className="material-symbols-outlined text-primary">local_shipping</span>
-            <div>
-              <h2 className="text-sm font-bold">Envíos a todo el país</h2>
-              <p className="text-sm leading-6 text-on-surface-variant">
-                Consultá modalidades, costos, plazos y seguimiento antes de finalizar.
-              </p>
-              <a href="/envios-y-cambios" className="mt-2 inline-flex text-xs font-bold text-secondary underline underline-offset-4">
-                Ver envíos y cambios
-              </a>
-            </div>
-          </div>
-          <div className="flex items-start gap-4 border-t border-outline-variant/10 pt-4">
-            <span className="material-symbols-outlined text-primary">support_agent</span>
-            <div>
-              <h2 className="text-sm font-bold">¿Dudas con el talle?</h2>
-              <p className="text-sm leading-6 text-on-surface-variant">
-                Escribinos por WhatsApp y te ayudamos a elegir antes de comprar.
-              </p>
-              <a href="/contacto" className="mt-2 inline-flex text-xs font-bold text-secondary underline underline-offset-4">
-                Hablar con MiniFimy
-              </a>
-            </div>
-          </div>
-        </div>
 
         <section aria-labelledby="product-details-title" className="overflow-hidden rounded-[1.5rem] bg-white/72 shadow-soft">
           <h2 id="product-details-title" className="border-b border-primary/10 px-5 py-4 font-headline text-xl font-extrabold text-on-surface">
@@ -205,21 +181,35 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
               <p className="mt-4 whitespace-pre-line text-sm leading-7 text-on-surface-variant">{product.includes}</p>
             </details>
           )}
-          <details className="group p-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between font-headline text-lg font-extrabold">
-              Envíos y cambios
-              <span className="material-symbols-outlined transition group-open:rotate-180">expand_more</span>
-            </summary>
-            <p className="mt-4 text-sm leading-7 text-on-surface-variant">
-              Revisá las condiciones vigentes y aprobadas antes de confirmar tu pedido.
-            </p>
-            <a href="/envios-y-cambios" className="mt-3 inline-flex text-sm font-bold text-secondary underline underline-offset-4">
-              Consultar condiciones
-            </a>
-          </details>
           </div>
         </section>
       </div>
+
+      <ProductInfoModal open={paymentModalOpen} title="Medios de pago" onClose={() => setPaymentModalOpen(false)}>
+        <div className="space-y-5">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-primary" aria-hidden="true">credit_card</span>
+            <div>
+              <h3 className="font-bold text-on-surface">Tarjetas de crédito</h3>
+              <p className="mt-1 text-sm leading-6 text-on-surface-variant">Hasta 3 cuotas sin interés a través de Mercado Pago.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-[#009ee3]" aria-hidden="true">account_balance_wallet</span>
+            <div>
+              <h3 className="font-bold text-on-surface">Mercado Pago</h3>
+              <p className="mt-1 text-sm leading-6 text-on-surface-variant">Pagá con los medios de pago disponibles en tu cuenta.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-primary" aria-hidden="true">account_balance</span>
+            <div>
+              <h3 className="font-bold text-on-surface">Transferencia bancaria</h3>
+              <p className="mt-1 text-sm leading-6 text-on-surface-variant">30% de descuento abonando por transferencia.</p>
+            </div>
+          </div>
+        </div>
+      </ProductInfoModal>
     </>
   );
 }

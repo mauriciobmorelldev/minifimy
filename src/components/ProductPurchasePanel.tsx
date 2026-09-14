@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { ProductInfoModal, WhatsAppIcon } from "@/components/ProductInfoModal";
 import { ProductPrice } from "@/components/ProductPrice";
 import { productNeedsOptions } from "@/lib/product-options";
 import { productIsInStock, variantIsInStock } from "@/lib/product-stock";
@@ -12,6 +13,13 @@ interface ProductPurchasePanelProps {
   selection?: ProductSelection;
   onSelectionChange?: (selection: ProductSelection) => void;
   selectedVariant?: ProductVariant;
+}
+
+const whatsappPhone = process.env.NEXT_PUBLIC_STORE_WHATSAPP_PHONE ?? "5493794004299";
+
+function getWhatsAppUrl(message: string) {
+  const phone = whatsappPhone.replace(/[^0-9]/g, "");
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 
 function colorValue(color: string) {
@@ -82,6 +90,7 @@ function findCompatibleVariant(
 
 export function ProductPurchasePanel({ product, selection: controlledSelection, onSelectionChange, selectedVariant }: ProductPurchasePanelProps) {
   const [quantity, setQuantity] = useState(1);
+  const [openModal, setOpenModal] = useState<"size" | "shipping" | null>(null);
   const selectedSize = controlledSelection?.size ?? product.sizes?.[0] ?? "";
   const selectedColor = controlledSelection?.color ?? product.colors?.[0] ?? "";
   const selectedModel = controlledSelection?.model ?? product.models?.[0] ?? "";
@@ -125,7 +134,7 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
       {product.sizes && product.sizes.length > 0 && (
         <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
           <span className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-            Elegí talle
+            Elegí tu talle
           </span>
           <div className="flex flex-wrap items-center gap-2">
             {product.sizes.map((size) => (
@@ -143,13 +152,20 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={() => setOpenModal("size")}
+            className="inline-flex text-sm font-semibold text-secondary underline underline-offset-4"
+          >
+            Guía de talles
+          </button>
         </div>
       )}
 
       {product.colors && product.colors.length > 0 && (
         <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
           <span className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-            Elegí color
+            Elegí tu color
           </span>
           <div className="flex flex-wrap items-center gap-2">
             {product.colors.map((color) => (
@@ -195,10 +211,7 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
         </div>
       )}
       <div className="flex items-center justify-between gap-4 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Cantidad</span>
-          <p className="text-sm text-on-surface-variant">Sumalo al bolso con las opciones elegidas.</p>
-        </div>
+        <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Cantidad</span>
         <div className="flex items-center gap-3 rounded-full bg-[#fbf4ea] px-3 py-2">
           <button
             type="button"
@@ -240,9 +253,81 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
         disabled={missingRequiredOptions || !selectedInStock}
         className="w-full gap-3 rounded-full bg-primary py-4 font-headline text-base text-on-primary shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-55 md:py-5 md:text-lg"
       >
-        <span className="material-symbols-outlined">shopping_bag</span>
-        {!selectedInStock ? "Sin stock" : missingRequiredOptions ? "Elegí una opción disponible" : "Agregar al bolso"}
+        <span className="material-symbols-outlined">shopping_cart</span>
+        {!selectedInStock ? "Sin stock" : missingRequiredOptions ? "Elegí una opción disponible" : "Agregar al carrito"}
       </AddToCartButton>
+
+      <div className="rounded-[1.5rem] bg-surface-container-low p-5 shadow-soft">
+        <div className="flex items-start gap-3">
+          <span className="material-symbols-outlined text-primary" aria-hidden="true">local_shipping</span>
+          <div>
+            <p className="text-sm font-bold text-on-surface">Envíos a todo el país por Correo Argentino</p>
+            <button
+              type="button"
+              onClick={() => setOpenModal("shipping")}
+              className="mt-2 text-sm font-semibold text-secondary underline underline-offset-4"
+            >
+              Ver envíos y cambios
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <ProductInfoModal open={openModal === "size"} title="Guía de talles" onClose={() => setOpenModal(null)}>
+        <div className="overflow-hidden rounded-[1.15rem] border border-primary/10">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-primary-container text-on-primary-container">
+              <tr>
+                <th className="px-4 py-3 font-bold">Talle</th>
+                <th className="px-4 py-3 font-bold">Edad aprox.</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-primary/10">
+              {[
+                ["1", "0–3 meses"],
+                ["2", "3–6 meses"],
+                ["3", "6–9 meses"],
+                ["4", "9–12 meses"],
+                ["5", "12–18 meses"],
+                ["6", "18–24 meses"],
+              ].map(([size, age]) => (
+                <tr key={size}>
+                  <td className="px-4 py-2.5 font-bold text-primary">{size}</td>
+                  <td className="px-4 py-2.5 text-on-surface-variant">{age}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-4 text-sm leading-6 text-on-surface-variant">Las equivalencias son orientativas y pueden variar según la prenda.</p>
+        <h3 className="mt-5 font-headline text-lg font-extrabold text-primary">¿Tenés dudas con el talle?</h3>
+        <p className="mt-2 text-sm leading-6 text-on-surface-variant">
+          Escribinos y te ayudamos a elegir. También podemos pasarte las medidas de la prenda que te gustó.
+        </p>
+        <a href={getWhatsAppUrl("Hola MiniFimy 🤎 Tengo una duda con el talle de una prenda. ¿Me ayudan a elegir?")} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-on-primary shadow-soft transition hover:brightness-110">
+          <WhatsAppIcon />
+          Consultar talle
+        </a>
+      </ProductInfoModal>
+
+      <ProductInfoModal open={openModal === "shipping"} title="Envíos y cambios" onClose={() => setOpenModal(null)}>
+        <section>
+          <h3 className="font-headline text-lg font-extrabold text-primary">Envíos</h3>
+          <p className="mt-3 text-sm leading-6 text-on-surface-variant">Realizamos envíos a todo el país por Correo Argentino.</p>
+          <p className="mt-2 text-sm leading-6 text-on-surface-variant">
+            Por el momento, coordinamos el envío después de la compra. Si querés conocer el costo antes de comprar, escribinos por WhatsApp y te lo cotizamos.
+          </p>
+          <a href={getWhatsAppUrl("Hola MiniFimy 🤎 Quiero consultar el costo de envío antes de realizar mi compra.")} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-on-primary shadow-soft transition hover:brightness-110">
+            <WhatsAppIcon />
+            Consultar costo de envío
+          </a>
+        </section>
+        <section className="mt-6 border-t border-primary/10 pt-6">
+          <h3 className="font-headline text-lg font-extrabold text-primary">Cambios</h3>
+          <p className="mt-3 text-sm leading-6 text-on-surface-variant">Podés solicitar un cambio siempre que la prenda se encuentre sin uso y en perfectas condiciones.</p>
+          <p className="mt-2 text-sm leading-6 text-on-surface-variant">Para realizar un cambio, contactanos y te indicamos los pasos a seguir.</p>
+        </section>
+      </ProductInfoModal>
     </div>
   );
 }

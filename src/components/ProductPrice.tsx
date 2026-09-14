@@ -5,14 +5,19 @@ interface ProductPriceProps {
   prices?: ProductPriceSet;
   compact?: boolean;
   className?: string;
+  onShowPaymentMethods?: () => void;
 }
 
 function formatPrice(value: number) {
-  return `$${Math.round(value).toLocaleString("es-AR")}`;
+  return `$$${Math.round(value).toLocaleString("es-AR")}`;
 }
 
 function formatInstallment(value: number) {
   return `$${value.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatRoundedInstallment(value: number) {
+  return `${Math.round(value).toLocaleString("es-AR")}`;
 }
 
 export function getDisplayPrice(price: number, prices?: ProductPriceSet) {
@@ -27,7 +32,7 @@ export function getDisplayPrice(price: number, prices?: ProductPriceSet) {
   return { listPrice: cardPrice, finalPrice: transferPrice ?? cardPrice, transferPrice, hasDiscount, discountPercent, installmentAmount };
 }
 
-export function ProductPrice({ price, prices, compact = false, className = "" }: ProductPriceProps) {
+export function ProductPrice({ price, prices, compact = false, className = "", onShowPaymentMethods }: ProductPriceProps) {
   const { listPrice, finalPrice, transferPrice, hasDiscount, discountPercent, installmentAmount } = getDisplayPrice(price, prices);
 
   if (compact) {
@@ -51,35 +56,29 @@ export function ProductPrice({ price, prices, compact = false, className = "" }:
 
   return (
     <section className={`space-y-2 ${className}`} aria-label="Precios y formas de pago">
+      <p className="font-headline text-lg font-bold leading-none text-primary/80 md:text-xl">
+        Precio de lista: {formatPrice(listPrice)}
+      </p>
       {hasDiscount && (
-        <div className="font-headline text-lg font-bold leading-none text-primary/80 md:text-xl">
-          {formatPrice(listPrice)}
-        </div>
+        <p className="font-headline text-[1.8rem] font-extrabold leading-none text-secondary md:text-[2.15rem]">
+          Precio por transferencia: {formatPrice(transferPrice!)}
+        </p>
       )}
 
-      <div className={`font-headline font-extrabold leading-none text-secondary ${hasDiscount ? "text-[2.25rem] md:text-[2.7rem]" : "text-[1.95rem] md:text-[2.35rem]"}`}>
-        {hasDiscount ? (
-          <>
-            {formatPrice(transferPrice!)}
-            <span className="ml-2 align-middle text-base font-extrabold text-secondary/80 md:text-lg">con Transferencia</span>
-          </>
-        ) : (
-          formatPrice(listPrice)
-        )}
-      </div>
-
       <div className="space-y-1 pt-1 text-sm text-on-surface-variant">
-        <p className="font-medium">3 x {formatInstallment(installmentAmount)} sin interés</p>
+        <p className="font-medium">3 cuotas sin interés de {formatRoundedInstallment(installmentAmount)}</p>
         {hasDiscount && (
           <p className="font-medium text-primary">
-            {discountPercent}% de descuento pagando con Transferencia
+            {discountPercent}% de descuento pagando por transferencia
           </p>
         )}
       </div>
 
-      <button type="button" className="text-sm font-semibold text-secondary underline underline-offset-4">
-        Ver medios de pago
-      </button>
+      {onShowPaymentMethods && (
+        <button type="button" onClick={onShowPaymentMethods} className="text-sm font-semibold text-secondary underline underline-offset-4">
+          Ver medios de pago
+        </button>
+      )}
     </section>
   );
 }
