@@ -46,4 +46,16 @@ describe("Header search", () => {
     await user.click(searchButton);
     expect(screen.getByRole("textbox", { name: "Buscar productos" })).toHaveFocus();
   });
+
+  it("closes when the customer clicks outside the search panel", async () => {
+    const user = userEvent.setup();
+    render(<Header navLinks={[]} />);
+
+    const searchButton = screen.getAllByRole("button", { name: "Buscar" })[0];
+    await user.click(searchButton);
+    await waitFor(() => expect(searchButton).toHaveAttribute("aria-expanded", "true"));
+
+    await user.click(document.body);
+    expect(searchButton).toHaveAttribute("aria-expanded", "false");
+  });
 });

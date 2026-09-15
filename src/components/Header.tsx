@@ -26,7 +26,10 @@ export function Header({ navLinks }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [miniCartOpen, setMiniCartOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const desktopSearchButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileSearchButtonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchPanelRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
   const suggestions = useProductSuggestions(query, searchOpen);
@@ -52,8 +55,26 @@ export function Header({ navLinks }: HeaderProps) {
 
   useEffect(() => {
     if (!searchOpen) return;
+
     const animationFrame = window.requestAnimationFrame(() => searchInputRef.current?.focus());
-    return () => window.cancelAnimationFrame(animationFrame);
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (
+        searchPanelRef.current?.contains(target) ||
+        desktopSearchButtonRef.current?.contains(target) ||
+        mobileSearchButtonRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      setSearchOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
   }, [searchOpen]);
 
   const openAndFocusSearch = () => {
@@ -172,6 +193,7 @@ export function Header({ navLinks }: HeaderProps) {
 
           <div className="hidden items-center gap-5 text-primary md:flex">
             <button
+              ref={desktopSearchButtonRef}
               type="button"
               onClick={openAndFocusSearch}
               className="scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
@@ -211,6 +233,7 @@ export function Header({ navLinks }: HeaderProps) {
 
           <div className="flex items-center gap-3 text-primary md:hidden">
             <button
+              ref={mobileSearchButtonRef}
               type="button"
               onClick={openAndFocusSearch}
               className="relative flex h-10 w-10 scale-95 items-center justify-center rounded-full bg-[#fffaf1] shadow-soft transition-transform duration-200 ease-soft-spring active:scale-90"
@@ -235,6 +258,7 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
 
           <div
+            ref={searchPanelRef}
             className={`absolute left-6 right-6 top-full z-40 overflow-hidden rounded-[1.5rem] bg-white shadow-lift transition-all duration-300 md:left-auto md:right-6 md:w-[420px] ${
               searchOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
             }`}
