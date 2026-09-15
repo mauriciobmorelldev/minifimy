@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
   const query = normalize(searchParams.get("q")?.trim() ?? "");
   const category = searchParams.get("categoria")?.trim();
   const requestedLimit = Number(searchParams.get("limit") ?? 0);
+  const suggestionsOnly = searchParams.get("suggestions") === "1";
+  const recommendations = searchParams.get("recommendations") === "1";
   const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(Math.trunc(requestedLimit), 0), 12) : 0;
   const products = await getStoreProducts({ perPage: 100 });
 
@@ -30,5 +32,24 @@ export async function GET(request: NextRequest) {
     return matchesCategory && (!query || haystack.includes(query));
   });
 
-  return NextResponse.json({ products: limit ? filteredProducts.slice(0, limit) : filteredProducts });
+  const availableProducts = recommendations
+    ? filteredProducts.filter((product) => product.stockStatus !== "outofstock" && product.stock !== 0)
+    : filteredProducts;
+  const limitedProducts = limit ? availableProducts.slice(0, limit) : availableProducts;
+
+  if (suggestionsOnly) {
+    return NextResponse.json({
+      products: limitedProducts.map((product) => ({
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        image: product.images[0] ?? "/brand/illustrations/jirafa.svg",
+        category: product.category,
+        price: product.price,
+        prices: product.prices,
+      })),
+    });
+  }
+
+  return NextResponse.json({ products: limitedProducts });
 }

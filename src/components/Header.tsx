@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { MiniCartDrawer } from "@/components/MiniCartDrawer";
+import { ProductSearchSuggestions } from "@/components/ProductSearchSuggestions";
 import { useCart } from "@/context/cart-context";
 import { useProductSuggestions } from "@/hooks/use-product-suggestions";
 
@@ -32,7 +33,7 @@ export function Header({ navLinks }: HeaderProps) {
   const searchPanelRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
-  const suggestions = useProductSuggestions(query, searchOpen);
+  const suggestions = useProductSuggestions(query, searchOpen, true);
   const hiddenRoutes = ["/cargando-70", "/cargando-99"];
   const closeMobileMenu = () => {
     setMobileOpen(false);
@@ -279,22 +280,12 @@ export function Header({ navLinks }: HeaderProps) {
                   Buscar
                 </button>
               </div>
-              {suggestions.length > 0 && (
-                <ul className="mt-2 overflow-hidden rounded-[1.1rem] border border-primary/10 bg-[#fffaf1]" aria-label="Sugerencias de productos">
-                  {suggestions.map((product) => (
-                    <li key={product.id}>
-                      <Link
-                        href={`/producto/${product.slug}`}
-                        onClick={() => setSearchOpen(false)}
-                        className="flex items-center justify-between gap-3 border-b border-primary/10 px-4 py-3 text-sm font-bold text-on-surface transition last:border-b-0 hover:bg-[#f7efe3] hover:text-secondary"
-                      >
-                        <span className="line-clamp-1">{product.name}</span>
-                        <span className="material-symbols-outlined text-base text-primary">arrow_forward</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <ProductSearchSuggestions
+                suggestions={suggestions}
+                query={query}
+                onSelect={() => setSearchOpen(false)}
+                className="mt-2"
+              />
               <p className="px-4 pb-2 pt-3 text-xs text-on-surface-variant">
                 Fimy puede ayudarte a encontrar regalos, tejidos y prendas para recién nacido.
               </p>

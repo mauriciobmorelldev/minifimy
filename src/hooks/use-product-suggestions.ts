@@ -1,27 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ProductPriceSet } from "@/models/product";
 
 export interface ProductSuggestion {
   id: string;
   name: string;
   slug: string;
+  image: string;
+  category: string;
+  price: number;
+  prices?: ProductPriceSet;
 }
 
 export const PRODUCT_SUGGESTION_MIN_LENGTH = 3;
 
-export function getProductSuggestionRequestUrl(query: string) {
+export function getProductSuggestionRequestUrl(query: string, recommendWhenShort = false) {
   const normalized = query.trim();
-  if (normalized.length < PRODUCT_SUGGESTION_MIN_LENGTH) return null;
-  return `/api/productos?q=${encodeURIComponent(normalized)}&limit=6`;
+  if (normalized.length < PRODUCT_SUGGESTION_MIN_LENGTH) {
+    return recommendWhenShort ? "/api/productos?suggestions=1&recommendations=1&limit=4" : null;
+  }
+  return `/api/productos?q=${encodeURIComponent(normalized)}&suggestions=1&limit=4`;
 }
 
-export function useProductSuggestions(query: string, enabled = true) {
+export function useProductSuggestions(query: string, enabled = true, recommendWhenShort = false) {
   const [result, setResult] = useState<{
     requestUrl: string;
     suggestions: ProductSuggestion[];
   }>({ requestUrl: "", suggestions: [] });
-  const requestUrl = enabled ? getProductSuggestionRequestUrl(query) : null;
+  const requestUrl = enabled ? getProductSuggestionRequestUrl(query, recommendWhenShort) : null;
 
   useEffect(() => {
     if (!requestUrl) return;

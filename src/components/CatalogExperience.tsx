@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { catalogUrl, facetValues, toggleFacet, type CatalogSelection } from "@/lib/catalog-facets";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductSearchSuggestions } from "@/components/ProductSearchSuggestions";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { useProductSuggestions } from "@/hooks/use-product-suggestions";
 import type { Category, Product, ProductFilterOptions } from "@/models/product";
@@ -57,7 +57,8 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
   const [priceRange, setPriceRange] = useState(searchParams.get("precio") ?? "all");
   const [sort, setSort] = useState(searchParams.get("orden") ?? "featured");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const suggestions = useProductSuggestions(query);
+  const [searchActive, setSearchActive] = useState(false);
+  const suggestions = useProductSuggestions(query, searchActive, true);
 
   useEffect(() => {
     setQuery(searchParams.get("q") ?? "");
@@ -186,6 +187,10 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                 <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto] md:mt-7">
                   <form
                     className="relative block"
+                    onFocusCapture={() => setSearchActive(true)}
+                    onBlurCapture={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget as Node)) setSearchActive(false);
+                    }}
                     onSubmit={(event) => {
                       event.preventDefault();
                       setFilter({ q: query.trim() });
@@ -205,21 +210,12 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                     >
                       Buscar
                     </button>
-                    {suggestions.length > 0 && (
-                      <ul className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-[1.3rem] border border-primary/10 bg-white shadow-lift" aria-label="Sugerencias de productos">
-                        {suggestions.map((product) => (
-                          <li key={product.id}>
-                            <Link
-                              href={`/producto/${product.slug}`}
-                              className="flex items-center justify-between gap-3 border-b border-primary/10 px-5 py-3 text-sm font-bold text-on-surface transition last:border-b-0 hover:bg-[#f7efe3] hover:text-secondary"
-                            >
-                              <span className="line-clamp-1">{product.name}</span>
-                              <span className="material-symbols-outlined text-base text-primary">arrow_forward</span>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    <ProductSearchSuggestions
+                      suggestions={suggestions}
+                      query={query}
+                      onSelect={() => setSearchActive(false)}
+                      className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 bg-white shadow-lift"
+                    />
                   </form>
                   <select
                     value={sort}
