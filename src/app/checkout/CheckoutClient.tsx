@@ -6,6 +6,15 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { getWooStoreRequestHeaders, useCart } from "@/context/cart-context";
 import { getMetaCartData, trackMetaEvent } from "@/lib/meta-events";
+import {
+  getCheckoutUnitPrice,
+  getListSubtotal,
+  getPaymentMethodCopy,
+  type CheckoutPaymentMethod,
+  type CheckoutShippingMethod,
+} from "@/lib/checkout-options";
+
+const whatsappPhone = process.env.NEXT_PUBLIC_STORE_WHATSAPP_PHONE ?? "5493794004299";
 
 interface CheckoutFormValues {
   name: string;
@@ -15,40 +24,6 @@ interface CheckoutFormValues {
   city: string;
   postalCode: string;
   notes: string;
-}
-
-interface CheckoutPaymentMethod {
-  id: string;
-  title: string;
-  description: string;
-}
-
-interface CheckoutShippingMethod {
-  id: string;
-  title: string;
-  description: string;
-  total: number;
-}
-
-function isCustomerPaidShippingMethod(method: CheckoutShippingMethod) {
-  const label = `${method.title} ${method.description}`.toLowerCase();
-
-  return method.total === 0 && (label.includes("nacional") || label.includes("argentina")) && !label.includes("corrientes");
-}
-
-function getShippingDescription(method: CheckoutShippingMethod) {
-  if (isCustomerPaidShippingMethod(method)) {
-    return "A cargo del cliente. Coordinamos el costo según destino antes del despacho.";
-  }
-
-  return method.description || "Disponible para tu compra";
-}
-
-function getShippingPriceLabel(method: CheckoutShippingMethod) {
-  if (isCustomerPaidShippingMethod(method)) return "A cargo del cliente";
-  if (method.total === 0) return "Gratis";
-
-  return `AR$ ${method.total.toLocaleString("es-AR")}`;
 }
 
 function onlyDigits(value: string) {
@@ -72,22 +47,8 @@ function hasEnoughPhoneDigits(value: string) {
 
 type CheckoutCartItem = ReturnType<typeof useCart>["items"][number];
 
-function isDiscountPaymentMethod(paymentMethodId: string, gatewayIds?: string[]) {
-  if (!paymentMethodId) return false;
-  if (gatewayIds?.length) return gatewayIds.includes(paymentMethodId);
-  return ["bacs", "cod", "cheque"].includes(paymentMethodId);
-}
-
 function isManualPaymentMethod(paymentMethodId: string) {
   return ["bacs", "cod", "cheque"].includes(paymentMethodId);
-}
-
-function getCheckoutUnitPrice(item: CheckoutCartItem, paymentMethodId: string) {
-  const prices = item.product.prices;
-  if (isDiscountPaymentMethod(paymentMethodId, prices?.discountGatewayIds) && prices?.discount) {
-    return prices.discount;
-  }
-  return prices?.list ?? prices?.base ?? item.product.price;
 }
 
 function getStockIssues(items: CheckoutCartItem[]) {
@@ -107,7 +68,7 @@ async function getCheckoutErrorMessage(response: Response) {
 }
 
 export default function CheckoutClient() {
-  const { items, total, refreshCart, updateQuantity } = useCart();
+  const { items, refreshCart, updateQuantity } = useCart();
   const checkoutTracked = useRef(false);
   const [status, setStatus] = useState<string | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<CheckoutPaymentMethod[]>([]);
@@ -133,8 +94,6 @@ export default function CheckoutClient() {
         const nextShippingMethods = payload.shippingMethods ?? [];
         setPaymentMethods(nextPaymentMethods);
         setShippingMethods(nextShippingMethods);
-        setPaymentMethodId((current) => current || nextPaymentMethods[0]?.id || "");
-        setShippingMethodId((current) => current || nextShippingMethods[0]?.id || "");
 
         if (nextPaymentMethods.length === 0 || nextShippingMethods.length === 0) {
           setStatus("Todavía no encontramos opciones disponibles para completar la compra.");
@@ -149,23 +108,28 @@ export default function CheckoutClient() {
     };
   }, []);
 
+  const listSubtotal = useMemo(() => getListSubtotal(items), [items]);
+
   useEffect(() => {
     if (checkoutTracked.current || items.length === 0) return;
     checkoutTracked.current = true;
-    trackMetaEvent("InitiateCheckout", getMetaCartData(items, total));
-  }, [items, total]);
+    trackMetaEvent("InitiateCheckout", getMetaCartData(items, listSubtotal));
+  }, [items, listSubtotal]);
 
-  const selectedShippingMethod = useMemo(
-    () => shippingMethods.find((method) => method.id === shippingMethodId),
-    [shippingMethodId, shippingMethods]
+  const selectedPaymentMethod = useMemo(
+    () => paymentMethods.find((method) => method.id === paymentMethodId),
+    [paymentMethodId, paymentMethods]
   );
-  const shipping = selectedShippingMethod?.total ?? 0;
+  const selectedPaymentCopy = selectedPaymentMethod ? getPaymentMethodCopy(selectedPaymentMethod) : null;
   const paymentSubtotal = useMemo(
     () => items.reduce((sum, item) => sum + getCheckoutUnitPrice(item, paymentMethodId) * item.quantity, 0),
     [items, paymentMethodId]
   );
-  const paymentDiscount = Math.max(0, total - paymentSubtotal);
-  const grandTotal = paymentSubtotal + shipping;
+  const paymentDiscount = Math.max(0, listSubtotal - paymentSubtotal);
+  const grandTotal = paymentSubtotal;
+  const shippingWhatsAppHref = `https://wa.me/${whatsappPhone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+    "¡Hola MiniFimy! Quiero consultar el costo de envío antes de finalizar mi compra.",
+  )}`;
 
   const maskPhone = (event: ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhone(event.target.value);
@@ -236,7 +200,7 @@ export default function CheckoutClient() {
     if (manualPayment && payload.order_id) {
       const params = new URLSearchParams();
       if (payload.order_key) params.set("key", payload.order_key);
-      window.location.href = `/orden/pagar/${payload.order_id}${params.toString() ? `?${params.toString()}` : ""}`;
+      window.location.assign(`/orden/pagar/${payload.order_id}${params.toString() ? `?${params.toString()}` : ""}`);
       return;
     }
 
@@ -247,7 +211,7 @@ export default function CheckoutClient() {
         url.host = window.location.host;
         if (paymentMethodId) url.searchParams.set("fimy_payment_method", paymentMethodId);
       }
-      window.location.href = url.toString();
+      window.location.assign(url.toString());
       return;
     }
 
@@ -256,11 +220,11 @@ export default function CheckoutClient() {
       params.set("pay_for_order", "true");
       if (paymentMethodId) params.set("fimy_payment_method", paymentMethodId);
       if (payload.order_key) params.set("key", payload.order_key);
-      window.location.href = `/finalizar-comprar/order-pay/${payload.order_id}/${params.toString() ? `?${params.toString()}` : ""}`;
+      window.location.assign(`/finalizar-comprar/order-pay/${payload.order_id}/${params.toString() ? `?${params.toString()}` : ""}`);
       return;
     }
 
-    window.location.href = "/gracias";
+    window.location.assign("/gracias");
   };
 
   return (
@@ -275,11 +239,8 @@ export default function CheckoutClient() {
             Último pasito
           </span>
           <h1 className="mt-5 font-headline text-[2.15rem] font-extrabold leading-tight text-on-surface md:text-6xl">
-            Dejamos todo listo para que llegue a casa.
+            Completá tus datos para finalizar tu compra.
           </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-on-surface-variant md:text-base md:leading-8">
-Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso.
-          </p>
         </header>
 
         {items.length === 0 ? (
@@ -420,41 +381,59 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                           />
                           <span>
                             <strong className="block text-on-surface">{method.title}</strong>
-                            <span className="block text-xs text-on-surface-variant">{getShippingDescription(method)}</span>
-                            <span className="mt-1 block text-xs font-bold text-secondary">{getShippingPriceLabel(method)}</span>
+                            <span className="block text-xs leading-5 text-on-surface-variant">{method.description}</span>
                           </span>
                         </label>
                       ))}
                     </div>
+                    <p className="mt-4 text-xs leading-5 text-on-surface-variant">
+                      ¿Querés conocer el costo antes de comprar? Consultanos por WhatsApp.
+                    </p>
+                    <a
+                      href={shippingWhatsAppHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-center text-[11px] font-bold uppercase tracking-wide text-on-primary shadow-soft"
+                    >
+                      <span className="material-symbols-outlined text-lg" aria-hidden="true">chat</span>
+                      Consultar costo de envío
+                    </a>
                   </fieldset>
 
                   <fieldset className="rounded-[1.5rem] bg-[#fbf4ea] p-4">
                     <legend className="mb-3 text-sm font-bold text-on-surface">Método de pago</legend>
                     <div className="space-y-2">
-                      {paymentMethods.map((method) => (
-                        <label key={method.id} className="flex cursor-pointer items-start gap-3 rounded-[1.1rem] bg-white/60 p-3 text-sm">
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            checked={paymentMethodId === method.id}
-                            onChange={() => setPaymentMethodId(method.id)}
-                            className="mt-1 text-primary focus:ring-primary/30"
-                          />
-                          <span>
-                            <strong className="block text-on-surface">{method.title}</strong>
-                          </span>
-                        </label>
-                      ))}
+                      {paymentMethods.map((method) => {
+                        const copy = getPaymentMethodCopy(method);
+                        return (
+                          <label key={method.id} className="flex cursor-pointer items-start gap-3 rounded-[1.1rem] bg-white/60 p-3 text-sm">
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              checked={paymentMethodId === method.id}
+                              onChange={() => setPaymentMethodId(method.id)}
+                              className="mt-1 text-primary focus:ring-primary/30"
+                            />
+                            <span>
+                              <strong className="block text-on-surface">{copy.title}</strong>
+                              <span className="block text-xs leading-5 text-on-surface-variant">{copy.description}</span>
+                              {copy.benefit && (
+                                <span className="mt-1 block text-xs font-bold text-secondary">{copy.benefit}</span>
+                              )}
+                            </span>
+                          </label>
+                        );
+                      })}
                     </div>
                   </fieldset>
                 </div>
 
                 <label className="text-sm font-semibold text-on-surface">
-                  Nota para preparar tu pedido, opcional
+                  Nota para preparar tu pedido (opcional)
                   <textarea
                     {...register("notes")}
                     className="mt-2 min-h-28 w-full rounded-[1.5rem] bg-[#fbf4ea] px-5 py-4 outline-none ring-1 ring-transparent focus:ring-primary/35"
-                    placeholder="Ej: es para regalo, necesitas tarjeta, preferis coordinar horario..."
+                    placeholder="Ej.: es para regalo, necesito una tarjeta, prefiero coordinar horario…"
                   />
                 </label>
               </div>
@@ -464,8 +443,8 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
                 disabled={isSubmitting || !paymentMethodId || !shippingMethodId}
                 className="mt-7 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 font-headline text-base font-bold text-on-primary shadow-soft transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isSubmitting ? "Creando orden..." : "Crear orden y pagar"}
-                <span className="material-symbols-outlined">payments</span>
+                {isSubmitting ? "Finalizando compra..." : "Finalizar compra"}
+                <span className="material-symbols-outlined">arrow_forward</span>
               </button>
               {status && <p className="mt-4 rounded-[1.3rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">{status}</p>}
             </form>
@@ -507,28 +486,31 @@ Vamos a preparar tu pedido con cuidado y dejar todo listo para el siguiente paso
               </div>
 
               <div className="mt-6 space-y-3 border-t border-outline-variant/30 pt-5 text-sm text-on-surface-variant">
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-4">
                   <span>Subtotal</span>
-                  <span>AR$ {total.toLocaleString("es-AR")}</span>
+                  <span>AR$ {listSubtotal.toLocaleString("es-AR")}</span>
                 </div>
                 {paymentDiscount > 0 && (
-                  <div className="flex justify-between text-primary">
-                    <span>Bonificación por método de pago</span>
-                    <span>- AR$ {paymentDiscount.toLocaleString("es-AR")}</span>
+                  <div className="flex justify-between gap-4 font-bold text-primary">
+                    <span>30% descuento por transferencia</span>
+                    <span className="shrink-0">− AR$ {paymentDiscount.toLocaleString("es-AR")}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span>{selectedShippingMethod?.title ?? "Envío"}</span>
-                  <span>AR$ {shipping.toLocaleString("es-AR")}</span>
+                <div className="flex justify-between gap-4">
+                  <span>Envío</span>
+                  <span>A coordinar</span>
                 </div>
-                <div className="flex items-baseline justify-between pt-3 font-headline text-xl font-extrabold text-on-surface">
+                <div className="flex items-baseline justify-between gap-4 pt-3 font-headline text-xl font-extrabold text-on-surface">
                   <span>Total</span>
                   <span className="text-primary">AR$ {grandTotal.toLocaleString("es-AR")}</span>
                 </div>
+                {selectedPaymentCopy?.benefit && (
+                  <p className="text-right text-xs font-bold text-secondary">{selectedPaymentCopy.benefit}</p>
+                )}
               </div>
 
               <p className="mt-5 rounded-[1.4rem] bg-primary/10 p-4 text-xs leading-5 text-primary">
-                Tu pedido queda guardado para que podamos prepararlo y acompañarte con el seguimiento.
+                Revisá que todos los datos estén correctos antes de finalizar tu compra.
               </p>
             </aside>
           </div>

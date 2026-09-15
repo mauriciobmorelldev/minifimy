@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/cart-context";
+import { getListSubtotal, getListUnitPrice } from "@/lib/checkout-options";
 
 function selectionLabel(item: ReturnType<typeof useCart>["items"][number]) {
   const size = item.selection?.size ?? item.product.sizes?.[0];
@@ -11,10 +12,9 @@ function selectionLabel(item: ReturnType<typeof useCart>["items"][number]) {
 }
 
 export default function CartClient() {
-  const { items, total, removeFromCart, updateQuantity, clearCart } = useCart();
+  const { items, removeFromCart, updateQuantity, clearCart } = useCart();
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const shipping = items.length > 0 ? 950 : 0;
-  const grandTotal = total + shipping;
+  const listSubtotal = getListSubtotal(items);
 
   return (
     <main className="mobile-soft-page relative overflow-hidden bg-[#fff8ef] px-4 pb-16 pt-28 md:px-6 md:pb-20">
@@ -100,7 +100,7 @@ export default function CartClient() {
                         )}
                       </div>
                       <p className="font-headline text-xl font-extrabold text-secondary">
-                        AR$ {(item.product.price * item.quantity).toLocaleString("es-AR")}
+                        AR$ {(getListUnitPrice(item) * item.quantity).toLocaleString("es-AR")}
                       </p>
                     </div>
 
@@ -126,13 +126,28 @@ export default function CartClient() {
 
             <aside className="lg:col-span-4">
               <div className="sticky top-28 rounded-[2rem] bg-white/82 p-6 shadow-lift">
-                <h2 className="font-headline text-2xl font-extrabold text-on-surface">Resumen dulce</h2>
+                <h2 className="font-headline text-2xl font-extrabold text-on-surface">Resumen de tu compra</h2>
                 <div className="mt-6 space-y-4 text-sm text-on-surface-variant">
-                  <div className="flex justify-between"><span>Subtotal</span><span className="font-bold text-on-surface">AR$ {total.toLocaleString("es-AR")}</span></div>
-                  <div className="flex justify-between"><span>Envío estimado</span><span className="font-bold text-on-surface">AR$ {shipping.toLocaleString("es-AR")}</span></div>
-                  <div className="rounded-[1.4rem] bg-[#f7efe3] p-4 text-xs leading-5 text-primary">El costo final de envio puede ajustarse segun zona y metodo elegido en checkout.</div>
+                  <div className="flex justify-between gap-4">
+                    <span>Subtotal</span>
+                    <span className="font-bold text-on-surface">AR$ {listSubtotal.toLocaleString("es-AR")}</span>
+                  </div>
+                  <div>
+                    <div className="flex justify-between gap-4">
+                      <span>Envío</span>
+                      <span className="font-bold text-on-surface">A coordinar</span>
+                    </div>
+                    <p className="mt-2 text-xs leading-5">El costo de envío se coordina según destino y modalidad elegida.</p>
+                  </div>
+                  <div className="space-y-2 rounded-[1.4rem] bg-[#f7efe3] p-4 text-xs font-semibold leading-5 text-primary">
+                    <p>30% OFF pagando por transferencia</p>
+                    <p>3 cuotas sin interés con Mercado Pago</p>
+                  </div>
                   <div className="border-t border-outline-variant/30 pt-5">
-                    <div className="flex items-baseline justify-between"><span className="font-headline text-lg font-extrabold">Total</span><span className="font-headline text-3xl font-extrabold text-primary">AR$ {grandTotal.toLocaleString("es-AR")}</span></div>
+                    <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                      <span className="font-headline text-lg font-extrabold">Total de productos</span>
+                      <span className="font-headline text-3xl font-extrabold text-primary">AR$ {listSubtotal.toLocaleString("es-AR")}</span>
+                    </div>
                   </div>
                 </div>
 

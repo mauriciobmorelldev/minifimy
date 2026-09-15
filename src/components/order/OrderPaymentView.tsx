@@ -54,18 +54,6 @@ function getManualInstructionRows(instructions?: string) {
   return rows.length ? rows : [{ value: instructions.trim() }];
 }
 
-function isCustomerPaidShipping(title: string, total: string) {
-  const numericValue = Number(total);
-  const normalizedTitle = title.toLowerCase();
-
-  return (
-    Number.isFinite(numericValue) &&
-    numericValue === 0 &&
-    (normalizedTitle.includes("nacional") || normalizedTitle.includes("argentina")) &&
-    !normalizedTitle.includes("corrientes")
-  );
-}
-
 export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
   if (!order) {
     return (
@@ -191,13 +179,11 @@ export function OrderPaymentView({ order, paymentUrl }: OrderPaymentViewProps) {
               <div className="mt-3 space-y-2">
                 {order.shippingLines.map((line) => (
                   <div key={line.id} className="rounded-[1.1rem] bg-[#fbf4ea] p-3 text-sm">
-                    <p className="font-bold text-on-surface">{line.title}</p>
+                    <p className="font-bold text-on-surface">{Number(line.total) === 0 ? "Envío a coordinar" : line.title}</p>
                     <p className="mt-1 text-on-surface-variant">
-                      {isCustomerPaidShipping(line.title, line.total)
-                        ? "A cargo del cliente. Coordinamos el costo final según destino antes del despacho."
-                        : Number(line.total) === 0
-                          ? "Gratis"
-                          : formatOrderAmount(order.currency, line.total)}
+                      {Number(line.total) === 0
+                        ? "A coordinar según destino y modalidad elegida."
+                        : formatOrderAmount(order.currency, line.total)}
                     </p>
                   </div>
                 ))}

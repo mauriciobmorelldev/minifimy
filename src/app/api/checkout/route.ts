@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getStorePaymentMethods,
-  getStoreShippingMethods,
-} from "@/lib/woocommerce";
+import { getStorePaymentMethods } from "@/lib/woocommerce";
 import { proxyWooStoreRequest } from "@/lib/woo-store-api";
+import {
+  COORDINATED_SHIPPING_METHODS,
+  getShippingMethod,
+  sortPaymentMethods,
+} from "@/lib/checkout-options";
+
 
 interface CheckoutItem {
   product?: { id?: string };
@@ -26,8 +29,6 @@ interface CheckoutPayload {
   };
 }
 
-const MAX_CHECKOUT_ITEMS = 20;
-const MAX_QUANTITY_PER_ITEM = 10;
 
 function isValidEmail(value?: string) {
   return Boolean(value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
@@ -46,12 +47,8 @@ function hasRequiredCustomerData(customer?: CheckoutPayload["customer"]) {
 }
 
 export async function GET() {
-  const [paymentMethods, shippingMethods] = await Promise.all([
-    getStorePaymentMethods(),
-    getStoreShippingMethods(),
-  ]);
-
-  return NextResponse.json({ paymentMethods, shippingMethods });
+  const paymentMethods = sortPaymentMethods(await getStorePaymentMethods());
+  return NextResponse.json({ paymentMethods, shippingMethods: COORDINATED_SHIPPING_METHODS });
 }
 
 export async function POST(request: NextRequest) {
@@ -66,6 +63,16 @@ export async function POST(request: NextRequest) {
   }
 
   const [firstName, ...lastNameParts] = payload.customer!.name!.trim().split(/\s+/);
+  const shippingMethod = getShippingMethod(payload.shippingMethodId ?? "");
+  if (!shippingMethod) {
+    return NextResponse.json({ message: "Seleccioná un método de envío." }, { status: 400 });
+  }
+
+  const customerNote = [
+    `Modalidad de envío: ${shippingMethod.title}.`,
+    payload.customer!.notes?.trim(),
+  ].filter(Boolean).join("\n");
+
   const address = {
     first_name: firstName || payload.customer!.name!,
     last_name: lastNameParts.join(" "),
@@ -85,7 +92,7 @@ export async function POST(request: NextRequest) {
       billing_address: address,
       shipping_address: address,
       payment_method: payload.paymentMethodId,
-      customer_note: payload.customer!.notes ?? "",
+      customer_note: customerNote,
     },
   });
 }

@@ -1388,7 +1388,7 @@ export async function getStoreManualPaymentDetails(): Promise<StoreManualPayment
 
 export async function getStoreShippingMethods(): Promise<StoreShippingMethod[]> {
   if (!canUseWooCommerce()) {
-    return [{ id: "fallback:flat_rate", methodId: "flat_rate", title: "Envio estimado", description: "A coordinar", total: 950 }];
+    return [{ id: "fallback:flat_rate", methodId: "flat_rate", title: "Envío a coordinar", description: "A coordinar", total: 0 }];
   }
 
   const zones = await fetchWoo<WooShippingZone[]>(

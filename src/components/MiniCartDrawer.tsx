@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo } from "react";
 import { useCart } from "@/context/cart-context";
+import { getListSubtotal, getListUnitPrice } from "@/lib/checkout-options";
 
 interface MiniCartDrawerProps {
   open: boolean;
@@ -11,11 +12,12 @@ interface MiniCartDrawerProps {
 }
 
 export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
-  const { items, total, updateQuantity, removeFromCart } = useCart();
+  const { items, updateQuantity, removeFromCart } = useCart();
   const itemCount = useMemo(
     () => items.reduce((sum, item) => sum + item.quantity, 0),
     [items],
   );
+  const listTotal = useMemo(() => getListSubtotal(items), [items]);
 
   useEffect(() => {
     if (!open) return;
@@ -156,7 +158,7 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
                         </button>
                       </div>
                       <span className="font-headline text-sm font-extrabold text-secondary">
-                        AR$ {(item.product.price * item.quantity).toLocaleString("es-AR")}
+                        AR$ {(getListUnitPrice(item) * item.quantity).toLocaleString("es-AR")}
                       </span>
                     </div>
                   </div>
@@ -165,11 +167,14 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
             </div>
 
             <footer className="shrink-0 border-t border-outline-variant/30 bg-white/72 px-6 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-              <div className="mb-4 flex items-center justify-between font-headline text-xl font-extrabold">
+              <div className="flex items-center justify-between font-headline text-xl font-extrabold">
                 <span>Total</span>
-                <span className="text-primary">AR$ {total.toLocaleString("es-AR")}</span>
+                <span className="text-primary">AR$ {listTotal.toLocaleString("es-AR")}</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <p className="mb-4 mt-1 text-xs font-semibold text-primary">
+                30% OFF pagando por transferencia
+              </p>
+              <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
                 <Link
                   href="/carrito"
                   onClick={onClose}
@@ -182,7 +187,7 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
                   onClick={onClose}
                   className="rounded-full bg-primary px-5 py-3 text-center text-sm font-bold text-on-primary shadow-soft"
                 >
-                  Finalizar
+                  Finalizar compra
                 </Link>
               </div>
             </footer>
