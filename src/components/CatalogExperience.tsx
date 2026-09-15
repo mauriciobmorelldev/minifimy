@@ -1,11 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { catalogUrl, facetValues, toggleFacet, type CatalogSelection } from "@/lib/catalog-facets";
 import { ProductCard } from "@/components/ProductCard";
 import { ScrollReveal } from "@/components/ScrollReveal";
+import { useProductSuggestions } from "@/hooks/use-product-suggestions";
 import type { Category, Product, ProductFilterOptions } from "@/models/product";
 
 interface CatalogExperienceProps {
@@ -55,6 +57,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
   const [priceRange, setPriceRange] = useState(searchParams.get("precio") ?? "all");
   const [sort, setSort] = useState(searchParams.get("orden") ?? "featured");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const suggestions = useProductSuggestions(query);
 
   useEffect(() => {
     setQuery(searchParams.get("q") ?? "");
@@ -188,7 +191,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                       setFilter({ q: query.trim() });
                     }}
                   >
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary">search</span>
+                    <span className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-primary">search</span>
                     <input
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
@@ -202,6 +205,21 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                     >
                       Buscar
                     </button>
+                    {suggestions.length > 0 && (
+                      <ul className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-[1.3rem] border border-primary/10 bg-white shadow-lift" aria-label="Sugerencias de productos">
+                        {suggestions.map((product) => (
+                          <li key={product.id}>
+                            <Link
+                              href={`/producto/${product.slug}`}
+                              className="flex items-center justify-between gap-3 border-b border-primary/10 px-5 py-3 text-sm font-bold text-on-surface transition last:border-b-0 hover:bg-[#f7efe3] hover:text-secondary"
+                            >
+                              <span className="line-clamp-1">{product.name}</span>
+                              <span className="material-symbols-outlined text-base text-primary">arrow_forward</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </form>
                   <select
                     value={sort}

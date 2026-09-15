@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { MiniCartDrawer } from "@/components/MiniCartDrawer";
 import { useCart } from "@/context/cart-context";
+import { useProductSuggestions } from "@/hooks/use-product-suggestions";
 
 type NavLink = {
   href: string;
@@ -25,8 +26,10 @@ export function Header({ navLinks }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [miniCartOpen, setMiniCartOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
   const router = useRouter();
+  const suggestions = useProductSuggestions(query, searchOpen);
   const hiddenRoutes = ["/cargando-70", "/cargando-99"];
   const closeMobileMenu = () => {
     setMobileOpen(false);
@@ -46,6 +49,21 @@ export function Header({ navLinks }: HeaderProps) {
       document.body.style.overscrollBehavior = previousOverscroll;
     };
   }, [mobileOpen]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const animationFrame = window.requestAnimationFrame(() => searchInputRef.current?.focus());
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [searchOpen]);
+
+  const openAndFocusSearch = () => {
+    if (searchOpen) {
+      searchInputRef.current?.focus();
+      return;
+    }
+
+    setSearchOpen(true);
+  };
 
   if (hiddenRoutes.includes(pathname)) {
     return null;
@@ -155,7 +173,7 @@ export function Header({ navLinks }: HeaderProps) {
           <div className="hidden items-center gap-5 text-primary md:flex">
             <button
               type="button"
-              onClick={() => setSearchOpen((prev) => !prev)}
+              onClick={openAndFocusSearch}
               className="scale-95 transition-transform duration-200 ease-soft-spring active:scale-90"
               aria-label="Buscar"
               aria-expanded={searchOpen}
@@ -194,9 +212,10 @@ export function Header({ navLinks }: HeaderProps) {
           <div className="flex items-center gap-3 text-primary md:hidden">
             <button
               type="button"
-              onClick={() => setSearchOpen((prev) => !prev)}
+              onClick={openAndFocusSearch}
               className="relative flex h-10 w-10 scale-95 items-center justify-center rounded-full bg-[#fffaf1] shadow-soft transition-transform duration-200 ease-soft-spring active:scale-90"
               aria-label="Buscar"
+              aria-expanded={searchOpen}
             >
               <span className="material-symbols-outlined">search</span>
             </button>
@@ -226,6 +245,7 @@ export function Header({ navLinks }: HeaderProps) {
                 <span className="material-symbols-outlined text-primary">search</span>
                 <input
                   id="site-search"
+                  ref={searchInputRef}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Body nube, regalo, ajuar..."
@@ -235,6 +255,22 @@ export function Header({ navLinks }: HeaderProps) {
                   Buscar
                 </button>
               </div>
+              {suggestions.length > 0 && (
+                <ul className="mt-2 overflow-hidden rounded-[1.1rem] border border-primary/10 bg-[#fffaf1]" aria-label="Sugerencias de productos">
+                  {suggestions.map((product) => (
+                    <li key={product.id}>
+                      <Link
+                        href={`/producto/${product.slug}`}
+                        onClick={() => setSearchOpen(false)}
+                        className="flex items-center justify-between gap-3 border-b border-primary/10 px-4 py-3 text-sm font-bold text-on-surface transition last:border-b-0 hover:bg-[#f7efe3] hover:text-secondary"
+                      >
+                        <span className="line-clamp-1">{product.name}</span>
+                        <span className="material-symbols-outlined text-base text-primary">arrow_forward</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
               <p className="px-4 pb-2 pt-3 text-xs text-on-surface-variant">
                 Fimy puede ayudarte a encontrar regalos, tejidos y prendas para recién nacido.
               </p>

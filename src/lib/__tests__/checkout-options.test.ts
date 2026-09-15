@@ -1,5 +1,6 @@
 import {
   COORDINATED_SHIPPING_METHODS,
+  getCartItemOptions,
   getCheckoutUnitPrice,
   getListSubtotal,
   getPaymentMethodCopy,
@@ -65,9 +66,38 @@ describe("payment presentation", () => {
       "woo-mercado-pago-credits",
     ]);
     expect(getPaymentMethodCopy(methods[0])).toEqual({
-      title: "Cuotas sin tarjeta con Mercado Pago",
-      description: "Pagá en cuotas con una línea de crédito disponible en tu cuenta de Mercado Pago.",
+      title: "Pagos sin Tarjeta de Mercado Pago",
+      description: "Pagá en cuotas sin tarjeta usando tu línea de crédito disponible en Mercado Pago.",
     });
     expect(getPaymentMethodCopy(methods[1]).title).toBe("Transferencia bancaria — 30% OFF");
+  });
+});
+
+describe("cart item options", () => {
+  it("shows the only available size, color and model when Woo omits the selection", () => {
+    const item = {
+      ...cartItem,
+      product: {
+        ...cartItem.product,
+        sizes: ["0–3 meses"],
+        colors: ["Natural"],
+        models: ["Clásico"],
+      },
+    };
+
+    expect(getCartItemOptions(item)).toEqual({
+      size: "0–3 meses",
+      color: "Natural",
+      model: "Clásico",
+    });
+  });
+
+  it("does not guess an option when more than one is available", () => {
+    const item = {
+      ...cartItem,
+      product: { ...cartItem.product, sizes: ["0–3 meses", "3–6 meses"] },
+    };
+
+    expect(getCartItemOptions(item).size).toBeUndefined();
   });
 });

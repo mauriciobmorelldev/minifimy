@@ -4,11 +4,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo } from "react";
 import { useCart } from "@/context/cart-context";
-import { getListSubtotal, getListUnitPrice } from "@/lib/checkout-options";
+import { getCartItemOptions, getListSubtotal, getListUnitPrice } from "@/lib/checkout-options";
 
 interface MiniCartDrawerProps {
   open: boolean;
   onClose: () => void;
+}
+
+function selectionLabel(item: ReturnType<typeof useCart>["items"][number]) {
+  const { size, color, model } = getCartItemOptions(item);
+  return [size ? `Talle ${size}` : null, color ? `Color ${color}` : null, model ? `Modelo ${model}` : null]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
@@ -111,21 +118,27 @@ export function MiniCartDrawer({ open, onClose }: MiniCartDrawerProps) {
                   key={item.id}
                   className="grid grid-cols-[88px_1fr] gap-4 rounded-[1.6rem] bg-white/78 p-3 shadow-soft"
                 >
-                  <Image
-                    src={item.product.images[0]}
-                    alt={item.product.name}
-                    width={88}
-                    height={104}
-                    className="h-28 w-[88px] rounded-[1.2rem] object-cover"
-                  />
+                  <Link href={`/producto/${item.product.slug}`} onClick={onClose} aria-label={`Ver ${item.product.name}`}>
+                    <Image
+                      src={item.product.images[0]}
+                      alt={item.product.name}
+                      width={88}
+                      height={104}
+                      className="h-28 w-[88px] rounded-[1.2rem] object-cover"
+                    />
+                  </Link>
                   <div className="min-w-0">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h3 className="line-clamp-2 font-headline text-base font-bold leading-tight text-on-surface">
-                          {item.product.name}
-                        </h3>
+                        <Link
+                          href={`/producto/${item.product.slug}`}
+                          onClick={onClose}
+                          className="block text-on-surface transition-colors hover:text-secondary"
+                        >
+                          <h3 className="line-clamp-2 font-headline text-base font-bold leading-tight">{item.product.name}</h3>
+                        </Link>
                         <p className="mt-1 text-xs text-on-surface-variant">
-                          {item.product.category}{item.selection?.size ? ` · Talle ${item.selection.size}` : ""}{item.selection?.color ? ` · ${item.selection.color}` : ""}{item.selection?.model ? ` · Modelo ${item.selection.model}` : ""}
+                          {item.product.category}{selectionLabel(item) ? ` · ${selectionLabel(item)}` : ""}
                         </p>
                       </div>
                       <button

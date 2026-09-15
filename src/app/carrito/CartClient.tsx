@@ -3,12 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/cart-context";
-import { getListSubtotal, getListUnitPrice } from "@/lib/checkout-options";
+import { getCartItemOptions, getListSubtotal, getListUnitPrice } from "@/lib/checkout-options";
 
 function selectionLabel(item: ReturnType<typeof useCart>["items"][number]) {
-  const size = item.selection?.size ?? item.product.sizes?.[0];
-  const color = item.selection?.color ?? item.product.colors?.[0];
-  return [size ? `Talle ${size}` : null, color ? `Color ${color}` : null].filter(Boolean).join(" ? ");
+  const { size, color, model } = getCartItemOptions(item);
+  return [size ? `Talle ${size}` : null, color ? `Color ${color}` : null, model ? `Modelo ${model}` : null]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 export default function CartClient() {
@@ -81,20 +82,24 @@ export default function CartClient() {
                   key={item.id}
                   className="grid gap-4 rounded-[1.6rem] bg-white/78 p-3 shadow-soft transition hover:-translate-y-0.5 hover:bg-white md:grid-cols-[150px_1fr] md:gap-5 md:rounded-[2rem] md:p-4"
                 >
-                  <Image
-                    src={item.product.images[0]}
-                    alt={item.product.name}
-                    width={150}
-                    height={180}
-                    className="h-44 w-full rounded-[1.5rem] object-cover md:w-[150px]"
-                  />
+                  <Link href={`/producto/${item.product.slug}`} aria-label={`Ver ${item.product.name}`}>
+                    <Image
+                      src={item.product.images[0]}
+                      alt={item.product.name}
+                      width={150}
+                      height={180}
+                      className="h-44 w-full rounded-[1.5rem] object-cover md:w-[150px]"
+                    />
+                  </Link>
                   <div className="flex min-w-0 flex-col justify-between gap-5 py-1">
                     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{item.product.category}</p>
-                        <h3 className="mt-1 font-headline text-xl font-extrabold leading-tight text-on-surface md:text-2xl">
-                          {item.product.name}
-                        </h3>
+                        <Link href={`/producto/${item.product.slug}`} className="mt-1 block text-on-surface transition-colors hover:text-secondary">
+                          <h3 className="font-headline text-xl font-extrabold leading-tight md:text-2xl">
+                            {item.product.name}
+                          </h3>
+                        </Link>
                         {selectionLabel(item) && (
                           <p className="mt-2 text-sm leading-6 text-on-surface-variant">{selectionLabel(item)}</p>
                         )}

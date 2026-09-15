@@ -34,6 +34,7 @@ type StoreApiCartItem = {
   quantity?: number;
   name?: string;
   short_description?: string;
+  permalink?: string;
   images?: { src?: string; thumbnail?: string; name?: string }[];
   prices?: { price?: string; regular_price?: string; currency_minor_unit?: number };
   totals?: { line_total?: string; currency_minor_unit?: number };
@@ -45,6 +46,7 @@ const CartContext = createContext<CartContextValue | undefined>(undefined);
 const NONCE_STORAGE_KEY = "minifimy-wc-store-nonce";
 const CART_TOKEN_STORAGE_KEY = "minifimy-wc-cart-token";
 const CART_PRICE_STORAGE_KEY = "minifimy-cart-prices";
+const CART_METADATA_STORAGE_KEY = "minifimy-cart-metadata";
 
 function getStoredHeader(key: string) {
   if (typeof window === "undefined") return null;
@@ -88,16 +90,62 @@ function rememberCartPrices(product: Product, selection?: ProductSelection) {
   window.localStorage.setItem(CART_PRICE_STORAGE_KEY, JSON.stringify(current));
 }
 
+type StoredCartMetadata = {
+  product: Pick<Product, "id" | "slug" | "category" | "sizes" | "colors" | "models">;
+  selection?: ProductSelection;
+};
+
+function getStoredCartMetadata() {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(CART_METADATA_STORAGE_KEY) ?? "{}") as Record<string, StoredCartMetadata>;
+  } catch {
+    return {};
+  }
+}
+
+function rememberCartMetadata(product: Product, selection?: ProductSelection) {
+  if (typeof window === "undefined") return;
+  const current = getStoredCartMetadata();
+  const metadata: StoredCartMetadata = {
+    product: {
+      id: product.id,
+      slug: product.slug,
+      category: product.category,
+      sizes: product.sizes,
+      colors: product.colors,
+      models: product.models,
+    },
+    selection,
+  };
+
+  current[product.id] = metadata;
+  if (selection?.variationId) current[selection.variationId] = metadata;
+  window.localStorage.setItem(CART_METADATA_STORAGE_KEY, JSON.stringify(current));
+}
+
+function getSlugFromPermalink(permalink?: string) {
+  if (!permalink) return undefined;
+  try {
+    const parts = new URL(permalink, "https://minifimy.local").pathname.split("/").filter(Boolean);
+    return parts.at(-1);
+  } catch {
+    return undefined;
+  }
+}
+
 function mapStoreItem(item: StoreApiCartItem): CartItem {
   const minorUnit = item.prices?.currency_minor_unit ?? item.totals?.currency_minor_unit ?? 2;
   const image = item.images?.[0]?.src ?? item.images?.[0]?.thumbnail ?? "/brand/illustrations/jirafa.svg";
+  const storedMetadata = getStoredCartMetadata()[String(item.id ?? item.key)];
+  const storedSelection = storedMetadata?.selection;
   const variation = item.variation ?? [];
   const variationAttributes = variation.flatMap((entry) =>
     entry.attribute && entry.value ? [{ attribute: entry.attribute, value: entry.value }] : []
   );
-  const size = variation.find((entry) => /talle|size|edad/i.test(entry.attribute ?? ""))?.value;
-  const color = variation.find((entry) => /color|tono/i.test(entry.attribute ?? ""))?.value;
-  const model = variation.find((entry) => /modelo|model/i.test(entry.attribute ?? ""))?.value;
+  const size = variation.find((entry) => /talle|size|edad/i.test(entry.attribute ?? ""))?.value ?? storedSelection?.size;
+  const color = variation.find((entry) => /color|tono/i.test(entry.attribute ?? ""))?.value ?? storedSelection?.color;
+  const model = variation.find((entry) => /modelo|model/i.test(entry.attribute ?? ""))?.value ?? storedSelection?.model;
   const price = getMoneyValue(item.prices?.price ?? item.prices?.regular_price, minorUnit);
   const listPrice = getMoneyValue(item.prices?.regular_price, minorUnit);
   const storedPrices = getStoredCartPrices()[String(item.id ?? item.key)];
@@ -111,16 +159,25 @@ function mapStoreItem(item: StoreApiCartItem): CartItem {
   return {
     id: item.key,
     quantity: item.quantity ?? 1,
-    selection: { size, color, model, variationId: item.id ? String(item.id) : undefined, variationAttributes },
+    selection: {
+      size,
+      color,
+      model,
+      variationId: item.id ? String(item.id) : storedSelection?.variationId,
+      variationAttributes: variationAttributes.length ? variationAttributes : storedSelection?.variationAttributes,
+    },
     product: {
       id: String(item.id ?? item.key),
       name: item.name ?? "Producto",
-      slug: String(item.id ?? item.key),
+      slug: getSlugFromPermalink(item.permalink) ?? storedMetadata?.product.slug ?? String(item.id ?? item.key),
       description: item.short_description ?? "",
       price,
       prices,
       images: [image],
-      category: "MiniFimy",
+      category: storedMetadata?.product.category ?? "MiniFimy",
+      sizes: storedMetadata?.product.sizes,
+      colors: storedMetadata?.product.colors,
+      models: storedMetadata?.product.models,
       stock,
     },
   };
@@ -202,6 +259,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       rememberCartPrices(product, selection);
+      rememberCartMetadata(product, selection);
       applyCart(await storeFetch("/api/woo/cart/add", {
         method: "POST",
         body: JSON.stringify(buildAddItemPayload(product, quantity, selection)),

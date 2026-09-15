@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { getWooStoreRequestHeaders, useCart } from "@/context/cart-context";
 import { getMetaCartData, trackMetaEvent } from "@/lib/meta-events";
 import {
+  getCartItemOptions,
   getCheckoutUnitPrice,
   getListSubtotal,
   getPaymentMethodCopy,
@@ -46,6 +47,13 @@ function hasEnoughPhoneDigits(value: string) {
 }
 
 type CheckoutCartItem = ReturnType<typeof useCart>["items"][number];
+
+function selectionLabel(item: CheckoutCartItem) {
+  const { size, color, model } = getCartItemOptions(item);
+  return [size ? `Talle ${size}` : null, color ? `Color ${color}` : null, model ? `Modelo ${model}` : null]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 function isManualPaymentMethod(paymentMethodId: string) {
   return ["bacs", "cod", "cheque"].includes(paymentMethodId);
@@ -461,21 +469,22 @@ export default function CheckoutClient() {
               <div className="mt-6 space-y-4">
                 {items.map((item) => (
                   <div key={item.id} className="grid grid-cols-[64px_1fr] gap-3 rounded-[1.4rem] bg-[#fbf4ea] p-3">
-                    <Image
-                      src={item.product.images[0]}
-                      alt={item.product.name}
-                      width={64}
-                      height={76}
-                      className="h-20 w-16 rounded-[1rem] object-cover"
-                    />
+                    <Link href={`/producto/${item.product.slug}`} aria-label={`Ver ${item.product.name}`}>
+                      <Image
+                        src={item.product.images[0]}
+                        alt={item.product.name}
+                        width={64}
+                        height={76}
+                        className="h-20 w-16 rounded-[1rem] object-cover"
+                      />
+                    </Link>
                     <div className="min-w-0">
-                      <p className="line-clamp-2 text-sm font-bold leading-tight text-on-surface">{item.product.name}</p>
+                      <Link href={`/producto/${item.product.slug}`} className="block text-on-surface transition-colors hover:text-secondary">
+                        <p className="line-clamp-2 text-sm font-bold leading-tight">{item.product.name}</p>
+                      </Link>
                       <p className="mt-1 text-xs text-on-surface-variant">Cantidad {item.quantity}</p>
-                      {(item.selection?.size || item.selection?.color) && (
-                        <p className="mt-1 text-xs text-on-surface-variant">
-                          {item.selection?.size ? `Talle ${item.selection.size}` : ""}
-                          {item.selection?.color ? ` · ${item.selection.color}` : ""}
-                        </p>
+                      {selectionLabel(item) && (
+                        <p className="mt-1 text-xs text-on-surface-variant">{selectionLabel(item)}</p>
                       )}
                       <p className="mt-2 text-sm font-extrabold text-secondary">
                         AR$ {(getCheckoutUnitPrice(item, paymentMethodId) * item.quantity).toLocaleString("es-AR")}

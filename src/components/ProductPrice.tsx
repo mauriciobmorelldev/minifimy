@@ -12,10 +12,6 @@ function formatPrice(value: number) {
   return `$${Math.round(value).toLocaleString("es-AR")}`;
 }
 
-function formatInstallment(value: number) {
-  return `$${value.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
 function formatRoundedInstallment(value: number) {
   return `$${Math.round(value).toLocaleString("es-AR")}`;
 }
@@ -49,7 +45,7 @@ export function ProductPrice({ price, prices, compact = false, className = "", o
             con transferencia
           </div>
         )}
-        <div className="mt-1.5 text-[11px] font-semibold text-primary/75">3x {formatInstallment(installmentAmount)}</div>
+        <div className="mt-1.5 text-[11px] font-semibold text-primary/75">3 cuotas sin interés · {formatRoundedInstallment(installmentAmount)}</div>
       </div>
     );
   }

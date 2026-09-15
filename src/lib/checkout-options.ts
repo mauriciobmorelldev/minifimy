@@ -71,8 +71,8 @@ export function getPaymentMethodCopy(method: CheckoutPaymentMethod) {
       };
     case "woo-mercado-pago-credits":
       return {
-        title: "Cuotas sin tarjeta con Mercado Pago",
-        description: "Pagá en cuotas con una línea de crédito disponible en tu cuenta de Mercado Pago.",
+        title: "Pagos sin Tarjeta de Mercado Pago",
+        description: "Pagá en cuotas sin tarjeta usando tu línea de crédito disponible en Mercado Pago.",
       };
     case "bacs":
     case "cod":
@@ -93,6 +93,16 @@ export function isTransferPaymentMethod(paymentMethodId: string, gatewayIds?: st
   if (!paymentMethodId) return false;
   if (gatewayIds?.length) return gatewayIds.includes(paymentMethodId);
   return ["bacs", "cod", "cheque"].includes(paymentMethodId);
+}
+
+export function getCartItemOptions(item: CartItem) {
+  const singleOption = (values?: string[]) => values?.length === 1 ? values[0] : undefined;
+
+  return {
+    size: item.selection?.size ?? singleOption(item.product.sizes),
+    color: item.selection?.color ?? singleOption(item.product.colors),
+    model: item.selection?.model ?? singleOption(item.product.models),
+  };
 }
 
 export function getListUnitPrice(item: CartItem) {

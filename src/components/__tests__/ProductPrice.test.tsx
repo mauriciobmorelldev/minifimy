@@ -32,4 +32,13 @@ describe("ProductPrice", () => {
     expect(screen.getByText("3 cuotas sin interés de $11.433")).toBeInTheDocument();
     expect(container.textContent).not.toContain("$$");
   });
+
+  it("uses the full interest-free installment copy on catalog cards", () => {
+    const { container } = render(
+      <ProductPrice price={27_900} prices={{ base: 27_900 }} compact />,
+    );
+
+    expect(screen.getByText("3 cuotas sin interés · $9.300")).toBeInTheDocument();
+    expect(container.textContent).not.toContain("3x");
+  });
 });

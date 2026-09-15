@@ -70,6 +70,14 @@ describe("CheckoutClient", () => {
       "href",
       expect.stringContaining("wa.me"),
     );
+    expect(screen.getByRole("link", { name: "Ver Body MiniFimy" })).toHaveAttribute(
+      "href",
+      "/producto/body-minifimy",
+    );
+    expect(screen.getByRole("link", { name: "Body MiniFimy" })).toHaveAttribute(
+      "href",
+      "/producto/body-minifimy",
+    );
     expect(screen.getAllByText("AR$ 34.300")).toHaveLength(3);
     expect(screen.getByText("A coordinar")).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/gratis|950/i);
