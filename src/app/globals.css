@@ -606,7 +606,7 @@
     }
 
     .home-banner-stage {
-      aspect-ratio: 1.04;
+      aspect-ratio: 1.18;
       overflow: hidden;
     }
 
@@ -614,7 +614,7 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: 9% center;
+      object-position: left center;
     }
 
     .home-fimy-peek {

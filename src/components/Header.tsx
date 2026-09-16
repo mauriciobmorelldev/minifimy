@@ -125,7 +125,7 @@ export function Header({ navLinks }: HeaderProps) {
         />
       )}
       <nav
-        className="fixed inset-x-0 top-0 z-[80] px-3 pt-3 md:px-5 lg:px-0 lg:pt-0"
+        className="fixed inset-x-0 top-0 z-[80]"
         aria-label="Principal"
       >
         <div className="hidden lg:block">
@@ -247,7 +247,13 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
         </div>
 
-        <div className="liquid-header relative mx-auto flex max-w-7xl items-center justify-between rounded-[1.35rem] px-4 py-3 md:rounded-[1.7rem] md:px-6 md:py-3.5 lg:hidden">
+        <div className="flex min-h-7 items-center justify-center bg-secondary-container px-4 text-center font-headline text-[9px] font-extrabold uppercase tracking-[0.11em] text-on-secondary-container lg:hidden">
+          3 cuotas sin interés
+          <span className="mx-2 h-1 w-1 rounded-full bg-secondary" aria-hidden="true" />
+          Envíos a todo el país
+        </div>
+
+        <div className="relative flex min-h-16 w-full items-center justify-between bg-[#d8e0c3] px-4 py-2.5 shadow-sm lg:hidden">
           <div className="flex items-center gap-3 lg:hidden">
             <button
               type="button"
@@ -272,7 +278,7 @@ export function Header({ navLinks }: HeaderProps) {
               alt="MiniFimy"
               width={140}
               height={40}
-              className="h-7 w-auto md:h-9"
+              className="h-8 w-auto md:h-9"
               priority
             />
             <span className="sr-only">MiniFimy</span>
@@ -497,7 +503,7 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
         </div>
       </nav>
-      <div className="hidden h-[5.5rem] lg:block" aria-hidden="true" />
+      <div className="h-3 lg:h-[5.5rem]" aria-hidden="true" />
       <MiniCartDrawer open={miniCartOpen} onClose={() => setMiniCartOpen(false)} />
     </>
   );

@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
-import { BenefitsBar } from "@/components/BenefitsBar";
 import { HomeHeroCarousel } from "@/components/HomeHeroCarousel";
 import { HomeOpportunities } from "@/components/HomeOpportunities";
 import { NewArrivalsCarousel } from "@/components/NewArrivalsCarousel";
@@ -67,8 +66,6 @@ export default async function HomePage() {
 
   return (
     <main className="minifimy-story overflow-hidden bg-background pt-20">
-      <BenefitsBar />
-
       <HomeHeroCarousel />
 
       <HomeOpportunities products={inStockOpportunityProducts} />
