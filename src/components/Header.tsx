@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { MiniCartDrawer } from "@/components/MiniCartDrawer";
 import { ProductSearchSuggestions } from "@/components/ProductSearchSuggestions";
 import { useCart } from "@/context/cart-context";
 import { useProductSuggestions } from "@/hooks/use-product-suggestions";
+import { isStoreMenuGroupActive } from "@/lib/category-menu";
 
 type NavLink = {
   href: string;
@@ -34,6 +35,7 @@ export function Header({ navLinks }: HeaderProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchPanelRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const suggestions = useProductSuggestions(query, searchOpen, true);
   const hiddenRoutes = ["/cargando-70", "/cargando-99"];
@@ -457,8 +459,8 @@ export function Header({ navLinks }: HeaderProps) {
               <div className="flex flex-col gap-2 font-headline text-base font-semibold text-primary">
                 {navLinks.map((link) => {
                   const hasChildren = Boolean(link.children?.length);
-                  const linkPathname = link.href.split("?")[0];
                   const isCategoryOpen = hasChildren && mobileCategoryOpen === link.href;
+                  const isActive = isStoreMenuGroupActive(link, pathname, searchParams.get("etapa"));
 
                   if (hasChildren) {
                     return (
@@ -467,7 +469,8 @@ export function Header({ navLinks }: HeaderProps) {
                           type="button"
                           onClick={() => setMobileCategoryOpen((prev) => prev === link.href ? null : link.href)}
                           aria-expanded={isCategoryOpen}
-                          className={`flex min-h-12 w-full items-center justify-between rounded-[1.15rem] px-4 py-3 text-left shadow-soft transition-colors ${pathname.startsWith(linkPathname) ? "bg-primary text-on-primary" : "bg-white text-primary"}`}
+                          aria-current={isActive ? "page" : undefined}
+                          className={`flex min-h-12 w-full items-center justify-between rounded-[1.15rem] px-4 py-3 text-left shadow-soft transition-colors ${isActive ? "bg-primary text-on-primary" : "bg-white text-primary"}`}
                         >
                           <span>{link.label}</span>
                           <span className={`material-symbols-outlined text-lg transition-transform duration-300 ${isCategoryOpen ? "rotate-180" : ""}`}>expand_more</span>

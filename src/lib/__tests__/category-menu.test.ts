@@ -1,4 +1,4 @@
-import { buildStoreMenu } from "@/lib/category-menu";
+import { buildStoreMenu, isStoreMenuGroupActive } from "@/lib/category-menu";
 
 const categories = [
   { id: "1", name: "Bebés", slug: "bebes", description: "" },
@@ -51,4 +51,24 @@ it("shows Niños now as an age-filtered group until its WooCommerce parent exist
       { href: "/catalogo?etapa=ninos", label: "Ver todo en Niños" },
     ],
   });
+});
+
+
+it("highlights only the mobile group represented by the current route and age context", () => {
+  const menu = buildStoreMenu(categories);
+  const activeLabels = (pathname: string, ageContext?: string) =>
+    menu.filter((group) => isStoreMenuGroupActive(group, pathname, ageContext)).map((group) => group.label);
+
+  expect(activeLabels("/catalogo/bebes", "bebes")).toEqual(["Bebés"]);
+  expect(activeLabels("/catalogo", "ninos")).toEqual(["Niños"]);
+  expect(activeLabels("/catalogo")).toEqual(["Catálogo"]);
+  expect(activeLabels("/catalogo/bodys", "bebes")).toEqual(["Bebés"]);
+  expect(activeLabels("/catalogo/accesorios")).toEqual(["Accesorios"]);
+
+  const menuWithoutBabyParent = buildStoreMenu(categories.filter((category) => category.slug !== "bebes"));
+  expect(
+    menuWithoutBabyParent
+      .filter((group) => isStoreMenuGroupActive(group, "/catalogo", "bebes"))
+      .map((group) => group.label),
+  ).toEqual(["Bebés"]);
 });

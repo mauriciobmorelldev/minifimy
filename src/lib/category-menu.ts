@@ -17,6 +17,25 @@ function categoryHref(category: Category, ageGroup?: "bebes" | "ninos") {
   return `/catalogo/${category.slug}${ageGroup ? `?etapa=${ageGroup}` : ""}`;
 }
 
+function normalizePathname(pathname: string) {
+  const normalized = pathname.replace(/\/+$/, "");
+  return normalized || "/";
+}
+
+function menuHrefIsActive(href: string, pathname: string, ageContext?: string | null) {
+  const url = new URL(href, "https://minifimy.com");
+  if (normalizePathname(url.pathname) !== normalizePathname(pathname)) return false;
+
+  const linkAgeContext = url.searchParams.get("etapa");
+  if (linkAgeContext && ageContext) return linkAgeContext === ageContext;
+  if (url.pathname === "/catalogo") return linkAgeContext ? linkAgeContext === ageContext : !ageContext;
+  return true;
+}
+
+export function isStoreMenuGroupActive(group: StoreMenuLink, pathname: string, ageContext?: string | null) {
+  return [group, ...(group.children ?? [])].some((link) => menuHrefIsActive(link.href, pathname, ageContext));
+}
+
 function descendantsOf(parentId: string, categories: Category[]) {
   const descendants: Category[] = [];
   const visited = new Set<string>();
