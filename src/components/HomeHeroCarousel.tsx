@@ -2,27 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-
-const heroSlides = [
-  {
-    src: "/brand/hero/home-banner-1.jpeg",
-    alt: "Conjunto MiniFimy para bebé junto a bolsas de la marca",
-  },
-  {
-    src: "/brand/hero/home-banner-2.jpeg",
-    alt: "Mantas tejidas MiniFimy presentadas en una canasta",
-  },
-  {
-    src: "/brand/hero/home-banner-3.jpeg",
-    alt: "Prendas y accesorios MiniFimy para los primeros días del bebé",
-  },
-];
+import { useLayoutEffect, useRef } from "react";
 
 export function HomeHeroCarousel() {
-  const [activeSlide, setActiveSlide] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const touchStartX = useRef<number | null>(null);
   const heroRef = useRef<HTMLElement>(null);
   const fimyRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -95,62 +77,24 @@ export function HomeHeroCarousel() {
     };
   }, []);
 
-  useEffect(() => {
-    if (paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const interval = window.setInterval(() => {
-      setActiveSlide((current) => (current + 1) % heroSlides.length);
-    }, 6000);
-
-    return () => window.clearInterval(interval);
-  }, [paused]);
-
-  const showSlide = (index: number) => {
-    setActiveSlide((index + heroSlides.length) % heroSlides.length);
-  };
-
   return (
     <section
       ref={heroRef}
       className="home-hero-shell px-5 pt-7 sm:px-8 sm:pt-9 lg:px-10"
       aria-label="Banner principal de MiniFimy"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onTouchStart={(event) => {
-        touchStartX.current = event.touches[0]?.clientX ?? null;
-        setPaused(true);
-      }}
-      onTouchEnd={(event) => {
-        const startX = touchStartX.current;
-        const endX = event.changedTouches[0]?.clientX;
-        touchStartX.current = null;
-        setPaused(false);
-        if (startX === null || endX === undefined || Math.abs(startX - endX) < 45) return;
-        showSlide(activeSlide + (startX > endX ? 1 : -1));
-      }}
-      onFocusCapture={() => setPaused(true)}
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false);
-      }}
     >
       <div className="home-banner-hero relative mx-auto max-w-7xl">
-        <div className="home-banner-stage absolute inset-0">
-        {heroSlides.map((slide, index) => (
+        <div className="home-banner-stage relative">
           <Image
-            key={slide.src}
-            src={slide.src}
-            alt={index === activeSlide ? slide.alt : ""}
-            fill
-            sizes="(min-width: 1280px) 1280px, (min-width: 640px) calc(100vw - 4rem), calc(100vw - 2.5rem)"
-            className={`home-banner-image object-cover ${index === activeSlide ? "is-active" : ""}`}
-            preload={index === 0}
-            quality={75}
-            aria-hidden={index !== activeSlide}
+            src="/brand/hero/nueva-temporada-primavera-2026.png"
+            alt="MiniFimy. Nueva temporada, primavera 2026. Nuevos colores, prendas y conjuntos para acompañar cada etapa."
+            width={1916}
+            height={821}
+            className="home-banner-image block h-auto w-full"
+            preload
+            unoptimized
           />
-        ))}
-      </div>
-
-        <div className="home-banner-shade" aria-hidden="true" />
+        </div>
 
         <div ref={fimyRef} className="home-fimy-peek" aria-hidden="true">
         <Image
@@ -178,55 +122,19 @@ export function HomeHeroCarousel() {
           </svg>
         </h1>
         <p className="mt-1.5 text-xs font-medium leading-5 text-on-surface-variant sm:text-sm sm:leading-6">
-          Descubrí nuestras prendas para tu bebé.
+          Descubrí nuestra nueva temporada.
         </p>
         <Link
-          href="/catalogo"
+          href="/catalogo/nueva-temporada"
           className="mt-3 inline-flex min-h-9 items-center gap-1 rounded-full bg-primary px-3.5 py-2 text-xs font-bold text-on-primary transition hover:-translate-y-0.5 hover:bg-primary-dim hover:shadow-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          Ver catálogo completo
+          Ver nueva temporada
           <span className="material-symbols-outlined text-base" aria-hidden="true">
             arrow_forward
           </span>
         </Link>
       </div>
 
-        <div className="home-carousel-controls" role="group" aria-label="Controles del carrusel">
-        <button
-          type="button"
-          className="home-carousel-arrow"
-          onClick={() => showSlide(activeSlide - 1)}
-          aria-label="Ver banner anterior"
-        >
-          <span className="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-        </button>
-
-        <div className="flex items-center gap-2" role="group" aria-label="Elegir banner">
-          {heroSlides.map((slide, index) => (
-            <button
-              key={slide.src}
-              type="button"
-              className={`home-carousel-dot ${index === activeSlide ? "is-active" : ""}`}
-              onClick={() => showSlide(index)}
-              aria-label={`Ver banner ${index + 1} de ${heroSlides.length}`}
-              aria-current={index === activeSlide ? "true" : undefined}
-            />
-          ))}
-        </div>
-
-        <button
-          type="button"
-          className="home-carousel-arrow"
-          onClick={() => showSlide(activeSlide + 1)}
-          aria-label="Ver banner siguiente"
-        >
-          <span className="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-        </button>
-      </div>
-
-        <p className="sr-only" aria-live="polite">
-        Banner {activeSlide + 1} de {heroSlides.length}
-      </p>
       </div>
     </section>
   );

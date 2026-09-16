@@ -541,7 +541,7 @@
 @layer utilities {
   .home-banner-hero {
     height: auto;
-    aspect-ratio: 1600 / 686;
+    aspect-ratio: auto;
     overflow: hidden;
     isolation: isolate;
     border-radius: 2.5rem;
@@ -553,26 +553,6 @@
 
   .home-banner-stage {
     z-index: 0;
-  }
-
-  .home-banner-image {
-    opacity: 0;
-    object-position: center center;
-    transform: scale(1.018);
-    transition: opacity 0.7s ease, transform 6s ease-out;
-  }
-
-  .home-banner-image.is-active {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .home-banner-shade {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background: linear-gradient(90deg, transparent 50%, rgba(255, 250, 246, 0.04) 68%, rgba(255, 250, 246, 0.24) 100%);
   }
 
   .home-fimy-peek {
@@ -600,79 +580,7 @@
     translate: 0 -50%;
   }
 
-  .home-carousel-controls {
-    position: absolute;
-    left: 50%;
-    bottom: 1.15rem;
-    z-index: 4;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-height: 3rem;
-    padding: 0.25rem 0.4rem;
-    border: 1px solid rgba(255, 255, 255, 0.78);
-    border-radius: 9999px;
-    background: rgba(255, 250, 242, 0.88);
-    box-shadow: 0 10px 28px rgba(79, 91, 54, 0.13);
-    backdrop-filter: blur(8px);
-    transform: translateX(-50%);
-  }
-
-  .home-carousel-arrow {
-    display: inline-flex;
-    width: 2.5rem;
-    height: 2.5rem;
-    align-items: center;
-    justify-content: center;
-    border-radius: 9999px;
-    color: rgb(var(--color-primary));
-    transition: color 180ms ease, background-color 180ms ease, transform 180ms ease;
-  }
-
-  .home-carousel-arrow:hover {
-    color: rgb(var(--color-on-primary));
-    background: rgb(var(--color-primary));
-    transform: translateY(-1px);
-  }
-
-  .home-carousel-arrow:focus-visible,
-  .home-carousel-dot:focus-visible {
-    outline: 2px solid rgb(var(--color-primary));
-    outline-offset: 2px;
-  }
-
-  .home-carousel-dot {
-    width: 0.55rem;
-    height: 0.55rem;
-    border-radius: 9999px;
-    background: rgba(var(--color-primary), 0.3);
-    transition: width 220ms ease, background-color 220ms ease;
-  }
-
-  .home-carousel-dot.is-active {
-    width: 1.45rem;
-    background: rgb(var(--color-primary));
-  }
-
   @media (max-width: 1199px) and (min-width: 768px) {
-    .home-banner-hero {
-      height: auto;
-      aspect-ratio: 16 / 8.4;
-    }
-
-    .home-banner-stage {
-      inset: 0;
-      height: auto;
-    }
-
-    .home-banner-image {
-      object-position: center center;
-    }
-
-    .home-banner-shade {
-      background: linear-gradient(90deg, transparent 45%, rgba(255, 250, 246, 0.08) 66%, rgba(255, 250, 246, 0.34) 100%);
-    }
-
     .home-fimy-peek {
       right: -1.5rem;
       bottom: -2rem;
@@ -685,32 +593,12 @@
       padding: 0.9rem;
       border-radius: 1.35rem;
     }
-
-    .home-carousel-controls {
-      bottom: 0.85rem;
-    }
   }
 
   @media (max-width: 767px) {
     .home-banner-hero {
-      height: clamp(27rem, 125vw, 32rem);
-      aspect-ratio: auto;
+      padding-bottom: 10.5rem;
       border-radius: 1.5rem;
-    }
-
-    .home-banner-stage {
-      inset: 0;
-      height: auto;
-    }
-
-    .home-banner-image {
-      object-position: 44% center;
-    }
-
-    .home-banner-shade {
-      background:
-        linear-gradient(180deg, rgba(255, 250, 246, 0.02) 42%, rgba(255, 250, 246, 0.1) 64%, rgba(248, 238, 230, 0.72) 100%),
-        linear-gradient(90deg, transparent 54%, rgba(255, 250, 246, 0.2) 100%);
     }
 
     .home-fimy-peek {
@@ -730,35 +618,9 @@
       box-shadow: 0 14px 32px rgba(79, 91, 54, 0.14);
       translate: none;
     }
-
-    .home-carousel-controls {
-      top: 0.85rem;
-      bottom: auto;
-      gap: 0.3rem;
-      min-height: 2.25rem;
-      padding: 0.15rem 0.25rem;
-    }
-
-    .home-carousel-arrow {
-      width: 2rem;
-      height: 2rem;
-    }
-
-    .home-carousel-dot {
-      width: 0.42rem;
-      height: 0.42rem;
-    }
-
-    .home-carousel-dot.is-active {
-      width: 1.05rem;
-    }
   }
 
   @media (max-width: 390px) {
-    .home-banner-hero {
-      height: clamp(26rem, 124vw, 29.5rem);
-    }
-
     .home-fimy-peek {
       right: -2.4rem;
       width: clamp(8.75rem, 42vw, 11rem);
@@ -769,12 +631,6 @@
       bottom: 0.7rem;
       width: min(12.5rem, calc(100% - 4.5rem));
       padding: 0.7rem;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .home-banner-image {
-      transition: none !important;
     }
   }
 
