@@ -22,11 +22,13 @@ interface HeaderProps {
 export function Header({ navLinks }: HeaderProps) {
   const { items } = useCart();
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
+  const [desktopCategoriesOpen, setDesktopCategoriesOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileCategoryOpen, setMobileCategoryOpen] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [miniCartOpen, setMiniCartOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const desktopMenuRef = useRef<HTMLDivElement>(null);
   const desktopSearchButtonRef = useRef<HTMLButtonElement>(null);
   const mobileSearchButtonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -39,6 +41,18 @@ export function Header({ navLinks }: HeaderProps) {
     setMobileOpen(false);
     setMobileCategoryOpen(null);
   };
+
+  useEffect(() => {
+    if (!desktopCategoriesOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!desktopMenuRef.current?.contains(event.target as Node)) {
+        setDesktopCategoriesOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [desktopCategoriesOpen]);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -104,7 +118,7 @@ export function Header({ navLinks }: HeaderProps) {
       {mobileOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-[70] cursor-default bg-on-surface/20 backdrop-blur-[2px] md:hidden"
+          className="fixed inset-0 z-[70] cursor-default bg-on-surface/20 backdrop-blur-[2px] lg:hidden"
           onClick={closeMobileMenu}
           aria-label="Cerrar menú"
           tabIndex={-1}
@@ -115,7 +129,7 @@ export function Header({ navLinks }: HeaderProps) {
         aria-label="Principal"
       >
         <div className="liquid-header relative mx-auto flex max-w-7xl items-center justify-between rounded-[1.35rem] px-4 py-3 md:rounded-[1.7rem] md:px-6 md:py-3.5">
-          <div className="flex items-center gap-3 md:hidden">
+          <div className="flex items-center gap-3 lg:hidden">
             <button
               type="button"
               onClick={() => setMobileOpen((prev) => !prev)}
@@ -132,7 +146,7 @@ export function Header({ navLinks }: HeaderProps) {
           <Link
             href="/"
             onClick={closeMobileMenu}
-            className="absolute left-1/2 flex -translate-x-1/2 items-center gap-3 md:static md:translate-x-0"
+            className="absolute left-1/2 flex -translate-x-1/2 items-center gap-3 lg:static lg:translate-x-0"
           >
             <Image
               src="/brand/logo.svg"
@@ -145,54 +159,68 @@ export function Header({ navLinks }: HeaderProps) {
             <span className="sr-only">MiniFimy</span>
           </Link>
 
-          <div className="hidden items-center gap-7 font-headline text-sm font-medium tracking-wide md:flex">
-            {navLinks.map((link) => {
-              const active = pathname === link.href || (link.href !== "/catalogo" && pathname.startsWith(link.href));
-              if (link.children?.length) {
-                return (
-                  <div key={link.href} className="group relative pb-3">
-                    <Link
-                      href={link.href}
-                      className={`inline-flex items-center gap-1 transition-colors duration-300 ${active ? "border-b-2 border-secondary text-secondary" : "text-primary hover:text-secondary"}`}
-                    >
-                      {link.label}
-                      <span className="material-symbols-outlined text-base transition-transform group-hover:rotate-180 group-focus-within:rotate-180">expand_more</span>
-                    </Link>
-                    <div className="invisible pointer-events-none absolute left-1/2 top-full z-50 w-72 -translate-x-1/2 translate-y-1 pt-3 opacity-0 transition-all duration-200 group-hover:visible group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                      <div className="rounded-[1.4rem] bg-white p-3 shadow-lift ring-1 ring-primary/10">
-                      <div className="mb-2 rounded-[1rem] bg-[#f7efe3] px-4 py-3">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Categorías</p>
-                        <p className="mt-1 text-xs leading-5 text-on-surface-variant">{link.href === "/catalogo" ? "Todo lo que está cargado en Fimy." : `Explorá las subcategorías de ${link.label}.`}</p>
-                      </div>
-                      <div className="grid gap-1">
-                        {link.children.map((child) => (
-                          <Link
-                            key={`${child.href}-${child.label}`}
-                            href={child.href}
-                            className="rounded-full px-4 py-2 text-sm font-bold text-primary transition hover:bg-[#f7efe3] hover:text-secondary"
-                          >
-                            {child.label}
-                          </Link>
-                        ))}
-                      </div>
-                      </div>
-                    </div>
-                  </div>
-                );
+          <div
+            ref={desktopMenuRef}
+            className="hidden items-center font-headline text-sm font-semibold tracking-wide lg:flex"
+            onMouseLeave={() => setDesktopCategoriesOpen(false)}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setDesktopCategoriesOpen(false);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                setDesktopCategoriesOpen(false);
+                desktopMenuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
               }
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`pb-1 transition-colors duration-300 ${active ? "border-b-2 border-secondary text-secondary" : "text-primary hover:text-secondary"}`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
+            }}
+          >
+            <button
+              type="button"
+              onMouseEnter={() => setDesktopCategoriesOpen(true)}
+              onFocus={() => setDesktopCategoriesOpen(true)}
+              onClick={() => setDesktopCategoriesOpen((open) => !open)}
+              aria-expanded={desktopCategoriesOpen}
+              aria-controls="desktop-category-menu"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-primary transition hover:bg-[#f7efe3] hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <span className="material-symbols-outlined text-xl" aria-hidden="true">menu</span>
+              Categorías
+              <span className={`material-symbols-outlined text-base transition-transform ${desktopCategoriesOpen ? "rotate-180" : ""}`} aria-hidden="true">expand_more</span>
+            </button>
+
+            <div
+              id="desktop-category-menu"
+              className={`absolute inset-x-0 top-full z-50 pt-3 transition duration-200 ${desktopCategoriesOpen ? "visible translate-y-0 opacity-100" : "invisible pointer-events-none -translate-y-2 opacity-0"}`}
+            >
+              <div className="grid max-h-[calc(100dvh-7rem)] grid-cols-5 gap-5 overflow-y-auto rounded-[1.5rem] bg-[#fffaf1] p-6 shadow-lift ring-1 ring-primary/10">
+                {navLinks.map((group) => (
+                  <section key={group.href} aria-labelledby={`menu-${group.label}`}>
+                    <Link
+                      id={`menu-${group.label}`}
+                      href={group.href}
+                      onClick={() => setDesktopCategoriesOpen(false)}
+                      className="mb-3 block border-b border-primary/10 pb-3 text-base font-extrabold text-primary transition hover:text-secondary"
+                    >
+                      {group.label}
+                    </Link>
+                    <div className="flex flex-col gap-1">
+                      {(group.children ?? []).map((child, index) => (
+                        <Link
+                          key={`${child.href}-${child.label}`}
+                          href={child.href}
+                          onClick={() => setDesktopCategoriesOpen(false)}
+                          className={`rounded-lg px-2 py-2 text-sm leading-5 transition hover:bg-[#f7efe3] hover:text-primary ${index === 0 ? "font-bold text-primary" : "text-on-surface-variant"}`}
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="hidden items-center gap-5 text-primary md:flex">
+          <div className="hidden items-center gap-5 text-primary lg:flex">
             <button
               ref={desktopSearchButtonRef}
               type="button"
@@ -232,7 +260,7 @@ export function Header({ navLinks }: HeaderProps) {
             </Link>
           </div>
 
-          <div className="flex items-center gap-3 text-primary md:hidden">
+          <div className="flex items-center gap-3 text-primary lg:hidden">
             <button
               ref={mobileSearchButtonRef}
               type="button"
@@ -293,8 +321,8 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
 
           <div
-            className={`absolute left-0 right-0 top-[calc(100%+0.75rem)] z-[90] h-[calc(100dvh-6.75rem)] overflow-hidden overscroll-contain rounded-[1.6rem] border border-primary/10 bg-[#fffaf1] shadow-lift ring-1 ring-primary/10 transition-all duration-300 md:hidden ${
-              mobileOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
+            className={`absolute left-0 right-0 top-[calc(100%+0.75rem)] z-[90] h-[calc(100dvh-6.75rem)] overflow-hidden overscroll-contain rounded-[1.6rem] border border-primary/10 bg-[#fffaf1] shadow-lift ring-1 ring-primary/10 transition-all duration-300 lg:hidden ${
+              mobileOpen ? "translate-y-0 opacity-100" : "invisible pointer-events-none translate-y-3 opacity-0"
             }`}
           >
             <div className="h-full space-y-5 overflow-y-auto overscroll-contain px-4 py-4 pb-8 [scrollbar-gutter:stable]">
@@ -305,6 +333,7 @@ export function Header({ navLinks }: HeaderProps) {
               <div className="flex flex-col gap-2 font-headline text-base font-semibold text-primary">
                 {navLinks.map((link) => {
                   const hasChildren = Boolean(link.children?.length);
+                  const linkPathname = link.href.split("?")[0];
                   const isCategoryOpen = hasChildren && mobileCategoryOpen === link.href;
 
                   if (hasChildren) {
@@ -314,7 +343,7 @@ export function Header({ navLinks }: HeaderProps) {
                           type="button"
                           onClick={() => setMobileCategoryOpen((prev) => prev === link.href ? null : link.href)}
                           aria-expanded={isCategoryOpen}
-                          className={`flex w-full items-center justify-between rounded-[1.15rem] px-4 py-3 text-left shadow-soft transition-colors ${pathname.startsWith(link.href) ? "bg-primary text-on-primary" : "bg-white text-primary"}`}
+                          className={`flex min-h-12 w-full items-center justify-between rounded-[1.15rem] px-4 py-3 text-left shadow-soft transition-colors ${pathname.startsWith(linkPathname) ? "bg-primary text-on-primary" : "bg-white text-primary"}`}
                         >
                           <span>{link.label}</span>
                           <span className={`material-symbols-outlined text-lg transition-transform duration-300 ${isCategoryOpen ? "rotate-180" : ""}`}>expand_more</span>

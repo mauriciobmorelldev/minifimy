@@ -1,30 +1,54 @@
-import { withCategoryChildren } from "@/lib/category-menu";
+import { buildStoreMenu } from "@/lib/category-menu";
 
 const categories = [
   { id: "1", name: "Bebés", slug: "bebes", description: "" },
   { id: "2", name: "Niñas", slug: "ninas", description: "" },
-  { id: "3", name: "Bodies", slug: "bodies", parentId: "1", description: "" },
+  { id: "3", name: "Bodies", slug: "bodys", parentId: "1", description: "" },
   { id: "4", name: "Vestidos", slug: "vestidos", parentId: "2", description: "" },
+  { id: "5", name: "Accesorios", slug: "accesorios", description: "" },
+  { id: "6", name: "Nueva Temporada", slug: "nueva-temporada", description: "" },
+  { id: "7", name: "Oportunidades", slug: "ultimas-oportunidades", description: "" },
 ];
 
-it("groups only the children of each parent and preserves its full catalog link", () => {
-  expect(withCategoryChildren({ href: "/catalogo/bebes", label: "Bebés" }, categories)).toEqual({
-    href: "/catalogo/bebes", label: "Bebés", children: [
-      { href: "/catalogo/bebes", label: "Ver todo en Bebés" },
-      { href: "/catalogo/bodies?etapa=bebes", label: "Bodies" },
-    ],
-  });
-  expect(withCategoryChildren({ href: "/catalogo/ninas/", label: "Niñas" }, categories)).toMatchObject({
-    children: [
-      { href: "/catalogo/ninas/", label: "Ver todo en Niñas" },
-      { href: "/catalogo/vestidos?etapa=ninos", label: "Vestidos" },
-    ],
-  });
+it("orders the primary groups before the remaining catalog", () => {
+  expect(buildStoreMenu(categories).map((group) => group.label)).toEqual([
+    "Bebés",
+    "Niñas",
+    "Niños",
+    "Accesorios",
+    "Catálogo",
+  ]);
 });
 
-it("keeps leaf categories and unrelated links as direct links", () => {
-  for (const href of ["/catalogo/bodies", "/contacto"]) {
-    const link = { href, label: "Enlace" };
-    expect(withCategoryChildren(link, categories)).toEqual(link);
-  }
+it("keeps children in their main group and removes those duplicates from Catalog", () => {
+  const menu = buildStoreMenu(categories);
+  const babies = menu.find((group) => group.label === "Bebés");
+  const girls = menu.find((group) => group.label === "Niñas");
+  const catalog = menu.find((group) => group.label === "Catálogo");
+
+  expect(babies?.children).toContainEqual({
+    href: "/catalogo/bodys?etapa=bebes",
+    label: "Bodies",
+  });
+  expect(girls?.children).toContainEqual({
+    href: "/catalogo/vestidos?etapa=ninos",
+    label: "Vestidos",
+  });
+  expect(catalog?.children?.map((child) => child.label)).toEqual([
+    "Ver catálogo completo",
+    "Nueva Temporada",
+    "Oportunidades",
+  ]);
+});
+
+it("shows Niños now as an age-filtered group until its WooCommerce parent exists", () => {
+  const boys = buildStoreMenu(categories).find((group) => group.label === "Niños");
+
+  expect(boys).toEqual({
+    href: "/catalogo?etapa=ninos",
+    label: "Niños",
+    children: [
+      { href: "/catalogo?etapa=ninos", label: "Ver todo en Niños" },
+    ],
+  });
 });

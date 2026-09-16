@@ -596,41 +596,53 @@
   }
 
   @media (max-width: 767px) {
+    .home-hero-shell {
+      padding-inline: 0.75rem;
+    }
+
     .home-banner-hero {
-      padding-bottom: 10.5rem;
+      padding-bottom: 9.5rem;
       border-radius: 1.5rem;
     }
 
+    .home-banner-stage {
+      aspect-ratio: 1.35;
+      overflow: hidden;
+    }
+
+    .home-banner-stage .home-banner-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: left center;
+    }
+
     .home-fimy-peek {
-      right: -2.25rem;
+      right: -1.25rem;
       bottom: -1.4rem;
-      width: clamp(9rem, 40vw, 12rem);
+      width: clamp(9rem, 38vw, 12rem);
     }
 
     .home-fimy-card {
       right: auto;
-      left: 0.85rem;
+      left: 0.75rem;
       top: auto;
       bottom: 0.85rem;
-      width: min(13rem, calc(100% - 5rem));
+      width: clamp(12.5rem, calc(100% - 7rem), 17rem);
       padding: 0.75rem;
       border-radius: 1.1rem;
       box-shadow: 0 14px 32px rgba(79, 91, 54, 0.14);
       translate: none;
     }
-  }
 
-  @media (max-width: 390px) {
-    .home-fimy-peek {
-      right: -2.4rem;
-      width: clamp(8.75rem, 42vw, 11rem);
+    .home-fimy-card h1 {
+      font-size: 1rem;
     }
 
-    .home-fimy-card {
-      left: 0.7rem;
-      bottom: 0.7rem;
-      width: min(12.5rem, calc(100% - 4.5rem));
-      padding: 0.7rem;
+    .home-fimy-card a {
+      min-height: 2.75rem;
+      padding-inline: 0.625rem;
+      white-space: nowrap;
     }
   }
 

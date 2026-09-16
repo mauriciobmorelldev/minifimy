@@ -7,7 +7,7 @@ import { SiteLockedScreen } from "@/components/SiteLockedScreen";
 import { WhatsAppFimy } from "@/components/WhatsAppFimy";
 import { CartProvider } from "@/context/cart-context";
 import { FeedbackProvider } from "@/context/feedback-context";
-import { withCategoryChildren } from "@/lib/category-menu";
+import { buildStoreMenu } from "@/lib/category-menu";
 import { getStoreCategories } from "@/lib/woocommerce";
 import { getSiteSettings } from "@/lib/wordpress";
 import "./globals.css";
@@ -78,30 +78,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const [siteSettings, storeCategories] = await Promise.all([getSiteSettings(), getStoreCategories()]);
-  const automaticFeaturedMenu = storeCategories.filter((category) => !category.parentId).slice(0, 3).map((category) => ({
-    href: `/catalogo/${category.slug}`,
-    label: category.name,
-  }));
-  const configuredFeaturedMenu = siteSettings.featuredMenuItems.filter((item) => !isHiddenCatalogMenuItem(item.href));
-  const featuredMenu = configuredFeaturedMenu.length > 0 ? configuredFeaturedMenu.slice(0, 3) : automaticFeaturedMenu;
-  const featuredHrefs = new Set(featuredMenu.map((item) => item.href));
-  const catalogChildren = storeCategories
-    .map((category) => ({
-      href: `/catalogo/${category.slug}`,
-      label: category.name,
-    }))
-    .filter((category) => !featuredHrefs.has(category.href))
-    .slice(0, 12);
-  const baseMenu = [
-    { href: "/catalogo", label: "Catálogo", children: catalogChildren },
-    ...featuredMenu,
-  ];
-  const extraMenu = siteSettings.menusFromWordPress
-    ? siteSettings.mainMenu.filter((item) => !isHiddenCatalogMenuItem(item.href) && !baseMenu.some((baseItem) => baseItem.href === item.href))
-    : [];
-  const mainMenu = [...baseMenu, ...extraMenu].slice(0, 6).map((link) =>
-    link.href === "/catalogo" ? link : withCategoryChildren(link, storeCategories)
-  );
+  const mainMenu = buildStoreMenu(storeCategories);
 
   if (siteLocked) {
     return (
