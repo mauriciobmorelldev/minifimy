@@ -85,7 +85,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       ...getPriceRange(getParam(query, "precio")),
       ...getSort(getParam(query, "orden")),
     }),
-    getStoreProductFilters(),
+    getStoreProductFilters({ category: category.id, ageGroup }),
   ]);
 
   return (

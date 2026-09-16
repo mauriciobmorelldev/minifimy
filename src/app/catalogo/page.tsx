@@ -43,17 +43,14 @@ function getSort(value?: string) {
 
 export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const params = await searchParams;
-  const selectedCategories = facetValues(params.categoria);
   const categories = await getStoreCategories();
-  const categoryIds = categories.filter((category) => selectedCategories.includes(category.slug)).map((category) => category.id);
-  const ageGroup = resolveCatalogAge(categories, selectedCategories, getParam(params, "etapa"));
+  const ageGroup = resolveCatalogAge(categories, [], getParam(params, "etapa"));
   const page = getPage(getParam(params, "page"));
   const [collection, filterOptions] = await Promise.all([
     getStoreProductCollection({
       page,
       ageGroup,
       perPage: 12,
-      category: selectedCategories.length ? categoryIds.join(",") || "0" : undefined,
       search: getParam(params, "q"),
       size: facetValues(params.talle),
       color: facetValues(params.color),

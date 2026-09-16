@@ -160,6 +160,69 @@ describe("WooCommerce catalog load", () => {
     });
     expect(requestedUrls.some((url) => url.pathname.endsWith("/wc/v3/products"))).toBe(false);
   });
+  it("builds scoped filters only from products in the active category", async () => {
+    const product = {
+      id: 41,
+      name: "Gorrito",
+      slug: "gorrito",
+      price: "1800",
+      regular_price: "2200",
+      stock_status: "instock",
+      images: [],
+      categories: [{ id: 8, name: "Accesorios", slug: "accesorios" }],
+      attributes: [
+        { name: "Talle", options: ["Talle único"] },
+        { name: "Color", options: ["Verde"] },
+      ],
+    };
+    global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/products/categories")) {
+        return { ok: true, status: 200, headers: new Headers(), json: async () => [{ id: 8, name: "Accesorios", slug: "accesorios" }] } as Response;
+      }
+      if (url.pathname.endsWith("/wc/store/v1/products")) {
+        return {
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: async () => [{
+            id: 41,
+            is_in_stock: true,
+            prices: { price: "180000", regular_price: "220000", currency_minor_unit: 2 },
+            extensions: { minifimy: { list_price: "2200", discount_price: "1800" } },
+            attributes: [
+              { name: "Talle", taxonomy: "pa_talle", terms: [{ name: "Talle único" }] },
+              { name: "Color", taxonomy: "pa_color", terms: [{ name: "Verde" }] },
+            ],
+          }],
+        } as Response;
+      }
+      if (url.pathname.endsWith("/wc/v3/products")) {
+        return {
+          ok: true,
+          status: 200,
+          headers: new Headers({ "x-wp-total": "1", "x-wp-totalpages": "1" }),
+          json: async () => [product],
+        } as Response;
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }) as typeof fetch;
+
+    const { getStoreProductFilters } = await import("@/lib/woocommerce");
+    const filters = await getStoreProductFilters({ category: "8" });
+    const urls = (global.fetch as jest.Mock).mock.calls.map(([input]) => new URL(String(input)));
+    const listing = urls.find((url) => url.pathname.endsWith("/wc/v3/products"));
+
+    expect(listing?.searchParams.get("category")).toBe("8");
+    expect(filters).toMatchObject({
+      sizes: ["Talle único"],
+      colors: ["Verde"],
+      price: { min: 1800, max: 2200 },
+    });
+    expect(urls.some((url) => url.pathname.endsWith("/products/attributes"))).toBe(false);
+    expect(urls.some((url) => url.pathname.endsWith("/collection-data"))).toBe(false);
+  });
+
   it("filters age before server pagination using all cached attribute pages without variations", async () => {
     const response = (data: unknown, totalPages = 1) => ({
       ok: true, status: 200,

@@ -1148,10 +1148,20 @@ async function getStoreCatalogPriceRange() {
   return max > min ? { min, max } : null;
 }
 
-export async function getStoreProductFilters(): Promise<ProductFilterOptions> {
+export async function getStoreProductFilters(scope: Pick<StoreProductQuery, "category" | "ageGroup"> = {}): Promise<ProductFilterOptions> {
   const fallback = buildFilterOptionsFromProducts(fallbackProducts, fallbackCategories);
   if (!canUseWooCommerce()) {
-    return fallback;
+    if (!scope.category && !scope.ageGroup) return fallback;
+    const collection = await getStoreProductCollection({ ...scope, perPage: 100 });
+    return buildFilterOptionsFromProducts(collection.products, fallback.categories);
+  }
+
+  if (scope.category || scope.ageGroup) {
+    const [categories, collection] = await Promise.all([
+      getStoreCategories(),
+      getStoreProductCollection({ ...scope, perPage: 100 }),
+    ]);
+    return buildFilterOptionsFromProducts(collection.products, categories);
   }
 
   const [categories, attributes, priceRange] = await Promise.all([

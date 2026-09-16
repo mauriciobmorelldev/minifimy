@@ -51,8 +51,8 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const routeCategory = pathname.startsWith("/catalogo/") ? pathname.split("/").filter(Boolean)[1] ?? "all" : "all";
+  const scopedCategories = routeCategory === "all" ? [] : [routeCategory];
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
-  const [category, setCategory] = useState(() => facetValues(searchParams.getAll("categoria").length ? searchParams.getAll("categoria") : routeCategory));
   const [size, setSize] = useState(() => facetValues(searchParams.getAll("talle")));
   const [color, setColor] = useState(() => facetValues(searchParams.getAll("color")));
   const [priceRange, setPriceRange] = useState(searchParams.get("precio") ?? "all");
@@ -63,14 +63,13 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
 
   useEffect(() => {
     setQuery(searchParams.get("q") ?? "");
-    setCategory(facetValues(searchParams.getAll("categoria").length ? searchParams.getAll("categoria") : routeCategory));
     setSize(facetValues(searchParams.getAll("talle")));
     setColor(facetValues(searchParams.getAll("color")));
     setPriceRange(searchParams.get("precio") ?? "all");
     setSort(searchParams.get("orden") ?? "featured");
   }, [routeCategory, searchParams]);
 
-  const selection: CatalogSelection = { etapa: resolveCatalogAge(categories, category, searchParams.get("etapa")), q: query, categoria: category, talle: size, color, precio: priceRange, orden: sort };
+  const selection: CatalogSelection = { etapa: resolveCatalogAge(categories, scopedCategories, searchParams.get("etapa")), q: query, categoria: scopedCategories, talle: size, color, precio: priceRange, orden: sort };
 
   const navigate = (next: CatalogSelection, page = 1) => {
     startTransition(() => router.push(catalogUrl(next, page), { scroll: false }));
@@ -79,16 +78,11 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
   const setFilter = (next: Partial<CatalogSelection>) => {
     const updated = { ...selection, ...next };
     setQuery(updated.q);
-    setCategory(updated.categoria);
     setSize(updated.talle);
     setColor(updated.color);
     setPriceRange(updated.precio);
     setSort(updated.orden);
     navigate(updated);
-  };
-
-  const setCategoryFilter = (value: string) => {
-    setFilter({ categoria: value === "all" ? [] : toggleFacet(category, value) });
   };
 
   const priceMinLimit = Math.floor((filterOptions.price.min || 0) / 100) * 100;
@@ -121,33 +115,9 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
     setFilter({ precio: serializePriceRange(draftPriceRange.min, draftPriceRange.max, priceMinLimit, priceMaxLimit) });
   };
 
-  const formatSizeCta = (value: string) => {
-    const normalized = value.replace(/\s*-\s*/g, "–");
-    const needsUnit = /\d+–\d+/.test(normalized) && !/mes|año/i.test(normalized);
-    return `Ver talle ${normalized}${needsUnit ? " meses" : ""}`;
-  };
-
-  const quickFilters = [
-    ...filterOptions.categories.slice(0, 5).map((item) => ({
-      label: item.name,
-      cta: `Ver ${item.name.toLocaleLowerCase("es-AR")}`,
-      icon: "category",
-      action: () => setCategoryFilter(item.slug),
-    })),
-    ...(filterOptions.sizes[0]
-      ? [{
-          label: `Talle ${filterOptions.sizes[0]}`,
-          cta: formatSizeCta(filterOptions.sizes[0]),
-          icon: "straighten",
-          action: () => setFilter({ talle: toggleFacet(size, filterOptions.sizes[0]) }),
-        }]
-      : []),
-  ].slice(0, 6);
-
   const selectedPriceName = !selectedPriceRange.isDefault ? `${formatPrice(selectedPriceRange.min)} - ${formatPrice(selectedPriceRange.max)}` : "";
   const activeFilters = [
     ...(query ? [{ key: "q", label: query, remove: () => setFilter({ q: "" }) }] : []),
-    ...category.map((value) => ({ key: `category-${value}`, label: categories.find((item) => item.slug === value)?.name ?? value, remove: () => setFilter({ categoria: toggleFacet(category, value) }) })),
     ...size.map((value) => ({ key: `size-${value}`, label: value, remove: () => setFilter({ talle: toggleFacet(size, value) }) })),
     ...color.map((value) => ({ key: `color-${value}`, label: value, remove: () => setFilter({ color: toggleFacet(color, value) }) })),
     ...(selectedPriceName ? [{ key: "price", label: selectedPriceName, remove: () => setFilter({ precio: "all" }) }] : []),
@@ -161,7 +131,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
 
   const resetFilters = () => {
     setMobileFiltersOpen(false);
-    setFilter({ etapa: undefined, q: "", categoria: [], talle: [], color: [], precio: "all", orden: "featured" });
+    setFilter({ q: "", talle: [], color: [], precio: "all", orden: "featured" });
   };
 
   return (
@@ -262,24 +232,6 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
           </div>
         </ScrollReveal>
 
-        <ScrollReveal className="mt-6 md:mt-8">
-          <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0">
-            {quickFilters.map((filter) => (
-              <button
-                key={filter.label}
-                type="button"
-                onClick={filter.action}
-                className="group min-w-[72%] snap-start rounded-[1.35rem] bg-white/76 p-4 text-left shadow-soft transition-all duration-300 hover:-translate-y-1 hover:bg-white sm:min-w-[42%] md:min-w-0 md:rounded-[1.6rem] md:p-5"
-              >
-                <span className="mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-[#f7efe3] text-primary transition-transform group-hover:rotate-[-8deg]">
-                  <span className="material-symbols-outlined">{filter.icon}</span>
-                </span>
-                <span className="font-headline text-lg font-extrabold text-on-surface">{filter.label}</span>
-                <span className="mt-2 block text-sm font-bold text-secondary">{filter.cta}</span>
-              </button>
-            ))}
-          </div>
-        </ScrollReveal>
 
         <div className="relative z-10 mt-8 grid gap-6 lg:mt-12 lg:grid-cols-[300px_1fr] lg:gap-8">
           <aside id="filtros" className="h-fit scroll-mt-28 rounded-[1.6rem] bg-white/82 p-4 shadow-soft ring-1 ring-white/70 lg:sticky lg:top-28 lg:rounded-[2rem] lg:p-5" aria-label="Filtros de catálogo">
@@ -309,33 +261,8 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
 
             <fieldset disabled={isPending} className={`${mobileFiltersOpen ? "block" : "hidden"} min-w-0 space-y-5 lg:block disabled:opacity-70`}>
               <p className="rounded-[1.2rem] bg-[#f7efe3] px-4 py-3 text-xs font-semibold leading-5 text-primary/85">
-                Podés elegir varias categorías, talles y colores. Las opciones de cada grupo se combinan con los demás filtros.
+                Los talles, colores y precios corresponden a las prendas de {routeCategory === "all" ? "este catálogo" : "esta categoría"}.
               </p>
-              <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">Categoría</h3>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCategoryFilter("all")}
-                    aria-pressed={category.length === 0}
-                    className={`rounded-full px-4 py-2 text-sm font-bold transition ${category.length === 0 ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
-                  >
-                    Todo MiniFimy
-                  </button>
-                  {categories.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setCategoryFilter(item.slug)}
-                      aria-pressed={category.includes(item.slug)}
-                      className={`rounded-full px-4 py-2 text-sm font-bold transition ${category.includes(item.slug) ? "bg-primary text-on-primary" : "bg-[#f7efe3] text-primary hover:bg-primary-container"}`}
-                    >
-                      {item.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div>
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">Talle</h3>
                 <div className="flex flex-wrap gap-2">
