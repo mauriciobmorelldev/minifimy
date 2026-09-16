@@ -5,7 +5,6 @@ import { useCart } from "@/context/cart-context";
 
 jest.mock("next/navigation", () => ({
   usePathname: () => "/",
-  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: jest.fn() }),
 }));
 

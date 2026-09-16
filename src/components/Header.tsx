@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { MiniCartDrawer } from "@/components/MiniCartDrawer";
 import { ProductSearchSuggestions } from "@/components/ProductSearchSuggestions";
@@ -29,19 +29,25 @@ export function Header({ navLinks }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [miniCartOpen, setMiniCartOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [mobileAgeContext, setMobileAgeContext] = useState<string | null>(null);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
   const desktopSearchButtonRef = useRef<HTMLButtonElement>(null);
   const mobileSearchButtonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchPanelRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const suggestions = useProductSuggestions(query, searchOpen, true);
   const hiddenRoutes = ["/cargando-70", "/cargando-99"];
   const closeMobileMenu = () => {
     setMobileOpen(false);
     setMobileCategoryOpen(null);
+  };
+  const toggleMobileMenu = () => {
+    if (!mobileOpen) {
+      setMobileAgeContext(new URLSearchParams(window.location.search).get("etapa"));
+    }
+    setMobileOpen((open) => !open);
   };
 
   useEffect(() => {
@@ -259,7 +265,7 @@ export function Header({ navLinks }: HeaderProps) {
           <div className="flex items-center gap-3 lg:hidden">
             <button
               type="button"
-              onClick={() => setMobileOpen((prev) => !prev)}
+              onClick={toggleMobileMenu}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fffaf1] text-primary shadow-soft ring-1 ring-primary/10"
               aria-expanded={mobileOpen}
               aria-label="Abrir menú"
@@ -460,7 +466,7 @@ export function Header({ navLinks }: HeaderProps) {
                 {navLinks.map((link) => {
                   const hasChildren = Boolean(link.children?.length);
                   const isCategoryOpen = hasChildren && mobileCategoryOpen === link.href;
-                  const isActive = isStoreMenuGroupActive(link, pathname, searchParams.get("etapa"));
+                  const isActive = isStoreMenuGroupActive(link, pathname, mobileAgeContext);
 
                   if (hasChildren) {
                     return (
