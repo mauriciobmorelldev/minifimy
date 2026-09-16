@@ -57,7 +57,7 @@ export function BenefitsBar() {
         ))}
       </div>
 
-      <div className="mx-auto hidden max-w-7xl grid-cols-3 px-8 py-4 sm:grid lg:px-10">
+      <div className="mx-auto hidden max-w-7xl grid-cols-3 px-8 py-4 sm:grid lg:hidden lg:px-10">
         {benefits.map((benefit) => (
           <div key={benefit.title} className="flex items-center justify-center gap-3 border-r border-white/20 px-3 text-center last:border-r-0">
             <span className="material-symbols-outlined text-2xl text-[#f2d79d]" aria-hidden="true">
