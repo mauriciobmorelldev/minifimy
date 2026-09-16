@@ -23,7 +23,7 @@ export function Header({ navLinks }: HeaderProps) {
   const { items } = useCart();
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
+  const [mobileCategoryOpen, setMobileCategoryOpen] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [miniCartOpen, setMiniCartOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -37,7 +37,7 @@ export function Header({ navLinks }: HeaderProps) {
   const hiddenRoutes = ["/cargando-70", "/cargando-99"];
   const closeMobileMenu = () => {
     setMobileOpen(false);
-    setMobileCatalogOpen(false);
+    setMobileCategoryOpen(null);
   };
 
   useEffect(() => {
@@ -156,13 +156,13 @@ export function Header({ navLinks }: HeaderProps) {
                       className={`inline-flex items-center gap-1 transition-colors duration-300 ${active ? "border-b-2 border-secondary text-secondary" : "text-primary hover:text-secondary"}`}
                     >
                       {link.label}
-                      <span className="material-symbols-outlined text-base transition-transform group-hover:rotate-180">expand_more</span>
+                      <span className="material-symbols-outlined text-base transition-transform group-hover:rotate-180 group-focus-within:rotate-180">expand_more</span>
                     </Link>
-                    <div className="pointer-events-none absolute left-1/2 top-full z-50 w-72 -translate-x-1/2 translate-y-1 pt-3 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+                    <div className="invisible pointer-events-none absolute left-1/2 top-full z-50 w-72 -translate-x-1/2 translate-y-1 pt-3 opacity-0 transition-all duration-200 group-hover:visible group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
                       <div className="rounded-[1.4rem] bg-white p-3 shadow-lift ring-1 ring-primary/10">
                       <div className="mb-2 rounded-[1rem] bg-[#f7efe3] px-4 py-3">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Categorías</p>
-                        <p className="mt-1 text-xs leading-5 text-on-surface-variant">Todo lo que está cargado en Fimy.</p>
+                        <p className="mt-1 text-xs leading-5 text-on-surface-variant">{link.href === "/catalogo" ? "Todo lo que está cargado en Fimy." : `Explorá las subcategorías de ${link.label}.`}</p>
                       </div>
                       <div className="grid gap-1">
                         {link.children.map((child) => (
@@ -305,22 +305,22 @@ export function Header({ navLinks }: HeaderProps) {
               <div className="flex flex-col gap-2 font-headline text-base font-semibold text-primary">
                 {navLinks.map((link) => {
                   const hasChildren = Boolean(link.children?.length);
-                  const isCatalogOpen = hasChildren && mobileCatalogOpen;
+                  const isCategoryOpen = hasChildren && mobileCategoryOpen === link.href;
 
                   if (hasChildren) {
                     return (
                       <div key={link.href} className="space-y-2">
                         <button
                           type="button"
-                          onClick={() => setMobileCatalogOpen((prev) => !prev)}
-                          aria-expanded={isCatalogOpen}
+                          onClick={() => setMobileCategoryOpen((prev) => prev === link.href ? null : link.href)}
+                          aria-expanded={isCategoryOpen}
                           className={`flex w-full items-center justify-between rounded-[1.15rem] px-4 py-3 text-left shadow-soft transition-colors ${pathname.startsWith(link.href) ? "bg-primary text-on-primary" : "bg-white text-primary"}`}
                         >
                           <span>{link.label}</span>
-                          <span className={`material-symbols-outlined text-lg transition-transform duration-300 ${isCatalogOpen ? "rotate-180" : ""}`}>expand_more</span>
+                          <span className={`material-symbols-outlined text-lg transition-transform duration-300 ${isCategoryOpen ? "rotate-180" : ""}`}>expand_more</span>
                         </button>
                         <div
-                          className={`ml-3 grid overflow-y-auto overscroll-contain rounded-[1.2rem] bg-white shadow-soft transition-all duration-300 ${isCatalogOpen ? "max-h-[55dvh] gap-2 p-3 opacity-100" : "max-h-0 gap-0 p-0 opacity-0"}`}
+                          className={`ml-3 grid overflow-y-auto overscroll-contain rounded-[1.2rem] bg-white shadow-soft transition-all duration-300 ${isCategoryOpen ? "max-h-[55dvh] gap-2 p-3 opacity-100" : "invisible max-h-0 gap-0 p-0 opacity-0"}`}
                         >
                           {link.children?.map((child) => (
                             <Link key={`${child.href}-${child.label}`} href={child.href} onClick={closeMobileMenu} className="rounded-full bg-[#f7efe3] px-3 py-2 text-sm font-bold text-primary/90">

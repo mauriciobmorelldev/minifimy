@@ -25,7 +25,7 @@ const WOO_PRODUCT_FIELDS = [
   "meta_data",
 ].join(",");
 
-const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description"].join(",");
+const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description", "parent"].join(",");
 const HIDDEN_CATEGORY_SLUGS = new Set(["sin-categorizar"]);
 const WOO_VARIATION_FIELDS = ["id", "price", "regular_price", "minifimy_prices", "stock_quantity", "stock_status", "image", "attributes"].join(",");
 
@@ -347,6 +347,7 @@ type WordPressMedia = {
 
 type WooCategory = {
   id: number;
+  parent?: number;
   name: string;
   slug: string;
   description?: string;
@@ -838,6 +839,7 @@ async function getStoreProductVariations(productId: string, revalidate = CACHE_S
 function mapWooCategory(category: WooCategory): Category {
   return {
     id: String(category.id),
+    parentId: category.parent ? String(category.parent) : undefined,
     name: category.name,
     slug: category.slug,
     description: cleanText(category.description) || `Productos MiniFimy de ${category.name}.`,

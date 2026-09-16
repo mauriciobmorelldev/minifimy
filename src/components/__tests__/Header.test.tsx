@@ -58,4 +58,28 @@ describe("Header search", () => {
     await user.click(document.body);
     expect(searchButton).toHaveAttribute("aria-expanded", "false");
   });
+  it("opens mobile categories separately and closes after choosing a subcategory", async () => {
+    const user = userEvent.setup();
+    render(<Header navLinks={[
+      { href: "/catalogo", label: "Catálogo", children: [{ href: "/catalogo/tejidos", label: "Tejidos" }] },
+      { href: "/catalogo/bebes", label: "Bebés", children: [{ href: "/catalogo/bodies", label: "Bodies" }] },
+      { href: "/catalogo/ninas", label: "Niñas", children: [{ href: "/catalogo/vestidos", label: "Vestidos" }] },
+    ]} />);
+    await user.click(screen.getByRole("button", { name: "Abrir menú" }));
+    const catalog = screen.getByRole("button", { name: /Catálogo/ });
+    const babies = screen.getByRole("button", { name: /Bebés/ });
+    const girls = screen.getByRole("button", { name: /Niñas/ });
+    await user.click(catalog);
+    await user.click(babies);
+    expect(catalog).toHaveAttribute("aria-expanded", "false");
+    expect(babies).toHaveAttribute("aria-expanded", "true");
+    expect(girls).toHaveAttribute("aria-expanded", "false");
+    await user.click(girls);
+    expect(babies).toHaveAttribute("aria-expanded", "false");
+    expect(girls).toHaveAttribute("aria-expanded", "true");
+    await user.click(screen.getAllByRole("link", { name: "Vestidos" }).at(-1)!);
+    expect(screen.getByRole("button", { name: "Abrir menú" })).toHaveAttribute("aria-expanded", "false");
+    expect(girls).toHaveAttribute("aria-expanded", "false");
+  });
+
 });

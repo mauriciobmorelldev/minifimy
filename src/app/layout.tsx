@@ -7,6 +7,7 @@ import { SiteLockedScreen } from "@/components/SiteLockedScreen";
 import { WhatsAppFimy } from "@/components/WhatsAppFimy";
 import { CartProvider } from "@/context/cart-context";
 import { FeedbackProvider } from "@/context/feedback-context";
+import { withCategoryChildren } from "@/lib/category-menu";
 import { getStoreCategories } from "@/lib/woocommerce";
 import { getSiteSettings } from "@/lib/wordpress";
 import "./globals.css";
@@ -77,7 +78,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const [siteSettings, storeCategories] = await Promise.all([getSiteSettings(), getStoreCategories()]);
-  const automaticFeaturedMenu = storeCategories.slice(0, 3).map((category) => ({
+  const automaticFeaturedMenu = storeCategories.filter((category) => !category.parentId).slice(0, 3).map((category) => ({
     href: `/catalogo/${category.slug}`,
     label: category.name,
   }));
@@ -98,7 +99,9 @@ export default async function RootLayout({
   const extraMenu = siteSettings.menusFromWordPress
     ? siteSettings.mainMenu.filter((item) => !isHiddenCatalogMenuItem(item.href) && !baseMenu.some((baseItem) => baseItem.href === item.href))
     : [];
-  const mainMenu = [...baseMenu, ...extraMenu].slice(0, 6);
+  const mainMenu = [...baseMenu, ...extraMenu].slice(0, 6).map((link) =>
+    link.href === "/catalogo" ? link : withCategoryChildren(link, storeCategories)
+  );
 
   if (siteLocked) {
     return (
