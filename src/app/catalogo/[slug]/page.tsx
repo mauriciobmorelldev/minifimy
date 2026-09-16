@@ -1,3 +1,4 @@
+import { resolveCatalogAge, sizeMatchesAge } from "@/lib/catalog-age";
 import { facetValues } from "@/lib/catalog-facets";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -70,10 +71,12 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     notFound();
   }
 
+  const ageGroup = resolveCatalogAge(categories, [slug], getParam(query, "etapa"));
   const page = getPage(getParam(query, "page"));
   const [collection, filterOptions] = await Promise.all([
     getStoreProductCollection({
       page,
+      ageGroup,
       perPage: 12,
       category: category.id,
       search: getParam(query, "q"),
@@ -101,7 +104,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       <CatalogExperience
         products={collection.products}
         categories={filterOptions.categories}
-        filterOptions={filterOptions}
+        filterOptions={{ ...filterOptions, sizes: filterOptions.sizes.filter((size) => sizeMatchesAge(size, ageGroup)) }}
         totalProducts={collection.total}
         totalPages={collection.totalPages}
         currentPage={collection.page}

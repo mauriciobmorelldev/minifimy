@@ -1,3 +1,5 @@
+import { parseAgeGroup, type CatalogAgeGroup } from "@/lib/catalog-age";
+
 /** Repeated query parameters keep labels containing commas unambiguous. */
 export function facetValues(value?: string | string[] | null): string[] {
   return [...new Set((Array.isArray(value) ? value : value ? [value] : [])
@@ -9,6 +11,7 @@ export function toggleFacet(values: string[], value: string): string[] {
 }
 
 export type CatalogSelection = {
+  etapa?: CatalogAgeGroup;
   q: string;
   categoria: string[];
   talle: string[];
@@ -19,6 +22,7 @@ export type CatalogSelection = {
 
 export function catalogUrl(selection: CatalogSelection, page = 1) {
   const params = new URLSearchParams();
+  if (parseAgeGroup(selection.etapa)) params.set("etapa", selection.etapa!);
   const categories = facetValues(selection.categoria);
   const path = categories.length === 1 ? `/catalogo/${encodeURIComponent(categories[0])}` : "/catalogo";
   if (categories.length > 1) categories.forEach((value) => params.append("categoria", value));
@@ -29,5 +33,6 @@ export function catalogUrl(selection: CatalogSelection, page = 1) {
   if (selection.precio && selection.precio !== "all") params.set("precio", selection.precio);
   if (selection.orden && selection.orden !== "featured") params.set("orden", selection.orden);
   if (page > 1) params.set("page", String(page));
-  return `${path}${params.size ? `?${params}` : ""}`;
+  const query = params.toString();
+  return `${path}${query ? `?${query}` : ""}`;
 }

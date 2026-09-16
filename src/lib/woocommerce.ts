@@ -1,3 +1,4 @@
+import { sizeMatchesAge, sizesMatchAge, type CatalogAgeGroup } from "@/lib/catalog-age";
 import { facetValues } from "@/lib/catalog-facets";
 import type { Category, Product, ProductFilterOptions, ProductVariant } from "@/models/product";
 import { CACHE_SECONDS, CACHE_TAGS, normalizeBaseUrl } from "@/lib/cache";
@@ -59,6 +60,7 @@ export interface StoreShippingMethod {
 }
 
 export interface StoreProductQuery {
+  ageGroup?: CatalogAgeGroup;
   featured?: boolean;
   category?: string;
   perPage?: number;
@@ -972,16 +974,40 @@ async function getFacetQuery(options: StoreProductQuery) {
   return params;
 }
 
+/** Read only IDs and size attributes in cached batches; never fetch product variations. */
+async function getAgeEligibleProductIds(group: CatalogAgeGroup) {
+  const ids: number[] = [];
+  let totalPages = 1;
+  for (let page = 1; page <= totalPages; page += 1) {
+    const response = await fetchWooResponse("products", {
+      status: "publish", per_page: 100, page, _fields: "id,attributes", orderby: "id", order: "asc",
+    }, CACHE_SECONDS.products, [CACHE_TAGS.products]);
+    if (!response) return [];
+    const products = await response.json() as Pick<WooProduct, "id" | "attributes">[];
+    totalPages = Number(response.headers.get("x-wp-totalpages") ?? 1);
+    for (const product of products) {
+      const sizes = product.attributes?.filter((attribute) => /talle|size|edad/.test(normalizeFilterName(attribute.name)))
+        .flatMap((attribute) => attribute.options ?? []);
+      if (sizesMatchAge(sizes, group)) ids.push(product.id);
+    }
+  }
+  return ids;
+}
+
 export async function getStoreProductCollection(options: StoreProductQuery = {}): Promise<StoreProductCollection> {
   const page = Number.isFinite(options.page) ? Math.max(1, Math.floor(options.page!)) : 1;
   const perPage = Number.isFinite(options.perPage) ? Math.min(Math.max(Math.floor(options.perPage!), 1), 100) : 12;
   const empty = { products: [], total: 0, totalPages: 1, page, perPage };
-  const sizes = facetValues(options.size).map(normalizeSize);
+  const requestedSizes = facetValues(options.size).map(normalizeSize);
+  const sizes = requestedSizes.filter((size) => sizeMatchesAge(size, options.ageGroup));
+  if (requestedSizes.length && !sizes.length) return empty;
+  options = { ...options, size: sizes };
   const colors = facetValues(options.color).map(normalizeColor);
 
   if (!canUseWooCommerce()) {
     const categoryIds = options.category?.split(",") ?? [];
     let products = fallbackProducts.filter((product) =>
+      (!options.ageGroup || sizesMatchAge(product.sizes, options.ageGroup)) &&
       (!categoryIds.length || categoryIds.some((id) => product.categoryId === id || product.categoryIds?.includes(id))) &&
       (!sizes.length || product.sizes?.some((size) => sizes.includes(normalizeSize(size)))) &&
       (!colors.length || product.colors?.some((color) => colors.includes(normalizeColor(color)))) &&
@@ -998,6 +1024,9 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
     return { products: products.slice((page - 1) * perPage, page * perPage), total, totalPages: Math.max(1, Math.ceil(total / perPage)), page, perPage };
   }
 
+  const eligibleIds = options.ageGroup ? await getAgeEligibleProductIds(options.ageGroup) : undefined;
+  if (eligibleIds && !eligibleIds.length) return empty;
+
   let summaries: WooStoreProductSummary[] | undefined;
   let filteredTotal: number | undefined;
   let filteredPages: number | undefined;
@@ -1006,9 +1035,11 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
     include?: string;
     orderby?: StoreProductQuery["orderby"] | "include";
   } = getProductQueryParams({ ...options, page, perPage });
+  if (eligibleIds) query.include = eligibleIds.join(",");
   if (sizes.length || colors.length || options.category?.includes(",")) {
     const params = await getFacetQuery(options);
     if (!params) return empty;
+    if (eligibleIds) params.set("include", eligibleIds.join(","));
     params.set("page", String(page));
     params.set("per_page", String(perPage));
     params.set("minifimy_price_contract", CATALOG_PRICE_CONTRACT_VERSION);
@@ -1050,7 +1081,7 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
 export async function getStoreProducts(options: StoreProductQuery = {}) {
   const collection = await getStoreProductCollection(options);
 
-  if (!canUseWooCommerce() && collection.products.length === 0) {
+  if (!canUseWooCommerce() && !options.ageGroup && collection.products.length === 0) {
     return fallbackProducts.slice(0, options.perPage ?? 24);
   }
 

@@ -11,13 +11,13 @@ it("groups only the children of each parent and preserves its full catalog link"
   expect(withCategoryChildren({ href: "/catalogo/bebes", label: "Bebés" }, categories)).toEqual({
     href: "/catalogo/bebes", label: "Bebés", children: [
       { href: "/catalogo/bebes", label: "Ver todo en Bebés" },
-      { href: "/catalogo/bodies", label: "Bodies" },
+      { href: "/catalogo/bodies?etapa=bebes", label: "Bodies" },
     ],
   });
   expect(withCategoryChildren({ href: "/catalogo/ninas/", label: "Niñas" }, categories)).toMatchObject({
     children: [
       { href: "/catalogo/ninas/", label: "Ver todo en Niñas" },
-      { href: "/catalogo/vestidos", label: "Vestidos" },
+      { href: "/catalogo/vestidos?etapa=ninos", label: "Vestidos" },
     ],
   });
 });
