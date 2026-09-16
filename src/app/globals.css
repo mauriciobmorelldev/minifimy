@@ -601,13 +601,23 @@
     }
 
     .home-banner-hero {
-      padding-bottom: 9rem;
+      padding-bottom: 7rem;
       border-radius: 1.5rem;
     }
 
     .home-banner-stage {
-      aspect-ratio: 1.18;
+      aspect-ratio: 1.28;
       overflow: hidden;
+    }
+
+    .home-banner-stage::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      z-index: 1;
+      height: 3.5rem;
+      background: linear-gradient(180deg, rgba(248, 238, 230, 0), #f8eee6);
+      pointer-events: none;
     }
 
     .home-banner-stage .home-banner-image {
@@ -618,16 +628,16 @@
     }
 
     .home-fimy-peek {
-      right: -1.25rem;
-      bottom: -1.4rem;
-      width: clamp(9rem, 38vw, 12rem);
+      right: -0.5rem;
+      bottom: -0.35rem;
+      width: clamp(9.5rem, 42vw, 11.5rem);
     }
 
     .home-fimy-card {
       right: auto;
       left: 0.75rem;
       top: auto;
-      bottom: 0.85rem;
+      bottom: 1rem;
       width: clamp(12.5rem, calc(100% - 7rem), 17rem);
       padding: 0.75rem;
       border-radius: 1.1rem;
