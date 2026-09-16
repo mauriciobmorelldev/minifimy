@@ -138,7 +138,7 @@ export function Header({ navLinks }: HeaderProps) {
           <div className="bg-[#d8e0c3] shadow-sm">
             <div className="mx-auto grid min-h-20 max-w-7xl grid-cols-[minmax(18rem,1fr)_auto_minmax(18rem,1fr)] items-center gap-8 px-8">
               <form onSubmit={submitSearch} className="max-w-[24rem]">
-                <label className="sr-only" htmlFor="desktop-site-search">Buscar productos</label>
+                <label className="sr-only" htmlFor="desktop-site-search">Buscar productos desde el encabezado</label>
                 <div className="flex min-h-11 items-center rounded-lg bg-white/95 px-4 shadow-soft ring-1 ring-primary/10 transition focus-within:ring-2 focus-within:ring-primary/30">
                   <input
                     id="desktop-site-search"
