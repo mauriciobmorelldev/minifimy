@@ -14,7 +14,6 @@ it("orders the primary groups before the remaining catalog", () => {
   expect(buildStoreMenu(categories).map((group) => group.label)).toEqual([
     "Bebés",
     "Niñas",
-    "Niños",
     "Accesorios",
     "Catálogo",
   ]);
@@ -27,11 +26,11 @@ it("keeps children in their main group and removes those duplicates from Catalog
   const catalog = menu.find((group) => group.label === "Catálogo");
 
   expect(babies?.children).toContainEqual({
-    href: "/catalogo/bodys?etapa=bebes",
+    href: "/catalogo/bodys?etapa=bebes&publico=bebes",
     label: "Bodies",
   });
   expect(girls?.children).toContainEqual({
-    href: "/catalogo/vestidos?etapa=ninos",
+    href: "/catalogo/vestidos?etapa=ninos&publico=ninas",
     label: "Vestidos",
   });
   expect(catalog?.children?.map((child) => child.label)).toEqual([
@@ -41,34 +40,47 @@ it("keeps children in their main group and removes those duplicates from Catalog
   ]);
 });
 
-it("shows Niños now as an age-filtered group until its WooCommerce parent exists", () => {
-  const boys = buildStoreMenu(categories).find((group) => group.label === "Niños");
+it("hides a primary group until its WooCommerce category exists with products", () => {
+  expect(buildStoreMenu(categories).find((group) => group.label === "Niños")).toBeUndefined();
 
-  expect(boys).toEqual({
-    href: "/catalogo?etapa=ninos",
+  const withBoys = buildStoreMenu([
+    ...categories,
+    { id: "8", name: "Niños", slug: "ninos", description: "", productCount: 2 },
+  ]).find((group) => group.label === "Niños");
+
+  expect(withBoys).toEqual({
+    href: "/catalogo/ninos?etapa=ninos&publico=ninos",
     label: "Niños",
     children: [
-      { href: "/catalogo?etapa=ninos", label: "Ver todo en Niños" },
+      { href: "/catalogo/ninos?etapa=ninos&publico=ninos", label: "Ver todo en Niños" },
     ],
   });
 });
 
-
 it("highlights only the mobile group represented by the current route and age context", () => {
   const menu = buildStoreMenu(categories);
-  const activeLabels = (pathname: string, ageContext?: string) =>
-    menu.filter((group) => isStoreMenuGroupActive(group, pathname, ageContext)).map((group) => group.label);
+  const activeLabels = (pathname: string, ageContext?: string, audienceContext?: string) =>
+    menu.filter((group) => isStoreMenuGroupActive(group, pathname, ageContext, audienceContext)).map((group) => group.label);
 
-  expect(activeLabels("/catalogo/bebes", "bebes")).toEqual(["Bebés"]);
-  expect(activeLabels("/catalogo", "ninos")).toEqual(["Niños"]);
+  expect(
+    menu.filter((group) => isStoreMenuGroupActive(group, "/catalogo/bebes", "bebes", "bebes")).map((group) => group.label),
+  ).toEqual(["Bebés"]);
   expect(activeLabels("/catalogo")).toEqual(["Catálogo"]);
-  expect(activeLabels("/catalogo/bodys", "bebes")).toEqual(["Bebés"]);
+  expect(activeLabels("/catalogo/bodys", "bebes", "bebes")).toEqual(["Bebés"]);
   expect(activeLabels("/catalogo/accesorios")).toEqual(["Accesorios"]);
 
-  const menuWithoutBabyParent = buildStoreMenu(categories.filter((category) => category.slug !== "bebes"));
-  expect(
-    menuWithoutBabyParent
-      .filter((group) => isStoreMenuGroupActive(group, "/catalogo", "bebes"))
-      .map((group) => group.label),
-  ).toEqual(["Bebés"]);
+});
+
+
+it("omits empty categories but keeps a parent whose child contains products", () => {
+  const menu = buildStoreMenu([
+    { id: "10", name: "Bebés", slug: "bebes", description: "", productCount: 0 },
+    { id: "11", name: "Bodies", slug: "bodies", parentId: "10", description: "", productCount: 2 },
+    { id: "12", name: "Vacía", slug: "vacia", description: "", productCount: 0 },
+  ]);
+  const babies = menu.find((group) => group.label === "Bebés");
+  const catalog = menu.find((group) => group.label === "Catálogo");
+
+  expect(babies?.children?.map((child) => child.label)).toContain("Bodies");
+  expect(catalog?.children?.map((child) => child.label)).not.toContain("Vacía");
 });

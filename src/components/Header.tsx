@@ -30,6 +30,7 @@ export function Header({ navLinks }: HeaderProps) {
   const [miniCartOpen, setMiniCartOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [mobileAgeContext, setMobileAgeContext] = useState<string | null>(null);
+  const [mobileAudienceContext, setMobileAudienceContext] = useState<string | null>(null);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
   const desktopSearchButtonRef = useRef<HTMLButtonElement>(null);
   const mobileSearchButtonRef = useRef<HTMLButtonElement>(null);
@@ -45,7 +46,9 @@ export function Header({ navLinks }: HeaderProps) {
   };
   const toggleMobileMenu = () => {
     if (!mobileOpen) {
-      setMobileAgeContext(new URLSearchParams(window.location.search).get("etapa"));
+      const params = new URLSearchParams(window.location.search);
+      setMobileAgeContext(params.get("etapa"));
+      setMobileAudienceContext(params.get("publico"));
     }
     setMobileOpen((open) => !open);
   };
@@ -466,7 +469,7 @@ export function Header({ navLinks }: HeaderProps) {
                 {navLinks.map((link) => {
                   const hasChildren = Boolean(link.children?.length);
                   const isCategoryOpen = hasChildren && mobileCategoryOpen === link.href;
-                  const isActive = isStoreMenuGroupActive(link, pathname, mobileAgeContext);
+                  const isActive = isStoreMenuGroupActive(link, pathname, mobileAgeContext, mobileAudienceContext);
 
                   if (hasChildren) {
                     return (

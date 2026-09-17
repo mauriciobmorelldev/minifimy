@@ -1,6 +1,7 @@
 "use client";
 
 import { resolveCatalogAge } from "@/lib/catalog-age";
+import { parseProductAudience } from "@/lib/catalog-audience";
 import Image from "next/image";
 import { useEffect, useState, useTransition } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
@@ -69,7 +70,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
     setSort(searchParams.get("orden") ?? "featured");
   }, [routeCategory, searchParams]);
 
-  const selection: CatalogSelection = { etapa: resolveCatalogAge(categories, scopedCategories, searchParams.get("etapa")), q: query, categoria: scopedCategories, talle: size, color, precio: priceRange, orden: sort };
+  const selection: CatalogSelection = { etapa: resolveCatalogAge(categories, scopedCategories, searchParams.get("etapa")), publico: parseProductAudience(searchParams.get("publico")), q: query, categoria: scopedCategories, talle: size, color, precio: priceRange, orden: sort };
 
   const navigate = (next: CatalogSelection, page = 1) => {
     startTransition(() => router.push(catalogUrl(next, page), { scroll: false }));

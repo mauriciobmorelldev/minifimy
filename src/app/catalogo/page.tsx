@@ -1,4 +1,5 @@
 import { resolveCatalogAge, sizeMatchesAge } from "@/lib/catalog-age";
+import { parseProductAudience } from "@/lib/catalog-audience";
 import { facetValues } from "@/lib/catalog-facets";
 import type { Metadata } from "next";
 import { Suspense } from "react";
@@ -45,11 +46,13 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const params = await searchParams;
   const categories = await getStoreCategories();
   const ageGroup = resolveCatalogAge(categories, [], getParam(params, "etapa"));
+  const audience = parseProductAudience(getParam(params, "publico"));
   const page = getPage(getParam(params, "page"));
   const [collection, filterOptions] = await Promise.all([
     getStoreProductCollection({
       page,
       ageGroup,
+      audience,
       perPage: 12,
       search: getParam(params, "q"),
       size: facetValues(params.talle),
@@ -57,7 +60,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       ...getPriceRange(getParam(params, "precio")),
       ...getSort(getParam(params, "orden")),
     }),
-    getStoreProductFilters(),
+    getStoreProductFilters({ ageGroup, audience }),
   ]);
 
   return (

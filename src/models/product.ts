@@ -1,3 +1,5 @@
+import type { ProductAudience } from "@/lib/catalog-audience";
+
 export interface ProductPriceSet {
   base: number;
   list?: number;
@@ -44,6 +46,7 @@ export interface Product {
   badge?: string;
   tagSlugs?: string[];
   tagNames?: string[];
+  audiences?: ProductAudience[];
   sizes?: string[];
   colors?: string[];
   models?: string[];
@@ -56,6 +59,7 @@ export interface Category {
   name: string;
   slug: string;
   description: string;
+  productCount?: number;
 }
 
 export interface ProductFilterOptions {

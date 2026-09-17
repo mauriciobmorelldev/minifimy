@@ -1,5 +1,6 @@
 import { sizeMatchesAge, sizesMatchAge, type CatalogAgeGroup } from "@/lib/catalog-age";
 import { facetValues } from "@/lib/catalog-facets";
+import { parseProductAudiences, productMatchesAudience, type ProductAudience } from "@/lib/catalog-audience";
 import type { Category, Product, ProductFilterOptions, ProductVariant } from "@/models/product";
 import { CACHE_SECONDS, CACHE_TAGS, normalizeBaseUrl } from "@/lib/cache";
 import { normalizeAndSortColors, normalizeAndSortSizes, normalizeColor, normalizeSize } from "@/lib/catalog-taxonomy";
@@ -26,7 +27,7 @@ const WOO_PRODUCT_FIELDS = [
   "meta_data",
 ].join(",");
 
-const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description", "parent"].join(",");
+const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description", "parent", "count"].join(",");
 const HIDDEN_CATEGORY_SLUGS = new Set(["sin-categorizar"]);
 const WOO_VARIATION_FIELDS = ["id", "price", "regular_price", "minifimy_prices", "stock_quantity", "stock_status", "image", "attributes"].join(",");
 
@@ -61,6 +62,7 @@ export interface StoreShippingMethod {
 
 export interface StoreProductQuery {
   ageGroup?: CatalogAgeGroup;
+  audience?: ProductAudience;
   featured?: boolean;
   category?: string;
   perPage?: number;
@@ -353,6 +355,7 @@ type WooCategory = {
   name: string;
   slug: string;
   description?: string;
+  count?: number;
 };
 
 type WooProduct = {
@@ -509,9 +512,17 @@ function getUniqueSortedValues(values: Array<string | undefined>) {
   );
 }
 
+function getProductMetaValue(product: WooProduct, key: string) {
+  return product.meta_data?.find((item) => item.key === key)?.value;
+}
+
 function getProductMeta(product: WooProduct, key: string) {
-  const value = product.meta_data?.find((item) => item.key === key)?.value;
+  const value = getProductMetaValue(product, key);
   return typeof value === "string" ? cleanText(value) : "";
+}
+
+function getProductAudiences(product: Pick<WooProduct, "meta_data">) {
+  return parseProductAudiences(product.meta_data?.find((item) => item.key === "_minifimy_audiences")?.value);
 }
 
 function buildFilterOptionsFromProducts(products: Product[], categories: Category[]): ProductFilterOptions {
@@ -664,6 +675,7 @@ function mapWooProduct(product: WooProduct, mediaSources = new Map<number, strin
     badge: product.tags?.find((tag) => !tag.slug?.startsWith("home-"))?.name ?? product.tags?.[0]?.name,
     tagSlugs,
     tagNames,
+    audiences: getProductAudiences(product),
     sizes: normalizeAndSortSizes(sizes ?? []),
     colors: normalizeAndSortColors(colors ?? []),
     models: getUniqueSortedValues(models ?? []),
@@ -845,6 +857,7 @@ function mapWooCategory(category: WooCategory): Category {
     name: category.name,
     slug: category.slug,
     description: cleanText(category.description) || `Productos MiniFimy de ${category.name}.`,
+    productCount: Number.isFinite(category.count) ? Math.max(0, Number(category.count)) : undefined,
   };
 }
 
@@ -974,21 +987,26 @@ async function getFacetQuery(options: StoreProductQuery) {
   return params;
 }
 
-/** Read only IDs and size attributes in cached batches; never fetch product variations. */
-async function getAgeEligibleProductIds(group: CatalogAgeGroup) {
+/** Read only IDs, size attributes and audience metadata in cached batches; never fetch product variations. */
+async function getEligibleProductIds(ageGroup?: CatalogAgeGroup, audience?: ProductAudience) {
   const ids: number[] = [];
   let totalPages = 1;
   for (let page = 1; page <= totalPages; page += 1) {
     const response = await fetchWooResponse("products", {
-      status: "publish", per_page: 100, page, _fields: "id,attributes", orderby: "id", order: "asc",
+      status: "publish", per_page: 100, page, _fields: "id,attributes,meta_data", orderby: "id", order: "asc",
     }, CACHE_SECONDS.products, [CACHE_TAGS.products]);
     if (!response) return [];
-    const products = await response.json() as Pick<WooProduct, "id" | "attributes">[];
+    const products = await response.json() as Pick<WooProduct, "id" | "attributes" | "meta_data">[];
     totalPages = Number(response.headers.get("x-wp-totalpages") ?? 1);
     for (const product of products) {
       const sizes = product.attributes?.filter((attribute) => /talle|size|edad/.test(normalizeFilterName(attribute.name)))
         .flatMap((attribute) => attribute.options ?? []);
-      if (sizesMatchAge(sizes, group)) ids.push(product.id);
+      if (
+        (!ageGroup || sizesMatchAge(sizes, ageGroup)) &&
+        productMatchesAudience(getProductAudiences(product), audience)
+      ) {
+        ids.push(product.id);
+      }
     }
   }
   return ids;
@@ -1008,6 +1026,7 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
     const categoryIds = options.category?.split(",") ?? [];
     let products = fallbackProducts.filter((product) =>
       (!options.ageGroup || sizesMatchAge(product.sizes, options.ageGroup)) &&
+      productMatchesAudience(product.audiences, options.audience) &&
       (!categoryIds.length || categoryIds.some((id) => product.categoryId === id || product.categoryIds?.includes(id))) &&
       (!sizes.length || product.sizes?.some((size) => sizes.includes(normalizeSize(size)))) &&
       (!colors.length || product.colors?.some((color) => colors.includes(normalizeColor(color)))) &&
@@ -1024,7 +1043,9 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
     return { products: products.slice((page - 1) * perPage, page * perPage), total, totalPages: Math.max(1, Math.ceil(total / perPage)), page, perPage };
   }
 
-  const eligibleIds = options.ageGroup ? await getAgeEligibleProductIds(options.ageGroup) : undefined;
+  const eligibleIds = options.ageGroup || options.audience
+    ? await getEligibleProductIds(options.ageGroup, options.audience)
+    : undefined;
   if (eligibleIds && !eligibleIds.length) return empty;
 
   let summaries: WooStoreProductSummary[] | undefined;
@@ -1148,15 +1169,15 @@ async function getStoreCatalogPriceRange() {
   return max > min ? { min, max } : null;
 }
 
-export async function getStoreProductFilters(scope: Pick<StoreProductQuery, "category" | "ageGroup"> = {}): Promise<ProductFilterOptions> {
+export async function getStoreProductFilters(scope: Pick<StoreProductQuery, "category" | "ageGroup" | "audience"> = {}): Promise<ProductFilterOptions> {
   const fallback = buildFilterOptionsFromProducts(fallbackProducts, fallbackCategories);
   if (!canUseWooCommerce()) {
-    if (!scope.category && !scope.ageGroup) return fallback;
+    if (!scope.category && !scope.ageGroup && !scope.audience) return fallback;
     const collection = await getStoreProductCollection({ ...scope, perPage: 100 });
     return buildFilterOptionsFromProducts(collection.products, fallback.categories);
   }
 
-  if (scope.category || scope.ageGroup) {
+  if (scope.category || scope.ageGroup || scope.audience) {
     const [categories, collection] = await Promise.all([
       getStoreCategories(),
       getStoreProductCollection({ ...scope, perPage: 100 }),
@@ -1204,13 +1225,23 @@ export async function getStoreCategories() {
 
   const data = await fetchWoo<WooCategory[]>(
     "products/categories",
-    { per_page: 50, hide_empty: true, _fields: WOO_CATEGORY_FIELDS },
+    { per_page: 100, hide_empty: false, _fields: WOO_CATEGORY_FIELDS },
     CACHE_SECONDS.categories,
     [CACHE_TAGS.categories]
   );
 
   const categories = data?.map(mapWooCategory) ?? fallbackCategories;
-  return categories.filter((category) => !HIDDEN_CATEGORY_SLUGS.has(category.slug));
+  const hasProducts = (category: Category, visited = new Set<string>()): boolean => {
+    if (visited.has(category.id)) return false;
+    visited.add(category.id);
+    if (category.productCount === undefined || category.productCount > 0) return true;
+    return categories
+      .filter((candidate) => candidate.parentId === category.id)
+      .some((child) => hasProducts(child, new Set(visited)));
+  };
+  return categories.filter((category) =>
+    !HIDDEN_CATEGORY_SLUGS.has(category.slug) && hasProducts(category)
+  );
 }
 
 export async function getStoreProductIdBySlug(slug: string) {

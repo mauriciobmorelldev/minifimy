@@ -1,4 +1,5 @@
 import type { Category } from "@/models/product";
+import type { ProductAudience } from "@/lib/catalog-audience";
 
 export type StoreMenuLink = {
   href: string;
@@ -7,14 +8,18 @@ export type StoreMenuLink = {
 };
 
 const PRIMARY_GROUPS = [
-  { slug: "bebes", label: "Bebés", ageGroup: "bebes" },
-  { slug: "ninas", label: "Niñas", ageGroup: "ninos" },
-  { slug: "ninos", label: "Niños", ageGroup: "ninos" },
-  { slug: "accesorios", label: "Accesorios", ageGroup: undefined },
+  { slug: "bebes", label: "Bebés", ageGroup: "bebes", audience: "bebes" },
+  { slug: "ninas", label: "Niñas", ageGroup: "ninos", audience: "ninas" },
+  { slug: "ninos", label: "Niños", ageGroup: "ninos", audience: "ninos" },
+  { slug: "accesorios", label: "Accesorios", ageGroup: undefined, audience: undefined },
 ] as const;
 
-function categoryHref(category: Category, ageGroup?: "bebes" | "ninos") {
-  return `/catalogo/${category.slug}${ageGroup ? `?etapa=${ageGroup}` : ""}`;
+function categoryHref(category: Category, ageGroup?: "bebes" | "ninos", audience?: ProductAudience) {
+  const params = new URLSearchParams();
+  if (ageGroup) params.set("etapa", ageGroup);
+  if (audience) params.set("publico", audience);
+  const query = params.toString();
+  return `/catalogo/${category.slug}${query ? `?${query}` : ""}`;
 }
 
 function normalizePathname(pathname: string) {
@@ -22,18 +27,20 @@ function normalizePathname(pathname: string) {
   return normalized || "/";
 }
 
-function menuHrefIsActive(href: string, pathname: string, ageContext?: string | null) {
+function menuHrefIsActive(href: string, pathname: string, ageContext?: string | null, audienceContext?: string | null) {
   const url = new URL(href, "https://minifimy.com");
   if (normalizePathname(url.pathname) !== normalizePathname(pathname)) return false;
 
+  const linkAudienceContext = url.searchParams.get("publico");
+  if (linkAudienceContext || audienceContext) return linkAudienceContext === audienceContext;
   const linkAgeContext = url.searchParams.get("etapa");
   if (linkAgeContext && ageContext) return linkAgeContext === ageContext;
   if (url.pathname === "/catalogo") return linkAgeContext ? linkAgeContext === ageContext : !ageContext;
   return true;
 }
 
-export function isStoreMenuGroupActive(group: StoreMenuLink, pathname: string, ageContext?: string | null) {
-  return [group, ...(group.children ?? [])].some((link) => menuHrefIsActive(link.href, pathname, ageContext));
+export function isStoreMenuGroupActive(group: StoreMenuLink, pathname: string, ageContext?: string | null, audienceContext?: string | null) {
+  return [group, ...(group.children ?? [])].some((link) => menuHrefIsActive(link.href, pathname, ageContext, audienceContext));
 }
 
 function descendantsOf(parentId: string, categories: Category[]) {
@@ -52,30 +59,39 @@ function descendantsOf(parentId: string, categories: Category[]) {
 }
 
 export function buildStoreMenu(categories: Category[]): StoreMenuLink[] {
-  const visibleCategories = categories.filter((category) => category.slug !== "sin-categorizar");
+  const hasProducts = (category: Category, visited = new Set<string>()): boolean => {
+    if (visited.has(category.id)) return false;
+    visited.add(category.id);
+    if (category.productCount === undefined || category.productCount > 0) return true;
+    return categories
+      .filter((candidate) => candidate.parentId === category.id)
+      .some((child) => hasProducts(child, new Set(visited)));
+  };
+  const visibleCategories = categories.filter((category) =>
+    category.slug !== "sin-categorizar" && hasProducts(category)
+  );
   const assignedCategoryIds = new Set<string>();
 
-  const primaryGroups = PRIMARY_GROUPS.map(({ slug, label, ageGroup }) => {
+  const primaryGroups = PRIMARY_GROUPS.flatMap(({ slug, label, ageGroup, audience }) => {
     const parent = visibleCategories.find((category) => category.slug === slug);
-    const descendants = parent ? descendantsOf(parent.id, visibleCategories) : [];
-    if (parent) assignedCategoryIds.add(parent.id);
+    if (!parent) return [];
+
+    const descendants = descendantsOf(parent.id, visibleCategories);
+    assignedCategoryIds.add(parent.id);
     descendants.forEach((category) => assignedCategoryIds.add(category.id));
+    const href = categoryHref(parent, ageGroup, audience);
 
-    const href = parent
-      ? categoryHref(parent, ageGroup)
-      : `/catalogo?etapa=${ageGroup ?? "ninos"}`;
-
-    return {
+    return [{
       href,
       label,
       children: [
         { href, label: `Ver todo en ${label}` },
         ...descendants.map((category) => ({
-          href: categoryHref(category, ageGroup),
+          href: categoryHref(category, ageGroup, audience),
           label: category.name,
         })),
       ],
-    };
+    }];
   });
 
   const catalogChildren = visibleCategories
