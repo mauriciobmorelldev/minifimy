@@ -27,7 +27,7 @@ const WOO_PRODUCT_FIELDS = [
   "meta_data",
 ].join(",");
 
-const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description", "parent", "count"].join(",");
+const WOO_CATEGORY_FIELDS = ["id", "name", "slug", "description", "parent", "count", "minifimy_parent_slugs"].join(",");
 const HIDDEN_CATEGORY_SLUGS = new Set(["sin-categorizar"]);
 const WOO_VARIATION_FIELDS = ["id", "price", "regular_price", "minifimy_prices", "stock_quantity", "stock_status", "image", "attributes"].join(",");
 
@@ -356,6 +356,7 @@ type WooCategory = {
   slug: string;
   description?: string;
   count?: number;
+  minifimy_parent_slugs?: unknown;
 };
 
 type WooProduct = {
@@ -851,6 +852,10 @@ async function getStoreProductVariations(productId: string, revalidate = CACHE_S
 }
 
 function mapWooCategory(category: WooCategory): Category {
+  const menuParentSlugs = Array.isArray(category.minifimy_parent_slugs)
+    ? Array.from(new Set(category.minifimy_parent_slugs.map((slug) => String(slug).trim()).filter(Boolean)))
+    : [];
+
   return {
     id: String(category.id),
     parentId: category.parent ? String(category.parent) : undefined,
@@ -858,6 +863,7 @@ function mapWooCategory(category: WooCategory): Category {
     slug: category.slug,
     description: cleanText(category.description) || `Productos MiniFimy de ${category.name}.`,
     productCount: Number.isFinite(category.count) ? Math.max(0, Number(category.count)) : undefined,
+    menuParentSlugs,
   };
 }
 
@@ -1231,12 +1237,14 @@ export async function getStoreCategories() {
   );
 
   const categories = data?.map(mapWooCategory) ?? fallbackCategories;
+  const isMenuChild = (candidate: Category, parent: Category) =>
+    candidate.parentId === parent.id || candidate.menuParentSlugs?.includes(parent.slug) === true;
   const hasProducts = (category: Category, visited = new Set<string>()): boolean => {
     if (visited.has(category.id)) return false;
     visited.add(category.id);
     if (category.productCount === undefined || category.productCount > 0) return true;
     return categories
-      .filter((candidate) => candidate.parentId === category.id)
+      .filter((candidate) => isMenuChild(candidate, category))
       .some((child) => hasProducts(child, new Set(visited)));
   };
   return categories.filter((category) =>

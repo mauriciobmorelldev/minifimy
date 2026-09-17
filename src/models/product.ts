@@ -56,6 +56,7 @@ export interface Product {
 export interface Category {
   id: string;
   parentId?: string;
+  menuParentSlugs?: string[];
   name: string;
   slug: string;
   description: string;

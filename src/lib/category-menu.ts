@@ -43,18 +43,23 @@ export function isStoreMenuGroupActive(group: StoreMenuLink, pathname: string, a
   return [group, ...(group.children ?? [])].some((link) => menuHrefIsActive(link.href, pathname, ageContext, audienceContext));
 }
 
-function descendantsOf(parentId: string, categories: Category[]) {
+function isMenuChild(category: Category, parent: Category) {
+  return category.parentId === parent.id || category.menuParentSlugs?.includes(parent.slug) === true;
+}
+
+function descendantsOf(parent: Category, categories: Category[]) {
   const descendants: Category[] = [];
   const visited = new Set<string>();
-  const collect = (id: string) => {
-    if (visited.has(id)) return;
-    visited.add(id);
-    for (const child of categories.filter((category) => category.parentId === id)) {
+  const collect = (current: Category) => {
+    if (visited.has(current.id)) return;
+    visited.add(current.id);
+    for (const child of categories.filter((category) => isMenuChild(category, current))) {
+      if (visited.has(child.id)) continue;
       descendants.push(child);
-      collect(child.id);
+      collect(child);
     }
   };
-  collect(parentId);
+  collect(parent);
   return descendants;
 }
 
@@ -64,7 +69,7 @@ export function buildStoreMenu(categories: Category[]): StoreMenuLink[] {
     visited.add(category.id);
     if (category.productCount === undefined || category.productCount > 0) return true;
     return categories
-      .filter((candidate) => candidate.parentId === category.id)
+      .filter((candidate) => isMenuChild(candidate, category))
       .some((child) => hasProducts(child, new Set(visited)));
   };
   const visibleCategories = categories.filter((category) =>
@@ -76,7 +81,7 @@ export function buildStoreMenu(categories: Category[]): StoreMenuLink[] {
     const parent = visibleCategories.find((category) => category.slug === slug);
     if (!parent) return [];
 
-    const descendants = descendantsOf(parent.id, visibleCategories);
+    const descendants = descendantsOf(parent, visibleCategories);
     assignedCategoryIds.add(parent.id);
     descendants.forEach((category) => assignedCategoryIds.add(category.id));
     const href = categoryHref(parent, ageGroup, audience);
