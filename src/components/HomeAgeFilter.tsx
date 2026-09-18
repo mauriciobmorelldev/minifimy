@@ -5,13 +5,6 @@ interface HomeAgeFilterProps {
   sizes: string[];
 }
 
-const ACCENT_STYLES = [
-  "bg-primary-container text-on-primary-container",
-  "bg-secondary-container text-on-secondary-container",
-  "bg-tertiary-container text-on-tertiary-container",
-  "bg-[#f2dfb8] text-[#664d21]",
-] as const;
-
 function getSizeParts(size: string) {
   const normalized = size.trim();
   if (/^rn$/i.test(normalized)) {
@@ -33,63 +26,56 @@ export function HomeAgeFilter({ sizes }: HomeAgeFilterProps) {
   if (sizes.length === 0) return null;
 
   return (
-    <section aria-labelledby="home-age-filter-title" className="relative border-y border-primary/10 bg-white/55 py-9 sm:py-12">
+    <section aria-labelledby="home-age-filter-title" className="border-y border-primary/10 bg-[#fbf6ed] py-6 sm:py-7">
       <ScrollReveal>
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="mb-5 flex items-end justify-between gap-5 sm:mb-7">
-            <div>
-              <span className="chip">Encontrá su medida</span>
-              <h2 id="home-age-filter-title" className="mt-3 font-headline text-3xl font-extrabold leading-tight sm:text-4xl">
-                Comprá por edad
-              </h2>
-              <p className="mt-2 max-w-xl text-sm leading-6 sm:text-base">
-                Elegí un talle y descubrí las prendas disponibles para esa etapa.
-              </p>
-            </div>
-            <Link
-              href="/catalogo"
-              className="hidden shrink-0 items-center gap-2 text-sm font-bold text-secondary underline decoration-2 underline-offset-4 sm:inline-flex"
-            >
-              Ver todos
-              <span className="material-symbols-outlined text-lg" aria-hidden="true">arrow_forward</span>
-            </Link>
+        <div className="mx-auto flex max-w-7xl items-end justify-between gap-5 px-5 sm:px-8 lg:px-10">
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <h2 id="home-age-filter-title" className="font-headline text-2xl font-extrabold leading-tight text-primary sm:text-[1.7rem]">
+              Elegí por edad
+            </h2>
+            <p className="text-sm text-on-surface-variant">
+              Encontrá rápido el talle para cada etapa.
+            </p>
           </div>
+          <Link
+            href="/catalogo"
+            className="hidden shrink-0 items-center gap-1.5 text-sm font-bold text-secondary transition hover:text-secondary-dim sm:inline-flex"
+          >
+            Ver todos
+            <span className="material-symbols-outlined text-lg" aria-hidden="true">arrow_forward</span>
+          </Link>
         </div>
 
         <div
-          className="overflow-x-auto scroll-smooth px-5 pb-3 [scrollbar-width:none] sm:px-8 lg:px-10 [&::-webkit-scrollbar]:hidden"
+          className="mt-4 overflow-x-auto scroll-smooth px-5 pb-1 [scrollbar-width:none] sm:px-8 lg:px-10 [&::-webkit-scrollbar]:hidden"
           aria-label="Talles disponibles"
         >
-          <div className="mx-auto flex w-max min-w-full max-w-7xl snap-x snap-mandatory items-start gap-4 sm:gap-6 lg:justify-between">
-            {sizes.map((size, index) => {
+          <div className="mx-auto flex w-max min-w-full max-w-7xl snap-x snap-mandatory items-center gap-3 sm:gap-4 lg:justify-between">
+            {sizes.map((size) => {
               const { value, unit } = getSizeParts(size);
-              const accent = ACCENT_STYLES[index % ACCENT_STYLES.length];
 
               return (
                 <Link
                   key={size}
                   href={`/catalogo?talle=${encodeURIComponent(size)}`}
                   aria-label={`Ver prendas en talle ${size}`}
-                  className="group flex w-[6.75rem] shrink-0 snap-start flex-col items-center gap-2 text-center focus-visible:outline-none sm:w-[7.75rem]"
+                  className="group flex w-[4.8rem] shrink-0 snap-start items-center justify-center rounded-full focus-visible:outline-none sm:w-[5.35rem]"
                 >
-                  <span
-                    className={`flex aspect-square w-full flex-col items-center justify-center rounded-full px-2 shadow-[0_12px_30px_rgba(82,101,61,0.10)] ring-1 ring-white/80 transition duration-300 group-hover:-translate-y-1 group-hover:scale-[1.03] group-hover:shadow-[0_16px_34px_rgba(82,101,61,0.18)] group-focus-visible:ring-4 group-focus-visible:ring-secondary/30 ${accent}`}
-                  >
-                    <span className="text-[0.62rem] font-extrabold uppercase tracking-[0.18em] opacity-75">Talle</span>
-                    <span className={`font-headline font-extrabold leading-none ${value.length > 5 ? "text-2xl" : "text-[2.15rem] sm:text-[2.55rem]"}`}>
+                  <span className="flex aspect-square w-full flex-col items-center justify-center rounded-full border border-primary/15 bg-[#edf0e2] px-1.5 text-center text-primary shadow-[0_5px_16px_rgba(82,101,61,0.07)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-secondary/30 group-hover:bg-primary-container/55 group-focus-visible:ring-4 group-focus-visible:ring-secondary/20">
+                    <span className="text-[0.48rem] font-extrabold uppercase tracking-[0.17em] text-primary/65">Talle</span>
+                    <span className={`font-headline font-extrabold leading-none ${value.length > 5 ? "text-lg sm:text-xl" : "text-[1.65rem] sm:text-[1.9rem]"}`}>
                       {value}
                     </span>
-                    {unit ? <span className="mt-1 text-[0.65rem] font-bold uppercase tracking-[0.12em] opacity-80">{unit}</span> : null}
+                    {unit ? (
+                      <span className="mt-0.5 max-w-full truncate text-[0.46rem] font-bold uppercase tracking-[0.08em] text-primary/70">
+                        {unit}
+                      </span>
+                    ) : null}
                   </span>
                 </Link>
               );
             })}
           </div>
-        </div>
-
-        <div className="mx-auto mt-1 flex max-w-7xl items-center gap-2 px-5 text-xs font-bold text-on-surface-variant sm:hidden">
-          <span className="material-symbols-outlined text-base" aria-hidden="true">swipe</span>
-          Deslizá para ver todos los talles
         </div>
       </ScrollReveal>
     </section>
