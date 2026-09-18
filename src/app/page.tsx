@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { HomeAgeFilter } from "@/components/HomeAgeFilter";
 import { HomeHeroCarousel } from "@/components/HomeHeroCarousel";
 import { HomeOpportunities } from "@/components/HomeOpportunities";
 import { NewArrivalsCarousel } from "@/components/NewArrivalsCarousel";
@@ -51,52 +52,15 @@ export default async function HomePage() {
   const featuredSectionProducts = pickProductsByTags(featured, ["home-destacados"], featuredProductsBySlug.length > 0 ? featuredProductsBySlug : featured);
   const sectionHeroProduct = featuredSectionProducts[0] ?? heroProduct;
   const sectionSupportProducts = featuredSectionProducts.filter((product) => product.id !== sectionHeroProduct?.id);
-  const homeFilterLinks = [
-    ...filterOptions.categories.slice(0, 3).map((category) => ({
-      label: category.name,
-      href: `/catalogo/${category.slug}`,
-      icon: "category",
-    })),
-    ...filterOptions.sizes.slice(0, 3).map((size) => ({
-      label: `Talle ${size}`,
-      href: `/catalogo?talle=${encodeURIComponent(size)}`,
-      icon: "straighten",
-    })),
-  ].slice(0, 6);
+
 
   return (
     <main className="minifimy-story overflow-hidden bg-background pt-20">
       <HomeHeroCarousel />
 
-      <HomeOpportunities products={inStockOpportunityProducts} />
+      <HomeAgeFilter sizes={filterOptions.sizes} />
 
-      <section aria-labelledby="shop-by-need" className="mx-auto max-w-7xl px-5 pb-8 sm:px-8 lg:px-10">
-        <ScrollReveal>
-          <div className="mb-5 flex items-end justify-between gap-4">
-            <div>
-              <span className="chip">Empezá por acá</span>
-              <h2 id="shop-by-need" className="mt-3 font-headline text-3xl font-extrabold sm:text-4xl">
-                Comprá por talle o necesidad
-              </h2>
-            </div>
-            <Link href="/catalogo" className="hidden text-sm font-bold text-secondary underline underline-offset-4 sm:inline-flex">
-              Ver catálogo completo
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {homeFilterLinks.map((link) => (
-              <Link
-                key={`${link.href}-${link.label}`}
-                href={link.href}
-                className="group flex min-h-32 flex-col justify-between rounded-[1.5rem] bg-white/78 p-4 shadow-soft ring-1 ring-primary/10 transition hover:-translate-y-1 hover:shadow-lift"
-              >
-                <span className="material-symbols-outlined text-2xl text-primary transition group-hover:-rotate-6">{link.icon}</span>
-                <span className="font-headline text-base font-extrabold leading-tight text-on-surface">{link.label}</span>
-              </Link>
-            ))}
-          </div>
-        </ScrollReveal>
-      </section>
+      <HomeOpportunities products={inStockOpportunityProducts} />
 
       <NewArrivalsCarousel products={newestProducts} />
 
