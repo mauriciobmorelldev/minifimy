@@ -29,7 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!hasStore) return urls;
 
   const [categories, productSlugs] = await Promise.all([
-    getStoreCategories(),
+    getStoreCategories(false),
     getStoreProductSitemapSlugs(),
   ]);
 
