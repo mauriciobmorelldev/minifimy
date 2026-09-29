@@ -1610,3 +1610,27 @@ export async function createStoreOrder(input: CreateStoreOrderInput) {
     paymentUrl: getSafePaymentUrl(order.payment_url ?? order.checkout_payment_url),
   };
 }
+
+/** Lightweight published product URLs for the search sitemap. */
+export async function getStoreProductSitemapSlugs(): Promise<string[]> {
+  if (!canUseWooCommerce()) return [];
+
+  const slugs: string[] = [];
+  for (let page = 1; ; page++) {
+    const response = await fetchWooResponse(
+      "products",
+      { per_page: 100, page, status: "publish", _fields: "slug" },
+      CACHE_SECONDS.products,
+      [CACHE_TAGS.products],
+    );
+    if (!response) break;
+
+    const products = (await response.json().catch(() => [])) as Array<{ slug?: string }>;
+    slugs.push(...products.map((product) => product.slug).filter((slug): slug is string => Boolean(slug)));
+
+    const totalPages = Number(response.headers.get("x-wp-totalpages") ?? 1);
+    if (page >= totalPages || products.length < 100) break;
+  }
+
+  return Array.from(new Set(slugs));
+}
