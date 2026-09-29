@@ -51,7 +51,6 @@ export const metadata: Metadata = {
     title: "MiniFimy | Ropa para bebés",
     description:
       "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MiniFimy.",
-    url: "/",
     siteName: "MiniFimy",
     type: "website",
     locale: "es_AR",
