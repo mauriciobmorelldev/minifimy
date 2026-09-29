@@ -7,6 +7,7 @@ import {
 } from "@/lib/store-policy";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/envios-y-cambios" },
   title: "Envíos y cambios",
   description: "Información de envíos, seguimiento y cambios de MiniFimy.",
 };
