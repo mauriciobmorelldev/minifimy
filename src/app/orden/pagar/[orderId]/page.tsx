@@ -11,6 +11,7 @@ interface OrderPayPageProps {
 }
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   title: "Pagar pedido",
   description: "Resumen de pedido MiniFimy.",
 };
