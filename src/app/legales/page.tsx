@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/legales" },
   title: "Términos y condiciones",
   description: "Condiciones generales de compra en MiniFimy.",
 };
