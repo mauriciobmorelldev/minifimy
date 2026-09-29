@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/cookies" },
   title: "Cookies",
   description: "Información sobre el uso de cookies en MiniFimy.",
 };
