@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AccountClient } from "@/components/AccountClient";
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   title: "Mi cuenta",
   description: "Cuenta, pedidos e inicio de sesión con Fimy desde el front de MiniFimy.",
 };
