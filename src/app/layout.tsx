@@ -34,9 +34,6 @@ export const metadata: Metadata = {
   },
   description:
     "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MiniFimy.",
-  alternates: {
-    canonical: "/",
-  },
   icons: {
     icon: [{ url: "/icon", type: "image/png", sizes: "256x256" }],
     apple: [{ url: "/icon", type: "image/png", sizes: "256x256" }],
