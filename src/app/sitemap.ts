@@ -1,26 +1,47 @@
 import type { MetadataRoute } from "next";
-import { categories, products } from "@/lib/products";
+import { getStoreCategories, getStoreProductSitemapSlugs } from "@/lib/woocommerce";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://minifimy.com";
+const baseUrl = "https://minifimy.com";
+const staticPaths = [
+  "/",
+  "/catalogo",
+  "/envios-y-cambios",
+  "/contacto",
+  "/legales",
+  "/privacidad",
+  "/cookies",
+];
 
-  return [
-    { url: baseUrl, lastModified: new Date() },
-    { url: `${baseUrl}/catalogo`, lastModified: new Date() },
-    { url: `${baseUrl}/carrito`, lastModified: new Date() },
-    { url: `${baseUrl}/checkout`, lastModified: new Date() },
-    { url: `${baseUrl}/cuenta`, lastModified: new Date() },
-    { url: `${baseUrl}/contacto`, lastModified: new Date() },
-    { url: `${baseUrl}/legales`, lastModified: new Date() },
-    { url: `${baseUrl}/privacidad`, lastModified: new Date() },
-    { url: `${baseUrl}/cookies`, lastModified: new Date() },
-    ...categories.filter((category) => category.slug !== "sin-categorizar").map((category) => ({
-      url: `${baseUrl}/catalogo/${category.slug}`,
-      lastModified: new Date(),
-    })),
-    ...products.map((product) => ({
-      url: `${baseUrl}/producto/${product.slug}`,
-      lastModified: new Date(),
-    })),
-  ];
+export const revalidate = 900;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const urls: MetadataRoute.Sitemap = staticPaths.map((path) => ({
+    url: new URL(path, baseUrl).toString(),
+  }));
+
+  // The fallback catalog contains demo products. Publish catalog URLs only when
+  // the live WooCommerce connection is configured.
+  const hasStore = Boolean(
+    (process.env.WOOCOMMERCE_URL ?? process.env.WORDPRESS_URL) &&
+      process.env.WOOCOMMERCE_CONSUMER_KEY &&
+      process.env.WOOCOMMERCE_CONSUMER_SECRET,
+  );
+  if (!hasStore) return urls;
+
+  const [categories, productSlugs] = await Promise.all([
+    getStoreCategories(false),
+    getStoreProductSitemapSlugs(),
+  ]);
+
+  for (const category of categories) {
+    if (category.slug && category.slug !== "sin-categorizar") {
+      urls.push({ url: new URL(`/catalogo/${encodeURIComponent(category.slug)}`, baseUrl).toString() });
+    }
+  }
+
+  for (const slug of productSlugs) {
+    urls.push({ url: new URL(`/producto/${encodeURIComponent(slug)}`, baseUrl).toString() });
+  }
+
+  return urls;
 }

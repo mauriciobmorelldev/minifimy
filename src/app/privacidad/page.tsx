@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/privacidad" },
   title: "Política de privacidad",
   description: "Cómo cuidamos los datos personales en MiniFimy.",
 };

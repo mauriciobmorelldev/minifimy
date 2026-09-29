@@ -12,6 +12,15 @@ import { getStoreCategories } from "@/lib/woocommerce";
 import { getSiteSettings } from "@/lib/wordpress";
 import "./globals.css";
 
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "MiniFimy",
+  url: "https://minifimy.com",
+  logo: "https://minifimy.com/brand/logo.svg",
+  sameAs: ["https://www.instagram.com/minifimybebe"],
+};
+
 const beVietnam = Be_Vietnam_Pro({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -34,9 +43,6 @@ export const metadata: Metadata = {
   },
   description:
     "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MiniFimy.",
-  alternates: {
-    canonical: "/",
-  },
   icons: {
     icon: [{ url: "/icon", type: "image/png", sizes: "256x256" }],
     apple: [{ url: "/icon", type: "image/png", sizes: "256x256" }],
@@ -45,7 +51,6 @@ export const metadata: Metadata = {
     title: "MiniFimy | Ropa para bebés",
     description:
       "Ropita suave, cómoda y con mucho amor. Descubrí colecciones para bebés en MiniFimy.",
-    url: "/",
     siteName: "MiniFimy",
     type: "website",
     locale: "es_AR",
@@ -111,6 +116,7 @@ export default async function RootLayout({
             <WhatsAppFimy phone={siteSettings.whatsappPhone} message={siteSettings.whatsappMessage} messages={siteSettings.whatsappMessages} />
           </CartProvider>
         </FeedbackProvider>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
         <Analytics />
       </body>
     </html>

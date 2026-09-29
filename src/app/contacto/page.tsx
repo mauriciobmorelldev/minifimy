@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/contacto" },
   title: "Contacto",
   description: "Escribinos por WhatsApp, Instagram o email.",
 };

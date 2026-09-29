@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { products } from "@/lib/products";
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   title: "Admin productos",
   description: "Panel interno para gestionar productos MiniFimy.",
 };

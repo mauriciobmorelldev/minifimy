@@ -1224,7 +1224,7 @@ export async function getStoreProductFilters(scope: Pick<StoreProductQuery, "cat
   };
 }
 
-export async function getStoreCategories() {
+export async function getStoreCategories(fallbackOnError = true) {
   if (!canUseWooCommerce()) {
     return fallbackCategories.filter((category) => !HIDDEN_CATEGORY_SLUGS.has(category.slug));
   }
@@ -1236,7 +1236,7 @@ export async function getStoreCategories() {
     [CACHE_TAGS.categories]
   );
 
-  const categories = data?.map(mapWooCategory) ?? fallbackCategories;
+  const categories = data?.map(mapWooCategory) ?? (fallbackOnError ? fallbackCategories : []);
   const isMenuChild = (candidate: Category, parent: Category) =>
     candidate.parentId === parent.id || candidate.menuParentSlugs?.includes(parent.slug) === true;
   const hasProducts = (category: Category, visited = new Set<string>()): boolean => {
@@ -1609,4 +1609,28 @@ export async function createStoreOrder(input: CreateStoreOrderInput) {
     orderKey: order.order_key,
     paymentUrl: getSafePaymentUrl(order.payment_url ?? order.checkout_payment_url),
   };
+}
+
+/** Lightweight published product URLs for the search sitemap. */
+export async function getStoreProductSitemapSlugs(): Promise<string[]> {
+  if (!canUseWooCommerce()) return [];
+
+  const slugs: string[] = [];
+  for (let page = 1; ; page++) {
+    const response = await fetchWooResponse(
+      "products",
+      { per_page: 100, page, status: "publish", _fields: "slug" },
+      CACHE_SECONDS.products,
+      [CACHE_TAGS.products],
+    );
+    if (!response) break;
+
+    const products = (await response.json().catch(() => [])) as Array<{ slug?: string }>;
+    slugs.push(...products.map((product) => product.slug).filter((slug): slug is string => Boolean(slug)));
+
+    const totalPages = Number(response.headers.get("x-wp-totalpages") ?? 1);
+    if (page >= totalPages || products.length < 100) break;
+  }
+
+  return Array.from(new Set(slugs));
 }

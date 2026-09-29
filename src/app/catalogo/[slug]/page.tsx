@@ -59,6 +59,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 
   return {
     title: category.name,
+    alternates: { canonical: `/catalogo/${slug}` },
     description: category.description ?? "Productos para cada etapa del bebé.",
   };
 }

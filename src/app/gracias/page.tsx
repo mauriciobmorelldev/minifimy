@@ -5,6 +5,7 @@ import { getMetaPurchaseData, isMetaPurchaseOrder } from "@/lib/meta-order";
 import { getStoreOrderForPayment } from "@/lib/woocommerce";
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   title: "Gracias",
   description: "Compra confirmada en MiniFimy.",
 };

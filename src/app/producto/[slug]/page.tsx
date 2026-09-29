@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { MetaEvent } from "@/components/MetaEvent";
 import { ProductCarousel } from "@/components/ProductCarousel";
 import { ProductDetailClient } from "@/components/ProductDetailClient";
@@ -49,6 +50,8 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const description = product?.description ?? "Detalle de producto MiniFimy.";
   const socialImage = product?.images[0];
 
+  if (!product) return { title: "Producto no encontrado", robots: { index: false, follow: false } };
+
   return {
     title: product ? product.name : "Producto",
     description,
@@ -83,18 +86,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     getStoreProducts({ perPage: 24 }),
   ]);
 
-  if (!product) {
-    return (
-      <main className="mobile-soft-page mx-auto w-full max-w-6xl px-4 py-28 md:px-6">
-        <div className="rounded-[2rem] bg-white/80 p-8 text-center shadow-soft">
-          <p className="text-sm text-on-surface-variant">Producto no encontrado o todavía no publicado.</p>
-          <Link href="/catalogo" className="btn-ghost mt-6 inline-flex">
-            Volver al catálogo
-          </Link>
-        </div>
-      </main>
-    );
-  }
+  if (!product) notFound();
 
   const category = categories.find((item) => item.slug === product.category);
   const availableRecommendations = allProducts.filter(
@@ -107,9 +99,31 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const hasRealComplements = complementaryProducts.length > 0;
   const recommendations = (hasRealComplements ? complementaryProducts : availableRecommendations).slice(0, 4);
   const productReviews = await getStoreProductReviews(product.id);
+  const productUrl = `https://minifimy.com/producto/${encodeURIComponent(product.slug)}`;
+  const listPrice = product.prices?.list ?? product.price;
+  const hasSingleOffer = product.type === "simple" && !product.variants?.length && Number.isFinite(listPrice) && listPrice > 0;
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    image: product.images.map((src) => new URL(src, "https://minifimy.com").toString()),
+    url: productUrl,
+    ...(hasSingleOffer ? {
+      offers: {
+        "@type": "Offer",
+        url: productUrl,
+        priceCurrency: "ARS",
+        price: listPrice,
+        availability: productIsInStock(product) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        itemCondition: "https://schema.org/NewCondition",
+      },
+    } : {}),
+  };
 
   return (
     <main className="mobile-soft-page mx-auto max-w-7xl px-4 pb-12 pt-24 md:px-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
       <MetaEvent name="ViewContent" eventKey={`product-${product.id}`} data={getMetaProductData(product)} />
       <nav className="mb-6 flex items-center gap-2 overflow-x-auto whitespace-nowrap rounded-full bg-white/64 px-4 py-2 text-[10px] font-medium uppercase tracking-widest text-on-surface-variant/70 shadow-soft md:mb-8 md:text-xs" aria-label="Breadcrumb">
         <Link href="/" className="transition-colors hover:text-primary">

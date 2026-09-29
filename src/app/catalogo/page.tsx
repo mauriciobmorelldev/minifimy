@@ -9,6 +9,7 @@ import { getStoreCategories, getStoreProductCollection, getStoreProductFilters }
 
 export const metadata: Metadata = {
   title: "Catálogo",
+  alternates: { canonical: "/catalogo" },
   description: "Explorá categorías, regalos y productos de MiniFimy.",
 };
 
