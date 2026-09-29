@@ -28,7 +28,8 @@ function pickProductsByTags(products: Awaited<ReturnType<typeof getFeaturedStore
 }
 
 export const metadata: Metadata = {
-  title: "Inicio",
+  title: "Ropa para bebés, regalos y prendas suaves",
+  alternates: { canonical: "/" },
   description:
     "MiniFimy acompaña primeras veces con ropa de bebé suave, regalos con significado y prendas elegidas con amor.",
 };
