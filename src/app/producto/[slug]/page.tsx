@@ -101,7 +101,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const productReviews = await getStoreProductReviews(product.id);
   const productUrl = `https://minifimy.com/producto/${encodeURIComponent(product.slug)}`;
   const listPrice = product.prices?.list ?? product.price;
-  const hasSingleOffer = !product.variants?.length && Number.isFinite(listPrice) && listPrice > 0;
+  const hasSingleOffer = product.type === "simple" && !product.variants?.length && Number.isFinite(listPrice) && listPrice > 0;
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
