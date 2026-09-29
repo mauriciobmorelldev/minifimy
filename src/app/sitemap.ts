@@ -1,26 +1,58 @@
 import type { MetadataRoute } from "next";
-import { categories, products } from "@/lib/products";
+import { getStoreCategories, getStoreProductCollection } from "@/lib/woocommerce";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://minifimy.com";
+const baseUrl = "https://minifimy.com";
+const staticPaths = [
+  "/",
+  "/catalogo",
+  "/envios-y-cambios",
+  "/contacto",
+  "/legales",
+  "/privacidad",
+  "/cookies",
+];
 
-  return [
-    { url: baseUrl, lastModified: new Date() },
-    { url: `${baseUrl}/catalogo`, lastModified: new Date() },
-    { url: `${baseUrl}/carrito`, lastModified: new Date() },
-    { url: `${baseUrl}/checkout`, lastModified: new Date() },
-    { url: `${baseUrl}/cuenta`, lastModified: new Date() },
-    { url: `${baseUrl}/contacto`, lastModified: new Date() },
-    { url: `${baseUrl}/legales`, lastModified: new Date() },
-    { url: `${baseUrl}/privacidad`, lastModified: new Date() },
-    { url: `${baseUrl}/cookies`, lastModified: new Date() },
-    ...categories.filter((category) => category.slug !== "sin-categorizar").map((category) => ({
-      url: `${baseUrl}/catalogo/${category.slug}`,
-      lastModified: new Date(),
-    })),
-    ...products.map((product) => ({
-      url: `${baseUrl}/producto/${product.slug}`,
-      lastModified: new Date(),
-    })),
-  ];
+export const revalidate = 900;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const urls: MetadataRoute.Sitemap = staticPaths.map((path) => ({
+    url: new URL(path, baseUrl).toString(),
+  }));
+
+  // The fallback catalog contains demo products. Publish catalog URLs only when
+  // the live WooCommerce connection is configured.
+  const hasStore = Boolean(
+    (process.env.WOOCOMMERCE_URL ?? process.env.WORDPRESS_URL) &&
+      process.env.WOOCOMMERCE_CONSUMER_KEY &&
+      process.env.WOOCOMMERCE_CONSUMER_SECRET,
+  );
+  if (!hasStore) return urls;
+
+  const [categories, firstPage] = await Promise.all([
+    getStoreCategories(),
+    getStoreProductCollection({ page: 1, perPage: 100 }),
+  ]);
+
+  for (const category of categories) {
+    if (category.slug && category.slug !== "sin-categorizar") {
+      urls.push({ url: new URL(`/catalogo/${encodeURIComponent(category.slug)}`, baseUrl).toString() });
+    }
+  }
+
+  const seen = new Set<string>();
+  const addProducts = (products: typeof firstPage.products) => {
+    for (const product of products) {
+      if (!product.slug || seen.has(product.slug)) continue;
+      seen.add(product.slug);
+      urls.push({ url: new URL(`/producto/${encodeURIComponent(product.slug)}`, baseUrl).toString() });
+    }
+  };
+
+  addProducts(firstPage.products);
+  for (let page = 2; page <= firstPage.totalPages; page++) {
+    const collection = await getStoreProductCollection({ page, perPage: 100 });
+    addProducts(collection.products);
+  }
+
+  return urls;
 }
