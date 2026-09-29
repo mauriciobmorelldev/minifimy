@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: "/api/",
+      disallow: ["/api/", "/wp-json/", "/wc-api/"],
     },
     sitemap: "https://minifimy.com/sitemap.xml",
   };
