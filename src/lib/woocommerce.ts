@@ -1224,7 +1224,7 @@ export async function getStoreProductFilters(scope: Pick<StoreProductQuery, "cat
   };
 }
 
-export async function getStoreCategories() {
+export async function getStoreCategories(fallbackOnError = true) {
   if (!canUseWooCommerce()) {
     return fallbackCategories.filter((category) => !HIDDEN_CATEGORY_SLUGS.has(category.slug));
   }
@@ -1236,7 +1236,7 @@ export async function getStoreCategories() {
     [CACHE_TAGS.categories]
   );
 
-  const categories = data?.map(mapWooCategory) ?? fallbackCategories;
+  const categories = data?.map(mapWooCategory) ?? (fallbackOnError ? fallbackCategories : []);
   const isMenuChild = (candidate: Category, parent: Category) =>
     candidate.parentId === parent.id || candidate.menuParentSlugs?.includes(parent.slug) === true;
   const hasProducts = (category: Category, visited = new Set<string>()): boolean => {
