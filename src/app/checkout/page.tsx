@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import CheckoutClient from "./CheckoutClient";
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   title: "Checkout",
   description: "Completa tu compra de manera segura.",
 };
