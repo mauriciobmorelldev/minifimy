@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import CartClient from "./CartClient";
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   title: "Carrito",
   description: "Revisá los productos seleccionados antes de pagar.",
 };
