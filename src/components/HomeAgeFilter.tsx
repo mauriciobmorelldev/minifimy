@@ -4,9 +4,31 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { groupSizesByLabel } from "@/lib/catalog-taxonomy";
+import { getSizeStage, sizeMatchesAge, type CatalogAgeGroup } from "@/lib/catalog-age";
 
 interface HomeAgeFilterProps {
   sizes: string[];
+}
+
+function homeSizeStage(size: string): CatalogAgeGroup | undefined {
+  const stage = getSizeStage(size);
+  if (stage) return stage;
+  const baby = sizeMatchesAge(size, "bebes");
+  const child = sizeMatchesAge(size, "ninos");
+  return baby !== child ? baby ? "bebes" : "ninos" : undefined;
+}
+
+function homeSizeGroups(sizes: string[]) {
+  const order = new Intl.Collator("es", { numeric: true });
+  return (["bebes", "ninos", undefined] as const).flatMap((stage) =>
+    groupSizesByLabel(sizes.filter((size) => homeSizeStage(size) === stage))
+      .sort((first, second) => {
+        const firstRN = /^rn$/i.test(first.label);
+        const secondRN = /^rn$/i.test(second.label);
+        return Number(secondRN) - Number(firstRN) || order.compare(first.label, second.label);
+      })
+      .map((group) => ({ ...group, stage }))
+  );
 }
 
 function getSizeParts(size: string): { value: string; unit: string } {
@@ -102,18 +124,18 @@ export function HomeAgeFilter({ sizes }: HomeAgeFilterProps) {
               aria-label="Talles disponibles"
             >
               <div className="flex w-max snap-x snap-mandatory items-center gap-3 pr-1 sm:gap-4">
-                {groupSizesByLabel(sizes).map(({ label, values }) => {
+                {homeSizeGroups(sizes).map(({ label, values, stage }) => {
                   const { value, unit } = getSizeParts(label);
-                  const query = values.map((size) => `talle=${encodeURIComponent(size)}`).join("&");
+                  const query = [...values.map((size) => `talle=${encodeURIComponent(size)}`), ...(stage ? [`etapa=${stage}`] : [])].join("&");
 
                   return (
                     <Link
-                      key={label}
+                      key={`${stage ?? "other"}-${label}`}
                       href={`/catalogo?${query}`}
-                      aria-label={`Ver prendas en talle ${label}`}
+                      aria-label={`Ver prendas en talle ${label}${stage ? stage === "bebes" ? " para bebés" : " para niños y niñas" : ""}`}
                       className="group flex w-[4.8rem] shrink-0 snap-start items-center justify-center rounded-full focus-visible:outline-none sm:w-[5.35rem]"
                     >
-                      <span className="flex aspect-square w-full flex-col items-center justify-center rounded-full border border-primary/15 bg-[#edf0e2] px-1 text-center text-primary shadow-[0_5px_16px_rgba(82,101,61,0.07)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-secondary/30 group-hover:bg-primary-container/55 group-focus-visible:ring-4 group-focus-visible:ring-secondary/20">
+                      <span className={`flex aspect-square w-full flex-col items-center justify-center rounded-full border border-primary/15 px-1 text-center text-primary shadow-[0_5px_16px_rgba(82,101,61,0.07)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-secondary/30 group-focus-visible:ring-4 group-focus-visible:ring-secondary/20 ${stage === "bebes" ? "bg-secondary-container group-hover:bg-secondary-container/80" : "bg-[#edf0e2] group-hover:bg-primary-container/55"}`}>
                         <span className="text-[0.48rem] font-extrabold uppercase tracking-[0.17em] text-primary/65">Talle</span>
                         <span className={`whitespace-nowrap font-headline font-extrabold leading-none ${value.length >= 5 ? "text-[1.22rem] sm:text-[1.38rem]" : "text-[1.65rem] sm:text-[1.9rem]"}`}>
                           {value}
