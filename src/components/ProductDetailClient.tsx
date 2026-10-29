@@ -6,6 +6,7 @@ import { ProductInfoModal } from "@/components/ProductInfoModal";
 import { ProductPrice } from "@/components/ProductPrice";
 import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
 import { productIsInStock, variantIsInStock } from "@/lib/product-stock";
+import { getSizeStage } from "@/lib/catalog-age";
 import type { Product, ProductSelection } from "@/models/product";
 
 interface ProductDetailClientProps {
@@ -40,6 +41,7 @@ function variantMatchesSelection(variant: ProductVariant, selection: ProductSele
 }
 
 function scoreVariantForSelection(variant: ProductVariant, selection: ProductSelection) {
+  if (selection.size && variant.size && getSizeStage(selection.size) !== getSizeStage(variant.size)) return -1;
   let score = variant.image ? 1 : 0;
   const selectedColor = normalizeOption(selection.color);
   const variantColor = normalizeOption(variant.color);

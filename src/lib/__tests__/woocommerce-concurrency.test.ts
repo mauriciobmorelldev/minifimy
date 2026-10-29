@@ -288,10 +288,65 @@ describe("WooCommerce catalog load", () => {
     expect(urls.some((url) => url.pathname.includes("/variations"))).toBe(false);
   });
 
-  it("returns no products for a selected size outside the category age", async () => {
+  it.each(["bebes", "ninas", "ninos"] as const)("separates equal numeric sizes for %s before pagination and in scoped filters", async (audience) => {
+    const products = [
+      { id: 31, name: "Body", slug: "body", price: "1200", images: [], attributes: [{ name: "Talle", options: ["4 · Bebés"] }] },
+      { id: 32, name: "Pantalón", slug: "pantalon", price: "1200", images: [], attributes: [{ name: "Talle", options: ["4 · Niños/Niñas"] }], meta_data: [{ key: "_minifimy_audiences", value: ["ninas"] }] },
+      { id: 33, name: "Mixto", slug: "mixto", price: "1200", images: [], attributes: [{ name: "Talle", options: ["4 · Bebés", "4 · Niños/Niñas"] }] },
+    ];
+    const expectedIds = audience === "bebes" ? "31,33" : audience === "ninas" ? "32,33" : "33";
+    const response = (data: unknown) => ({
+      ok: true, status: 200, headers: new Headers({ "x-wp-total": "2", "x-wp-totalpages": "1" }), json: async () => data,
+    }) as Response;
+    global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/products/categories") || url.pathname.endsWith("/wc/store/v1/products")) return response([]);
+      if (url.searchParams.get("_fields") === "id,attributes,meta_data") return response(products);
+      expect(url.searchParams.get("include")).toBe(expectedIds);
+      expect(url.searchParams.get("category")).toBe("8");
+      return response(products.filter((product) => expectedIds.split(",").includes(String(product.id))));
+    }) as typeof fetch;
+    const { getStoreProductCollection, getStoreProductFilters } = await import("@/lib/woocommerce");
+    const collection = await getStoreProductCollection({ audience, category: "8" });
+    expect(collection.products.map((product) => product.id)).toEqual(expectedIds.split(","));
+    const filters = await getStoreProductFilters({ audience, category: "8" });
+    expect(filters.sizes).toEqual([audience === "bebes" ? "4 · Bebés" : "4 · Niños/Niñas"]);
+    expect((global.fetch as jest.Mock).mock.calls.some(([url]) => String(url).includes("/variations"))).toBe(false);
+  });
+
+  it.each(["4 · Bebés", "4 · Niños/Niñas"])("queries only the exact taxonomy term for %s", async (size) => {
+    const originalTimeout = AbortSignal.timeout;
+    AbortSignal.timeout = jest.fn(() => new AbortController().signal);
+    const response = (data: unknown) => ({
+      ok: true, status: 200, headers: new Headers(), json: async () => data,
+    }) as Response;
+    global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/products/attributes")) return response([{ id: 1, name: "Talle", slug: "pa_talle" }]);
+      if (url.pathname.endsWith("/products/attributes/1/terms")) return response([
+        { id: 10, name: "4" }, { id: 11, name: "4 · Bebés" }, { id: 12, name: "4 · Niños/Niñas" },
+      ]);
+      if (url.pathname.endsWith("/wc/store/v1/products")) {
+        expect(url.searchParams.getAll("attributes[0][term_id][]")).toEqual([size === "4 · Bebés" ? "11" : "12"]);
+        return response([]);
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }) as typeof fetch;
+    const { getStoreProductCollection } = await import("@/lib/woocommerce");
+    try {
+      await getStoreProductCollection({ size });
+      expect((global.fetch as jest.Mock).mock.calls.some(([url]) => String(url).includes("/wc/store/v1/products?"))).toBe(true);
+    } finally {
+      AbortSignal.timeout = originalTimeout;
+    }
+  });
+
+  it.each([
+    ["bebes", "4 · Niños/Niñas"], ["ninos", "4 · Bebés"], ["bebes", "3 años"],
+  ] as const)("returns no products for a size outside %s: %s", async (ageGroup, size) => {
     global.fetch = jest.fn();
     const { getStoreProductCollection } = await import("@/lib/woocommerce");
-    const collection = await getStoreProductCollection({ ageGroup: "bebes", size: "3 años" });
+    const collection = await getStoreProductCollection({ ageGroup, size });
     expect(collection.total).toBe(0);
     expect(collection.products).toEqual([]);
     expect(global.fetch).not.toHaveBeenCalled();

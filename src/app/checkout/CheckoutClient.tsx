@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { getWooStoreRequestHeaders, useCart } from "@/context/cart-context";
 import { getMetaCartData, trackMetaEvent } from "@/lib/meta-events";
+import { getSizeLabel, getSizeStageLabel } from "@/lib/catalog-taxonomy";
 import {
   getCartItemOptions,
   getCheckoutUnitPrice,
@@ -50,7 +51,8 @@ type CheckoutCartItem = ReturnType<typeof useCart>["items"][number];
 
 function selectionLabel(item: CheckoutCartItem) {
   const { size, color, model } = getCartItemOptions(item);
-  return [size ? `Talle ${size}` : null, color ? `Color ${color}` : null, model ? `Modelo ${model}` : null]
+  const stage = getSizeStageLabel(size ?? "");
+  return [stage ? `Etapa ${stage}` : null, size ? `Talle ${getSizeLabel(size)}` : null, color ? `Color ${color}` : null, model ? `Modelo ${model}` : null]
     .filter(Boolean)
     .join(" · ");
 }

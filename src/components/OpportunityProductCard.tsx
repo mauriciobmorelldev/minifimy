@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { groupSizesByLabel } from "@/lib/catalog-taxonomy";
 import { getDisplayPrice } from "@/components/ProductPrice";
 import type { Product } from "@/models/product";
 
@@ -12,7 +13,7 @@ function formatPrice(value: number) {
 }
 
 function getSizeLabel(product: Product) {
-  const sizes = product.sizes?.filter(Boolean) ?? [];
+  const sizes = groupSizesByLabel(product.sizes?.filter(Boolean) ?? []).map(({ label }) => label);
   if (sizes.length === 0) return null;
 
   const visibleSizes = sizes.slice(0, 4);

@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollReveal } from "@/components/ScrollReveal";
+import { groupSizesByLabel } from "@/lib/catalog-taxonomy";
 
 interface HomeAgeFilterProps {
   sizes: string[];
 }
 
-function getSizeParts(size: string) {
+function getSizeParts(size: string): { value: string; unit: string } {
   const normalized = size.trim();
   if (/^rn$/i.test(normalized)) {
     return { value: "RN", unit: "recién nacido" };
@@ -101,14 +102,15 @@ export function HomeAgeFilter({ sizes }: HomeAgeFilterProps) {
               aria-label="Talles disponibles"
             >
               <div className="flex w-max snap-x snap-mandatory items-center gap-3 pr-1 sm:gap-4">
-                {sizes.map((size) => {
-                  const { value, unit } = getSizeParts(size);
+                {groupSizesByLabel(sizes).map(({ label, values }) => {
+                  const { value, unit } = getSizeParts(label);
+                  const query = values.map((size) => `talle=${encodeURIComponent(size)}`).join("&");
 
                   return (
                     <Link
-                      key={size}
-                      href={`/catalogo?talle=${encodeURIComponent(size)}`}
-                      aria-label={`Ver prendas en talle ${size}`}
+                      key={label}
+                      href={`/catalogo?${query}`}
+                      aria-label={`Ver prendas en talle ${label}`}
                       className="group flex w-[4.8rem] shrink-0 snap-start items-center justify-center rounded-full focus-visible:outline-none sm:w-[5.35rem]"
                     >
                       <span className="flex aspect-square w-full flex-col items-center justify-center rounded-full border border-primary/15 bg-[#edf0e2] px-1 text-center text-primary shadow-[0_5px_16px_rgba(82,101,61,0.07)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-secondary/30 group-hover:bg-primary-container/55 group-focus-visible:ring-4 group-focus-visible:ring-secondary/20">

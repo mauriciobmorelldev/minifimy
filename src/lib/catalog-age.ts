@@ -35,9 +35,17 @@ export function resolveCatalogAge(categories: Category[], slugs: string[], conte
   return inherited.size === 1 ? [...inherited][0] : undefined;
 }
 
-/** Ranges belong to the age at which they start; unclassified sizes remain visible. */
+/** Explicit stages are part of the Woo term name, so equal numbers stay distinct. */
+export function getSizeStage(size: string): CatalogAgeGroup | undefined {
+  const stage = comparable(size).match(/\s*·\s*(bebes|ninos\/ninas)$/)?.[1];
+  if (stage) return stage === "bebes" ? "bebes" : "ninos";
+}
+
+/** Explicit stages win over age guesses; legacy unclassified sizes remain visible. */
 export function sizeMatchesAge(size: string, group?: CatalogAgeGroup): boolean {
   if (!group) return true;
+  const stage = getSizeStage(size);
+  if (stage) return stage === group;
   const value = comparable(size).replace(/[–—]/g, "-");
   if (/^(rn|recien nacido|talle unico|unico)$/.test(value)) return group === "bebes";
   const match = value.match(/^(\d+(?:[.,]\d+)?)(?:\s*[-a]\s*\d+(?:[.,]\d+)?)?\s*(mes(?:es)?|m|anos?|a)$/);

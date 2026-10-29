@@ -17,6 +17,23 @@ it("allows mixed sizes in both groups and keeps products without age classificat
   }
 });
 
+it.each([
+  ["4 · Bebés", "bebes"], ["4 · Niños/Niñas", "ninos"],
+  ["4 años · Bebés", "bebes"], ["RN · Niños/Niñas", "ninos"],
+  ["Talle único · Niños/Niñas", "ninos"], ["4 · bebes", "bebes"],
+])("uses the explicit stage of %s before guessing age", (size, stage) => {
+  expect(sizeMatchesAge(size, "bebes")).toBe(stage === "bebes");
+  expect(sizeMatchesAge(size, "ninos")).toBe(stage === "ninos");
+  expect(sizeMatchesAge(size)).toBe(true);
+});
+
+it("keeps bare numbers compatible and allows deliberately mixed stages", () => {
+  for (const group of ["bebes", "ninos"] as const) {
+    expect(sizeMatchesAge("4", group)).toBe(true);
+    expect(sizesMatchAge(["4 · Bebés", "4 · Niños/Niñas"], group)).toBe(true);
+  }
+});
+
 const categories = [
   { id: "1", name: "Bebés", slug: "bebes", description: "" },
   { id: "2", name: "Niña", slug: "nina", description: "" },

@@ -40,3 +40,12 @@ it("keeps age ranges together and advances with the carousel arrow", () => {
     behavior: "smooth",
   });
 });
+
+it("shows a single plain size while keeping both stages in the filter query", () => {
+  render(<HomeAgeFilter sizes={["4 · Bebés", "4 · Niños/Niñas"]} />);
+  expect(screen.getAllByText("4")).toHaveLength(1);
+  expect(screen.queryByText(/Bebés|Niños\/Niñas/)).not.toBeInTheDocument();
+  const link = screen.getByRole("link", { name: "Ver prendas en talle 4" });
+  const url = new URL(link.getAttribute("href")!, "https://minifimy.com");
+  expect(url.searchParams.getAll("talle")).toEqual(["4 · Bebés", "4 · Niños/Niñas"]);
+});

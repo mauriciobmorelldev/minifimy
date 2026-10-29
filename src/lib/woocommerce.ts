@@ -526,14 +526,15 @@ function getProductAudiences(product: Pick<WooProduct, "meta_data">) {
   return parseProductAudiences(product.meta_data?.find((item) => item.key === "_minifimy_audiences")?.value);
 }
 
-function buildFilterOptionsFromProducts(products: Product[], categories: Category[]): ProductFilterOptions {
+function buildFilterOptionsFromProducts(products: Product[], categories: Category[], ageGroup?: CatalogAgeGroup): ProductFilterOptions {
   const prices = products
     .flatMap((product) => [product.price, product.prices?.discount, product.prices?.list])
     .filter((price): price is number => Number.isFinite(price) && Number(price) > 0);
 
   return {
     categories,
-    sizes: normalizeAndSortSizes(products.flatMap((product) => product.sizes ?? [])),
+    sizes: normalizeAndSortSizes(products.flatMap((product) => product.sizes ?? []))
+      .filter((size) => sizeMatchesAge(size, ageGroup)),
     colors: normalizeAndSortColors(products.flatMap((product) => product.colors ?? [])),
     price: {
       min: prices.length ? Math.min(...prices) : 0,
@@ -1019,6 +1020,7 @@ async function getEligibleProductIds(ageGroup?: CatalogAgeGroup, audience?: Prod
 }
 
 export async function getStoreProductCollection(options: StoreProductQuery = {}): Promise<StoreProductCollection> {
+  options = { ...options, ageGroup: options.ageGroup ?? (options.audience === "bebes" ? "bebes" : options.audience ? "ninos" : undefined) };
   const page = Number.isFinite(options.page) ? Math.max(1, Math.floor(options.page!)) : 1;
   const perPage = Number.isFinite(options.perPage) ? Math.min(Math.max(Math.floor(options.perPage!), 1), 100) : 12;
   const empty = { products: [], total: 0, totalPages: 1, page, perPage };
@@ -1176,11 +1178,12 @@ async function getStoreCatalogPriceRange() {
 }
 
 export async function getStoreProductFilters(scope: Pick<StoreProductQuery, "category" | "ageGroup" | "audience"> = {}): Promise<ProductFilterOptions> {
+  const ageGroup = scope.ageGroup ?? (scope.audience === "bebes" ? "bebes" : scope.audience ? "ninos" : undefined);
   const fallback = buildFilterOptionsFromProducts(fallbackProducts, fallbackCategories);
   if (!canUseWooCommerce()) {
     if (!scope.category && !scope.ageGroup && !scope.audience) return fallback;
     const collection = await getStoreProductCollection({ ...scope, perPage: 100 });
-    return buildFilterOptionsFromProducts(collection.products, fallback.categories);
+    return buildFilterOptionsFromProducts(collection.products, fallback.categories, ageGroup);
   }
 
   if (scope.category || scope.ageGroup || scope.audience) {
@@ -1188,7 +1191,7 @@ export async function getStoreProductFilters(scope: Pick<StoreProductQuery, "cat
       getStoreCategories(),
       getStoreProductCollection({ ...scope, perPage: 100 }),
     ]);
-    return buildFilterOptionsFromProducts(collection.products, categories);
+    return buildFilterOptionsFromProducts(collection.products, categories, ageGroup);
   }
 
   const [categories, attributes, priceRange] = await Promise.all([

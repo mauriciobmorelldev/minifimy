@@ -1,6 +1,7 @@
 "use client";
 
 import { resolveCatalogAge } from "@/lib/catalog-age";
+import { groupSizesByLabel } from "@/lib/catalog-taxonomy";
 import { parseProductAudience } from "@/lib/catalog-audience";
 import Image from "next/image";
 import { useEffect, useState, useTransition } from "react";
@@ -119,7 +120,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
   const selectedPriceName = !selectedPriceRange.isDefault ? `${formatPrice(selectedPriceRange.min)} - ${formatPrice(selectedPriceRange.max)}` : "";
   const activeFilters = [
     ...(query ? [{ key: "q", label: query, remove: () => setFilter({ q: "" }) }] : []),
-    ...size.map((value) => ({ key: `size-${value}`, label: value, remove: () => setFilter({ talle: toggleFacet(size, value) }) })),
+    ...groupSizesByLabel(size).map(({ label, values }) => ({ key: `size-${label}`, label, remove: () => setFilter({ talle: size.filter((value) => !values.includes(value)) }) })),
     ...color.map((value) => ({ key: `color-${value}`, label: value, remove: () => setFilter({ color: toggleFacet(color, value) }) })),
     ...(selectedPriceName ? [{ key: "price", label: selectedPriceName, remove: () => setFilter({ precio: "all" }) }] : []),
   ];
@@ -275,15 +276,15 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                   >
                     Todos
                   </button>
-                  {filterOptions.sizes.map((item) => (
+                  {groupSizesByLabel(filterOptions.sizes).map(({ label, values }) => (
                     <button
-                      key={item}
+                      key={label}
                       type="button"
-                      onClick={() => setFilter({ talle: toggleFacet(size, item) })}
-                      aria-pressed={size.includes(item)}
-                      className={`rounded-full px-4 py-2 text-sm font-bold ${size.includes(item) ? "bg-secondary text-on-secondary" : "bg-[#f7efe3] text-primary"}`}
+                      onClick={() => setFilter({ talle: values.some((value) => size.includes(value)) ? size.filter((value) => !values.includes(value)) : [...size, ...values] })}
+                      aria-pressed={values.some((value) => size.includes(value))}
+                      className={`rounded-full px-4 py-2 text-sm font-bold ${values.some((value) => size.includes(value)) ? "bg-secondary text-on-secondary" : "bg-[#f7efe3] text-primary"}`}
                     >
-                      {item}
+                      {label}
                     </button>
                   ))}
                 </div>

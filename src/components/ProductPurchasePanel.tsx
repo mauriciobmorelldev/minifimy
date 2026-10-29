@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { getSizeLabel } from "@/lib/catalog-taxonomy";
+import { getSizeStage } from "@/lib/catalog-age";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductInfoModal, WhatsAppIcon } from "@/components/ProductInfoModal";
 import { ProductPrice } from "@/components/ProductPrice";
@@ -92,6 +94,15 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
   const [quantity, setQuantity] = useState(1);
   const [openModal, setOpenModal] = useState<"size" | "shipping" | null>(null);
   const selectedSize = controlledSelection?.size ?? product.sizes?.[0] ?? "";
+  const allSizes = Array.from(new Set([...(product.sizes ?? []), ...(product.variants?.flatMap((variant) => variant.size ? [variant.size] : []) ?? [])]));
+  const stageOptions = [
+    { value: "bebes", label: "Bebés" },
+    { value: "ninos", label: "Niños/Niñas" },
+    { value: "", label: "Otros talles" },
+  ].filter((stage) => allSizes.some((size) => (getSizeStage(size) ?? "") === stage.value));
+  const hasStages = allSizes.some((size) => getSizeStage(size));
+  const selectedStage = getSizeStage(selectedSize) ?? "";
+  const visibleSizes = hasStages ? allSizes.filter((size) => (getSizeStage(size) ?? "") === selectedStage) : allSizes;
   const selectedColor = controlledSelection?.color ?? product.colors?.[0] ?? "";
   const selectedModel = controlledSelection?.model ?? product.models?.[0] ?? "";
   const selection: ProductSelection = {
@@ -104,7 +115,11 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
 
   const updateSelection = (nextSelection: ProductSelection, changedField: "size" | "color" | "model") => {
     const mergedSelection = { ...selection, ...nextSelection, variationId: undefined };
-    const compatibleVariant = findCompatibleVariant(product.variants, mergedSelection, changedField);
+    // Changing color/model may choose another size, but must stay in this stage.
+    const stageVariants = hasStages ? product.variants?.filter((variant) =>
+      !variant.size || getSizeStage(variant.size) === getSizeStage(mergedSelection.size ?? "")
+    ) : product.variants;
+    const compatibleVariant = findCompatibleVariant(stageVariants, mergedSelection, changedField);
 
     onSelectionChange?.({
       ...mergedSelection,
@@ -114,6 +129,14 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
       variationId: compatibleVariant?.id,
       variationAttributes: compatibleVariant?.variationAttributes,
     });
+  };
+
+  const changeStage = (stage: string) => {
+    const sizes = allSizes.filter((size) => (getSizeStage(size) ?? "") === stage);
+    const sameLabel = sizes.find((size) => getSizeLabel(size) === getSizeLabel(selectedSize));
+    const availableSize = sizes.find((size) => product.variants?.some((variant) => optionEquals(variant.size, size) && variantIsInStock(variant)));
+    const size = sameLabel ?? availableSize ?? sizes[0];
+    if (size) updateSelection({ size }, "size");
   };
 
   const selectedInStock = selectedVariant ? variantIsInStock(selectedVariant) : productIsInStock(product);
@@ -131,24 +154,40 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
 
   return (
     <div className="space-y-5">
-      {product.sizes && product.sizes.length > 0 && (
+      {hasStages && (
+        <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
+          <label htmlFor="product-size-stage" className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+            Elegí la etapa
+          </label>
+          <select
+            id="product-size-stage"
+            value={selectedStage}
+            onChange={(event) => changeStage(event.target.value)}
+            className="w-full rounded-xl border border-outline-variant/30 bg-white px-4 py-3 text-sm font-bold text-primary outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            {stageOptions.map((stage) => <option key={stage.value} value={stage.value}>{stage.label}</option>)}
+          </select>
+        </div>
+      )}
+      {visibleSizes.length > 0 && (
         <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
           <span className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
             Elegí tu talle
           </span>
           <div className="flex flex-wrap items-center gap-2">
-            {product.sizes.map((size) => (
+            {visibleSizes.map((size) => (
               <button
                 key={size}
                 type="button"
                 onClick={() => updateSelection({ size }, "size")}
+                aria-pressed={selectedSize === size}
                 className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${
                   selectedSize === size
                     ? "border-primary bg-primary text-on-primary"
                     : "border-outline-variant/30 bg-white text-primary hover:border-primary"
                 }`}
               >
-                {size}
+                {getSizeLabel(size)}
               </button>
             ))}
           </div>

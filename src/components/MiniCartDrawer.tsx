@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo } from "react";
 import { useCart } from "@/context/cart-context";
+import { getSizeLabel, getSizeStageLabel } from "@/lib/catalog-taxonomy";
 import { getCartItemOptions, getListSubtotal, getListUnitPrice } from "@/lib/checkout-options";
 
 interface MiniCartDrawerProps {
@@ -13,7 +14,8 @@ interface MiniCartDrawerProps {
 
 function selectionLabel(item: ReturnType<typeof useCart>["items"][number]) {
   const { size, color, model } = getCartItemOptions(item);
-  return [size ? `Talle ${size}` : null, color ? `Color ${color}` : null, model ? `Modelo ${model}` : null]
+  const stage = getSizeStageLabel(size ?? "");
+  return [stage ? `Etapa ${stage}` : null, size ? `Talle ${getSizeLabel(size)}` : null, color ? `Color ${color}` : null, model ? `Modelo ${model}` : null]
     .filter(Boolean)
     .join(" · ");
 }
