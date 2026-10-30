@@ -45,13 +45,13 @@ it("puts babies first from RN, uses natural numeric order and keeps stage filter
   render(<HomeAgeFilter sizes={["T10 · Niños/Niñas", "T4 · Bebés", "4 años", "T2 · Bebés", "RN · Bebés", "T4 · Niños/Niñas", "T1 · Bebés"]} />);
   const links = screen.getAllByRole("link").filter((link) => link.getAttribute("aria-label")?.startsWith("Ver prendas en talle"));
   expect(links.map((link) => link.getAttribute("aria-label"))).toEqual([
-    "Ver prendas en talle RN para bebés", "Ver prendas en talle T1 para bebés", "Ver prendas en talle T2 para bebés", "Ver prendas en talle T4 para bebés",
-    "Ver prendas en talle 4 años para niños y niñas", "Ver prendas en talle T4 para niños y niñas", "Ver prendas en talle T10 para niños y niñas",
+    "Ver prendas en talle RN para bebés", "Ver prendas en talle 1 para bebés", "Ver prendas en talle 2 para bebés", "Ver prendas en talle 4 para bebés",
+    "Ver prendas en talle 4 para niños y niñas", "Ver prendas en talle 10 para niños y niñas",
   ]);
   for (const stage of ["bebes", "ninos"]) {
-    const link = screen.getByRole("link", { name: `Ver prendas en talle T4 para ${stage === "bebes" ? "bebés" : "niños y niñas"}` });
+    const link = screen.getByRole("link", { name: `Ver prendas en talle 4 para ${stage === "bebes" ? "bebés" : "niños y niñas"}` });
     const url = new URL(link.getAttribute("href")!, "https://minifimy.com");
-    expect(url.searchParams.getAll("talle")).toEqual([stage === "bebes" ? "T4 · Bebés" : "T4 · Niños/Niñas"]);
+    expect(url.searchParams.getAll("talle")).toEqual(stage === "bebes" ? ["T4 · Bebés"] : ["4 años", "T4 · Niños/Niñas"]);
     expect(url.searchParams.get("etapa")).toBe(stage);
     expect(link.firstElementChild).toHaveClass(stage === "bebes" ? "bg-secondary-container" : "bg-[#edf0e2]");
     expect(link).not.toHaveTextContent(/Bebés|Niños\/Niñas/);

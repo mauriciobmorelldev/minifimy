@@ -2,10 +2,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Header } from "@/components/Header";
 import { useCart } from "@/context/cart-context";
+import { useProductSuggestions } from "@/hooks/use-product-suggestions";
+
+const mockPush = jest.fn();
 
 jest.mock("next/navigation", () => ({
   usePathname: () => "/",
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
 jest.mock("@/components/MiniCartDrawer", () => ({
@@ -17,11 +20,13 @@ jest.mock("@/context/cart-context", () => ({
 }));
 
 jest.mock("@/hooks/use-product-suggestions", () => ({
-  useProductSuggestions: () => [],
+  useProductSuggestions: jest.fn(() => []),
 }));
 
 describe("Header search", () => {
   beforeEach(() => {
+    mockPush.mockClear();
+    jest.mocked(useProductSuggestions).mockReturnValue([]);
     jest.mocked(useCart).mockReturnValue({
       items: [],
       total: 0,
@@ -32,6 +37,30 @@ describe("Header search", () => {
       clearCart: jest.fn(),
       refreshCart: jest.fn(),
     });
+  });
+
+  it("activates suggestions in the desktop field and only navigates when submitted", async () => {
+    const user = userEvent.setup();
+    render(<Header navLinks={[]} />);
+    const input = screen.getByRole("textbox", { name: "Buscar productos desde el encabezado" });
+    await user.type(input, "bod");
+    expect(useProductSuggestions).toHaveBeenLastCalledWith("bod", true, true);
+    expect(mockPush).not.toHaveBeenCalled();
+    await user.keyboard("{Enter}");
+    expect(mockPush).toHaveBeenCalledWith("/catalogo?q=bod");
+  });
+
+  it("shows desktop suggestion links without submitting the search form", async () => {
+    jest.mocked(useProductSuggestions).mockImplementation((query, enabled) => enabled && query.length >= 3 ? [
+      { id: "1", name: "Body Pima", slug: "body-pima", image: "/body.png", category: "bodies", price: 1000 },
+    ] : []);
+    const user = userEvent.setup();
+    render(<Header navLinks={[]} />);
+    await user.type(screen.getByRole("textbox", { name: "Buscar productos desde el encabezado" }), "bod");
+    expect(screen.getAllByRole("link", { name: "Ver Body Pima" })[0]).toHaveAttribute("href", "/producto/body-pima");
+    expect(mockPush).not.toHaveBeenCalled();
+    await user.keyboard("{Escape}");
+    expect(useProductSuggestions).toHaveBeenLastCalledWith("bod", false, true);
   });
 
   it("focuses the input on the first and subsequent magnifying-glass clicks", async () => {

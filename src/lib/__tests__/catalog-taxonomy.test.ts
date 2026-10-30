@@ -8,6 +8,19 @@ import {
 } from "@/lib/catalog-taxonomy";
 
 describe("catalog taxonomy normalization", () => {
+  it("merges display aliases and sorts sizes numerically from RN without modifying Woo values", () => {
+    expect(getSizeLabel("T6 · Niños/Niñas")).toBe("6");
+    expect(getSizeLabel("6 años")).toBe("6");
+    expect(getSizeLabel("Talle 2 · Bebés")).toBe("2");
+    expect(groupSizesByLabel(["T12", "T6 · Niños/Niñas", "6 años", "RN · Bebés", "T2 · Bebés", "T10"])).toEqual([
+      { label: "RN", values: ["RN · Bebés"] },
+      { label: "2", values: ["T2 · Bebés"] },
+      { label: "6", values: ["T6 · Niños/Niñas", "6 años"] },
+      { label: "10", values: ["T10"] },
+      { label: "12", values: ["T12"] },
+    ]);
+    expect(normalizeSize("T6 · Niños/Niñas")).toBe("T6 · Niños/Niñas");
+  });
   it("hides stages only for display without losing internal filter identities", () => {
     expect(getSizeLabel("4 · Bebés")).toBe("4");
     expect(getSizeLabel("4 · Niños/Niñas")).toBe("4");

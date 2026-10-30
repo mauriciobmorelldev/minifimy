@@ -27,18 +27,20 @@ export function Header({ navLinks }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileCategoryOpen, setMobileCategoryOpen] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [desktopSearchOpen, setDesktopSearchOpen] = useState(false);
   const [miniCartOpen, setMiniCartOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [mobileAgeContext, setMobileAgeContext] = useState<string | null>(null);
   const [mobileAudienceContext, setMobileAudienceContext] = useState<string | null>(null);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
+  const desktopSearchRef = useRef<HTMLFormElement>(null);
   const desktopSearchButtonRef = useRef<HTMLButtonElement>(null);
   const mobileSearchButtonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchPanelRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
-  const suggestions = useProductSuggestions(query, searchOpen, true);
+  const suggestions = useProductSuggestions(query, searchOpen || desktopSearchOpen, true);
   const hiddenRoutes = ["/cargando-70", "/cargando-99"];
   const closeMobileMenu = () => {
     setMobileOpen(false);
@@ -78,6 +80,15 @@ export function Header({ navLinks }: HeaderProps) {
       document.body.style.overscrollBehavior = previousOverscroll;
     };
   }, [mobileOpen]);
+
+  useEffect(() => {
+    if (!desktopSearchOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!desktopSearchRef.current?.contains(event.target as Node)) setDesktopSearchOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [desktopSearchOpen]);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -121,6 +132,7 @@ export function Header({ navLinks }: HeaderProps) {
     const normalized = query.trim();
     router.push(normalized ? `/catalogo?q=${encodeURIComponent(normalized)}` : "/catalogo");
     setSearchOpen(false);
+    setDesktopSearchOpen(false);
     setMobileOpen(false);
   };
 
@@ -148,13 +160,17 @@ export function Header({ navLinks }: HeaderProps) {
 
           <div className="bg-[#d8e0c3] shadow-sm">
             <div className="mx-auto grid min-h-20 max-w-7xl grid-cols-[minmax(18rem,1fr)_auto_minmax(18rem,1fr)] items-center gap-8 px-8">
-              <form onSubmit={submitSearch} className="max-w-[24rem]">
+              <form ref={desktopSearchRef} onSubmit={submitSearch} className="relative max-w-[24rem]"
+                onFocusCapture={() => setDesktopSearchOpen(true)}
+                onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDesktopSearchOpen(false); }}
+                onKeyDown={(event) => { if (event.key === "Escape") setDesktopSearchOpen(false); }}
+              >
                 <label className="sr-only" htmlFor="desktop-site-search">Buscar productos desde el encabezado</label>
                 <div className="flex min-h-11 items-center rounded-lg bg-white/95 px-4 shadow-soft ring-1 ring-primary/10 transition focus-within:ring-2 focus-within:ring-primary/30">
                   <input
                     id="desktop-site-search"
                     value={query}
-                    onChange={(event) => setQuery(event.target.value)}
+                    onChange={(event) => { setQuery(event.target.value); setDesktopSearchOpen(true); }}
                     placeholder="¿Qué estás buscando?"
                     className="min-w-0 flex-1 bg-transparent pr-3 text-sm text-on-surface outline-none placeholder:text-on-surface-variant/65"
                   />
@@ -162,6 +178,12 @@ export function Header({ navLinks }: HeaderProps) {
                     <span className="material-symbols-outlined">search</span>
                   </button>
                 </div>
+                {desktopSearchOpen && (
+                  <ProductSearchSuggestions suggestions={suggestions} query={query}
+                    onSelect={() => setDesktopSearchOpen(false)}
+                    className="absolute left-0 right-0 top-full z-50 mt-2"
+                  />
+                )}
               </form>
 
               <Link href="/" className="flex items-center justify-center">

@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const suggestionsOnly = searchParams.get("suggestions") === "1";
   const recommendations = searchParams.get("recommendations") === "1";
   const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(Math.trunc(requestedLimit), 0), 12) : 0;
-  const products = await getStoreProducts({ perPage: 100 });
+  const products = await getStoreProducts({ perPage: 100, ...(query ? { search: query } : {}) });
 
   const filteredProducts = products.filter((product) => {
     const matchesCategory = !category || category === "all" || product.category === category;

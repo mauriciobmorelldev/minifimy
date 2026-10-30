@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getSizeLabel } from "@/lib/catalog-taxonomy";
+import { getSizeLabel, groupSizesByLabel } from "@/lib/catalog-taxonomy";
 import { getSizeStage } from "@/lib/catalog-age";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductInfoModal, WhatsAppIcon } from "@/components/ProductInfoModal";
@@ -175,19 +175,22 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
             Elegí tu talle
           </span>
           <div className="flex flex-wrap items-center gap-2">
-            {visibleSizes.map((size) => (
+            {groupSizesByLabel(visibleSizes).map(({ label, values }) => (
               <button
-                key={size}
+                key={label}
                 type="button"
-                onClick={() => updateSelection({ size }, "size")}
-                aria-pressed={selectedSize === size}
+                onClick={() => {
+                  const size = values.includes(selectedSize) ? selectedSize : values.find((value) => product.variants?.some((variant) => optionEquals(variant.size, value) && variantIsInStock(variant))) ?? values[0];
+                  updateSelection({ size }, "size");
+                }}
+                aria-pressed={values.includes(selectedSize)}
                 className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${
-                  selectedSize === size
+                  values.includes(selectedSize)
                     ? "border-primary bg-primary text-on-primary"
                     : "border-outline-variant/30 bg-white text-primary hover:border-primary"
                 }`}
               >
-                {getSizeLabel(size)}
+                {label}
               </button>
             ))}
           </div>

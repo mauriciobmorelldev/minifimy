@@ -34,7 +34,14 @@ export function normalizeSize(value: string): string {
 
 /** Presentation only: retain the full value for filtering and variation selection. */
 export function getSizeLabel(value: string): string {
-  return getSizeStage(value) ? value.replace(/\s*·[^·]+$/, "").trim() : value;
+  const base = getSizeStage(value) ? value.replace(/\s*·[^·]+$/, "").trim() : value.trim();
+  return base.replace(/^(?:t|talle)\s*(\d+)$/i, "$1").replace(/^(\d+)\s+a[ñn]os?$/i, "$1");
+}
+
+export function compareSizeLabels(first: string, second: string): number {
+  const a = getSizeLabel(first);
+  const b = getSizeLabel(second);
+  return Number(/^rn$/i.test(b)) - Number(/^rn$/i.test(a)) || a.localeCompare(b, "es", { numeric: true });
 }
 
 export function getSizeStageLabel(value: string): string | undefined {
@@ -50,7 +57,8 @@ export function groupSizesByLabel(values: string[]) {
     if (!group.includes(value)) group.push(value);
     groups.set(label, group);
   }
-  return Array.from(groups, ([label, values]) => ({ label, values }));
+  return Array.from(groups, ([label, values]) => ({ label, values }))
+    .sort((first, second) => compareSizeLabels(first.label, second.label));
 }
 
 export function normalizeColor(value: string) {
@@ -69,11 +77,8 @@ function uniqueByCanonical(values: Array<string | undefined>, normalize: (value:
 }
 
 export function normalizeAndSortSizes(values: Array<string | undefined>) {
-  const order = new Map(SIZE_ORDER.map((size, index) => [comparable(size), index]));
   return uniqueByCanonical(values, normalizeSize).sort((first, second) => {
-    const firstOrder = order.get(comparable(first)) ?? Number.MAX_SAFE_INTEGER;
-    const secondOrder = order.get(comparable(second)) ?? Number.MAX_SAFE_INTEGER;
-    return firstOrder - secondOrder || first.localeCompare(second, "es");
+    return compareSizeLabels(first, second) || first.localeCompare(second, "es", { numeric: true });
   });
 }
 

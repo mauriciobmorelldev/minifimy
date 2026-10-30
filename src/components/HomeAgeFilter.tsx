@@ -19,14 +19,8 @@ function homeSizeStage(size: string): CatalogAgeGroup | undefined {
 }
 
 function homeSizeGroups(sizes: string[]) {
-  const order = new Intl.Collator("es", { numeric: true });
   return (["bebes", "ninos", undefined] as const).flatMap((stage) =>
     groupSizesByLabel(sizes.filter((size) => homeSizeStage(size) === stage))
-      .sort((first, second) => {
-        const firstRN = /^rn$/i.test(first.label);
-        const secondRN = /^rn$/i.test(second.label);
-        return Number(secondRN) - Number(firstRN) || order.compare(first.label, second.label);
-      })
       .map((group) => ({ ...group, stage }))
   );
 }
