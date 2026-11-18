@@ -1,8 +1,8 @@
 describe("Home age filter", () => {
   function verifyAgeFilter() {
     cy.visit("/");
-    cy.get("#home-age-filter-title").scrollIntoView().should("be.visible").and("contain.text", "Comprá por edad");
-    cy.get('[aria-label="Talles disponibles"] a')
+    cy.get("#home-age-filter-title").scrollIntoView().should("be.visible").and("contain.text", "Comprá por talle");
+    cy.get('[aria-labelledby="home-age-filter-title"] ul a')
       .should("have.length.greaterThan", 0)
       .first()
       .should("have.attr", "href")

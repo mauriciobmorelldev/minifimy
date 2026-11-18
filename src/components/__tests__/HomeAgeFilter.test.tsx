@@ -1,30 +1,11 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { HomeAgeFilter } from "@/components/HomeAgeFilter";
 
 jest.mock("@/components/ScrollReveal", () => ({
   ScrollReveal: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-const scrollBy = jest.fn();
-
-beforeAll(() => {
-  Object.defineProperty(global, "ResizeObserver", {
-    configurable: true,
-    value: class {
-      observe() {}
-      disconnect() {}
-    },
-  });
-  Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, value: 320 });
-  Object.defineProperty(HTMLElement.prototype, "scrollWidth", { configurable: true, value: 960 });
-  Object.defineProperty(HTMLElement.prototype, "scrollBy", { configurable: true, value: scrollBy });
-});
-
-beforeEach(() => {
-  scrollBy.mockClear();
-});
-
-it("keeps age ranges together and advances with the carousel arrow", () => {
+it("shows the full size grid with age units and stage labels", () => {
   render(<HomeAgeFilter sizes={["12–18 meses", "18–24 meses", "4 años", "5 años", "6 años"]} />);
 
   expect(screen.getByRole("link", { name: "Ver prendas en talle 12–18 meses para bebés" })).toHaveAttribute(
@@ -34,11 +15,8 @@ it("keeps age ranges together and advances with the carousel arrow", () => {
   expect(screen.getByText("12–18")).toHaveClass("whitespace-nowrap");
   expect(screen.getByText("18–24")).toHaveClass("whitespace-nowrap");
 
-  fireEvent.click(screen.getByRole("button", { name: "Ver más talles" }));
-  expect(scrollBy).toHaveBeenCalledWith({
-    left: 280,
-    behavior: "smooth",
-  });
+  expect(within(screen.getByRole("region", { name: "Bebés" })).getAllByText("Baby")).toHaveLength(2);
+  expect(within(screen.getByRole("region", { name: "Niños y niñas" })).getAllByText("Kids")).toHaveLength(3);
 });
 
 it("puts babies first from RN, uses natural numeric order and keeps stage filters separate", () => {
@@ -53,7 +31,6 @@ it("puts babies first from RN, uses natural numeric order and keeps stage filter
     const url = new URL(link.getAttribute("href")!, "https://minifimy.com");
     expect(url.searchParams.getAll("talle")).toEqual(stage === "bebes" ? ["T4 · Bebés"] : ["4 años", "T4 · Niños/Niñas"]);
     expect(url.searchParams.get("etapa")).toBe(stage);
-    expect(link.firstElementChild).toHaveClass(stage === "bebes" ? "bg-secondary-container" : "bg-[#edf0e2]");
-    expect(link).not.toHaveTextContent(/Bebés|Niños\/Niñas/);
+    expect(link).toHaveTextContent(stage === "bebes" ? "4Baby" : "4Kids");
   }
 });

@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { groupSizesByLabel } from "@/lib/catalog-taxonomy";
 import { getSizeStage, sizeMatchesAge, type CatalogAgeGroup } from "@/lib/catalog-age";
@@ -18,12 +15,11 @@ function homeSizeStage(size: string): CatalogAgeGroup | undefined {
   return baby !== child ? baby ? "bebes" : "ninos" : undefined;
 }
 
-function homeSizeGroups(sizes: string[]) {
-  return (["bebes", "ninos", undefined] as const).flatMap((stage) =>
-    groupSizesByLabel(sizes.filter((size) => homeSizeStage(size) === stage))
-      .map((group) => ({ ...group, stage }))
-  );
-}
+const stages = [
+  { stage: "bebes", title: "Bebés", label: "Baby", forAge: " para bebés", background: "bg-secondary-container/60", tile: "bg-[#fff9f4]" },
+  { stage: "ninos", title: "Niños y niñas", label: "Kids", forAge: " para niños y niñas", background: "bg-[#edf0e2]", tile: "bg-[#f9fbf4]" },
+  { stage: undefined, title: "Otros talles", label: "", forAge: "", background: "bg-white/70", tile: "bg-white" },
+] as const;
 
 function getSizeParts(size: string): { value: string; unit: string } {
   const normalized = size.trim();
@@ -43,118 +39,76 @@ function getSizeParts(size: string): { value: string; unit: string } {
 }
 
 export function HomeAgeFilter({ sizes }: HomeAgeFilterProps) {
-  const railRef = useRef<HTMLDivElement>(null);
-  const [canScrollBack, setCanScrollBack] = useState(false);
-  const [canScrollForward, setCanScrollForward] = useState(false);
-
-  const updateScrollState = useCallback(() => {
-    const rail = railRef.current;
-    if (!rail) return;
-
-    setCanScrollBack(rail.scrollLeft > 4);
-    setCanScrollForward(rail.scrollLeft + rail.clientWidth < rail.scrollWidth - 4);
-  }, []);
-
-  useEffect(() => {
-    const rail = railRef.current;
-    if (!rail) return;
-
-    updateScrollState();
-    const resizeObserver = new ResizeObserver(updateScrollState);
-    resizeObserver.observe(rail);
-
-    return () => resizeObserver.disconnect();
-  }, [sizes, updateScrollState]);
-
-  const moveRail = (direction: -1 | 1) => {
-    const rail = railRef.current;
-    if (!rail) return;
-
-    rail.scrollBy({
-      left: direction * Math.max(rail.clientWidth * 0.72, 280),
-      behavior: "smooth",
-    });
-  };
-
   if (sizes.length === 0) return null;
 
+  const groups = stages.map((stage) => ({
+    ...stage,
+    sizes: groupSizesByLabel(sizes.filter((size) => homeSizeStage(size) === stage.stage)),
+  })).filter((group) => group.sizes.length > 0);
+  const showStagesSideBySide = groups.filter((group) => group.stage).length === 2;
+
   return (
-    <section aria-labelledby="home-age-filter-title" className="border-y border-primary/10 bg-[#fbf6ed] py-6 sm:py-7">
+    <section aria-labelledby="home-age-filter-title" className="border-y border-primary/10 bg-[#fbf6ed] py-7 sm:py-9">
       <ScrollReveal>
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="flex items-end justify-between gap-5">
-            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <h2 id="home-age-filter-title" className="font-headline text-2xl font-extrabold leading-tight text-primary sm:text-[1.7rem]">
-                Elegí por edad
-              </h2>
-              <p className="text-sm text-on-surface-variant">
-                Encontrá rápido el talle para cada etapa.
-              </p>
-            </div>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <h2 id="home-age-filter-title" className="font-headline text-2xl font-extrabold leading-tight text-primary sm:text-3xl">
+              Comprá por talle
+            </h2>
             <Link
               href="/catalogo"
-              className="hidden shrink-0 items-center gap-1.5 text-sm font-bold text-secondary transition hover:text-secondary-dim sm:inline-flex"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-md text-sm font-bold text-primary underline decoration-primary/35 underline-offset-4 hover:decoration-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
-              Ver todos
+              Ver catálogo
               <span className="material-symbols-outlined text-lg" aria-hidden="true">arrow_forward</span>
             </Link>
           </div>
 
-          <div className="relative mt-4">
-            <button
-              type="button"
-              onClick={() => moveRail(-1)}
-              disabled={!canScrollBack}
-              aria-label="Ver talles anteriores"
-              className="absolute left-0 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-primary/15 bg-[#fffaf2]/95 text-primary shadow-soft transition hover:border-secondary/30 hover:text-secondary disabled:pointer-events-none disabled:opacity-30"
-            >
-              <span className="material-symbols-outlined text-xl" aria-hidden="true">chevron_left</span>
-            </button>
+          <div className={`mt-3 grid gap-3 sm:gap-4 ${showStagesSideBySide ? "lg:grid-cols-[1.15fr_1fr]" : ""}`}>
+            {groups.map(({ stage, title, label: stageLabel, forAge, background, tile, sizes: options }) => {
+              const titleId = `home-talles-${stage ?? "otros"}`;
+              return (
+                <section
+                  key={titleId}
+                  aria-labelledby={titleId}
+                  className={`min-w-0 rounded-[1.35rem] border border-primary/10 p-3.5 sm:p-4 ${background} ${stage === undefined ? "lg:col-span-full" : ""}`}
+                >
+                  <h3 id={titleId} className="mb-3 border-b border-dashed border-primary/30 pb-2 font-headline text-lg font-extrabold leading-tight text-primary">
+                    {title}
+                  </h3>
+                  <ul className={`grid auto-rows-fr gap-2 ${stage === "ninos"
+                    ? "grid-cols-[repeat(auto-fit,minmax(3.3rem,1fr))]"
+                    : "grid-cols-[repeat(auto-fit,minmax(4.1rem,1fr))]"}`}>
+                    {options.map(({ label, values }) => {
+                      const { value, unit } = getSizeParts(label);
+                      const query = [...values.map((size) => `talle=${encodeURIComponent(size)}`), ...(stage ? [`etapa=${stage}`] : [])].join("&");
 
-            <div
-              ref={railRef}
-              onScroll={updateScrollState}
-              className="mx-11 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              aria-label="Talles disponibles"
-            >
-              <div className="flex w-max snap-x snap-mandatory items-center gap-3 pr-1 sm:gap-4">
-                {homeSizeGroups(sizes).map(({ label, values, stage }) => {
-                  const { value, unit } = getSizeParts(label);
-                  const query = [...values.map((size) => `talle=${encodeURIComponent(size)}`), ...(stage ? [`etapa=${stage}`] : [])].join("&");
-
-                  return (
-                    <Link
-                      key={`${stage ?? "other"}-${label}`}
-                      href={`/catalogo?${query}`}
-                      aria-label={`Ver prendas en talle ${label}${stage ? stage === "bebes" ? " para bebés" : " para niños y niñas" : ""}`}
-                      className="group flex w-[4.8rem] shrink-0 snap-start items-center justify-center rounded-full focus-visible:outline-none sm:w-[5.35rem]"
-                    >
-                      <span className={`flex aspect-square w-full flex-col items-center justify-center rounded-full border border-primary/15 px-1 text-center text-primary shadow-[0_5px_16px_rgba(82,101,61,0.07)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-secondary/30 group-focus-visible:ring-4 group-focus-visible:ring-secondary/20 ${stage === "bebes" ? "bg-secondary-container group-hover:bg-secondary-container/80" : "bg-[#edf0e2] group-hover:bg-primary-container/55"}`}>
-                        <span className="text-[0.48rem] font-extrabold uppercase tracking-[0.17em] text-primary/65">Talle</span>
-                        <span className={`whitespace-nowrap font-headline font-extrabold leading-none ${value.length >= 5 ? "text-[1.22rem] sm:text-[1.38rem]" : "text-[1.65rem] sm:text-[1.9rem]"}`}>
-                          {value}
-                        </span>
-                        {unit ? (
-                          <span className="mt-0.5 max-w-full truncate text-[0.46rem] font-bold uppercase tracking-[0.08em] text-primary/70">
-                            {unit}
-                          </span>
-                        ) : null}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => moveRail(1)}
-              disabled={!canScrollForward}
-              aria-label="Ver más talles"
-              className="absolute right-0 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-primary/15 bg-[#fffaf2]/95 text-primary shadow-soft transition hover:border-secondary/30 hover:text-secondary disabled:pointer-events-none disabled:opacity-30"
-            >
-              <span className="material-symbols-outlined text-xl" aria-hidden="true">chevron_right</span>
-            </button>
+                      return (
+                        <li key={label} className="min-w-0">
+                          <Link
+                            href={`/catalogo?${query}`}
+                            aria-label={`Ver prendas en talle ${label}${forAge}`}
+                            className={`flex h-full min-h-[5.4rem] flex-col items-center rounded-[0.8rem] border border-primary/15 px-1.5 pb-1.5 pt-2 text-center text-primary shadow-[0_2px_0_rgba(82,101,61,0.13)] transition-colors hover:border-primary/55 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${tile}`}
+                          >
+                            <span className="flex w-full flex-1 flex-col items-center justify-center gap-0.5">
+                              <span className={`max-w-full font-headline font-extrabold leading-none ${unit ? "whitespace-nowrap" : "[overflow-wrap:anywhere]"} ${value.length >= 5 ? "text-base" : "text-2xl"}`}>
+                                {value}
+                              </span>
+                              {unit && <span className="text-[0.625rem] font-semibold leading-tight">{unit}</span>}
+                            </span>
+                            {stageLabel && (
+                              <span lang="en" className="mt-1 w-full border-t border-primary/15 pt-1 text-[0.6875rem] font-extrabold leading-none tracking-wide">
+                                {stageLabel}
+                              </span>
+                            )}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              );
+            })}
           </div>
         </div>
       </ScrollReveal>

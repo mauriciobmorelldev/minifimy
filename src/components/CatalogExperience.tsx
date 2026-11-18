@@ -238,17 +238,15 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
         <div className="relative z-10 mt-8 grid gap-6 lg:mt-12 lg:grid-cols-[300px_1fr] lg:gap-8">
           <aside id="filtros" className="h-fit scroll-mt-28 rounded-[1.6rem] bg-white/82 p-4 shadow-soft ring-1 ring-white/70 lg:sticky lg:top-28 lg:rounded-[2rem] lg:p-5" aria-label="Filtros de catálogo">
             <div className="mb-4 flex items-center justify-between gap-4 lg:mb-6">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Fimy filtra por vos</span>
-                <h2 className="font-headline text-xl font-extrabold text-on-surface md:text-2xl">Elegir con calma</h2>
-              </div>
+              <h2 className="font-headline text-xl font-extrabold text-on-surface md:text-2xl">Filtros</h2>
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen((open) => !open)}
                 className="rounded-full bg-[#f7efe3] px-3 py-2 text-xs font-bold text-primary lg:hidden"
                 aria-expanded={mobileFiltersOpen}
+                aria-controls="catalog-filter-options"
               >
-                {mobileFiltersOpen ? "Cerrar" : "Abrir"}
+                {mobileFiltersOpen ? "Ocultar filtros" : "Mostrar filtros"}
               </button>
               {activeFilters.length > 0 && (
                 <button
@@ -261,7 +259,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
               )}
             </div>
 
-            <fieldset disabled={isPending} className={`${mobileFiltersOpen ? "block" : "hidden"} min-w-0 space-y-5 lg:block disabled:opacity-70`}>
+            <fieldset id="catalog-filter-options" disabled={isPending} className={`${mobileFiltersOpen ? "block" : "hidden"} min-w-0 space-y-5 lg:block disabled:opacity-70`}>
               <p className="rounded-[1.2rem] bg-[#f7efe3] px-4 py-3 text-xs font-semibold leading-5 text-primary/85">
                 Los talles, colores y precios corresponden a las prendas de {routeCategory === "all" ? "este catálogo" : "esta categoría"}.
               </p>
