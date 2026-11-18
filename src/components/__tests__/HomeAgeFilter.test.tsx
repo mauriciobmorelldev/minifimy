@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { HomeAgeFilter } from "@/components/HomeAgeFilter";
 
 jest.mock("@/components/ScrollReveal", () => ({
@@ -33,4 +33,24 @@ it("puts babies first from RN, uses natural numeric order and keeps stage filter
     expect(url.searchParams.get("etapa")).toBe(stage);
     expect(link).toHaveTextContent(stage === "bebes" ? "4Baby" : "4Kids");
   }
+});
+
+it("switches the mobile group from Baby to Kids while retaining the desktop groups", () => {
+  render(<HomeAgeFilter sizes={["RN · Bebés", "4 · Niños/Niñas"]} />);
+  const switcher = within(screen.getByRole("group", { name: "Etapa del talle" }));
+  const baby = switcher.getByRole("button", { name: "Baby" });
+  const kids = switcher.getByRole("button", { name: "Kids" });
+  const babyPanel = screen.getByRole("region", { name: "Bebés" });
+  const kidsPanel = screen.getByRole("region", { name: "Niños y niñas" });
+
+  expect(baby).toHaveAttribute("aria-pressed", "true");
+  expect(kidsPanel).toHaveClass("hidden", "sm:block");
+
+  fireEvent.click(kids);
+
+  expect(kids).toHaveAttribute("aria-pressed", "true");
+  expect(kids).toHaveAttribute("aria-controls", kidsPanel.id);
+  expect(baby).toHaveAttribute("aria-pressed", "false");
+  expect(babyPanel).toHaveClass("hidden", "sm:block");
+  expect(kidsPanel).not.toHaveClass("hidden");
 });
