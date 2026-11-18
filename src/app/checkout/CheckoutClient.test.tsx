@@ -16,7 +16,6 @@ jest.mock("@/lib/meta-events", () => ({
 
 const paymentMethods = [
   { id: "woo-mercado-pago-basic", title: "Mercado Pago", description: "" },
-  { id: "woo-mercado-pago-custom", title: "Tarjetas", description: "" },
   { id: "cod", title: "Efectivo/transferencia", description: "" },
   { id: "woo-mercado-pago-credits", title: "Pagos sin Tarjeta de Mercado Pago", description: "" },
 ];
@@ -64,7 +63,7 @@ describe("CheckoutClient", () => {
     const user = userEvent.setup();
     const { container } = render(<CheckoutClient />);
 
-    expect(await screen.findByRole("radio", { name: /Mercado Pago Pagá con los medios disponibles/i })).not.toBeChecked();
+    expect(await screen.findByRole("radio", { name: /Mercado Pago Pagá con tarjeta de crédito/i })).not.toBeChecked();
     expect(screen.getByRole("radio", { name: /Correo Argentino — retiro en sucursal/i })).not.toBeChecked();
     expect(screen.getByRole("link", { name: /Consultar costo de envío/i })).toHaveAttribute(
       "href",

@@ -54,14 +54,12 @@ describe("payment presentation", () => {
   const methods = [
     { id: "woo-mercado-pago-credits", title: "Pagos sin Tarjeta de Mercado Pago", description: "" },
     { id: "cod", title: "Efectivo/transferencia", description: "" },
-    { id: "woo-mercado-pago-custom", title: "Tarjetas", description: "" },
     { id: "woo-mercado-pago-basic", title: "Mercado Pago", description: "" },
   ];
 
   it("orders the main choices first and explains Mercado Pago credit clearly", () => {
     expect(sortPaymentMethods(methods).map((method) => method.id)).toEqual([
       "woo-mercado-pago-basic",
-      "woo-mercado-pago-custom",
       "cod",
       "woo-mercado-pago-credits",
     ]);

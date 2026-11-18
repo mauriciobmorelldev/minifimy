@@ -4,6 +4,7 @@ import { proxyWooStoreRequest } from "@/lib/woo-store-api";
 import {
   COORDINATED_SHIPPING_METHODS,
   getShippingMethod,
+  MERCADO_PAGO_CUSTOM_METHOD,
   sortPaymentMethods,
 } from "@/lib/checkout-options";
 
@@ -47,7 +48,10 @@ function hasRequiredCustomerData(customer?: CheckoutPayload["customer"]) {
 }
 
 export async function GET() {
-  const paymentMethods = sortPaymentMethods(await getStorePaymentMethods());
+  const enabledMethods = await getStorePaymentMethods();
+  const paymentMethods = sortPaymentMethods(
+    enabledMethods.filter((method) => method.id !== MERCADO_PAGO_CUSTOM_METHOD),
+  );
   return NextResponse.json({ paymentMethods, shippingMethods: COORDINATED_SHIPPING_METHODS });
 }
 
@@ -60,6 +64,13 @@ export async function POST(request: NextRequest) {
 
   if (!payload?.paymentMethodId) {
     return NextResponse.json({ message: "Seleccioná un método de pago." }, { status: 400 });
+  }
+
+  if (payload.paymentMethodId === MERCADO_PAGO_CUSTOM_METHOD) {
+    return NextResponse.json(
+      { message: "Recargá esta página y elegí Mercado Pago para pagar con tarjeta." },
+      { status: 422 },
+    );
   }
 
   const [firstName, ...lastNameParts] = payload.customer!.name!.trim().split(/\s+/);

@@ -38,9 +38,10 @@ export function getShippingMethod(methodId: string) {
   return COORDINATED_SHIPPING_METHODS.find((method) => method.id === methodId);
 }
 
+export const MERCADO_PAGO_CUSTOM_METHOD = "woo-mercado-pago-custom";
+
 const PAYMENT_METHOD_ORDER = [
   "woo-mercado-pago-basic",
-  "woo-mercado-pago-custom",
   "cod",
   "bacs",
   "cheque",
@@ -60,13 +61,7 @@ export function getPaymentMethodCopy(method: CheckoutPaymentMethod) {
     case "woo-mercado-pago-basic":
       return {
         title: "Mercado Pago",
-        description: "Pagá con los medios disponibles en tu cuenta.",
-        benefit: "Hasta 3 cuotas sin interés.",
-      };
-    case "woo-mercado-pago-custom":
-      return {
-        title: "Tarjeta de crédito o débito",
-        description: "Pago procesado de forma segura por Mercado Pago.",
+        description: "Pagá con tarjeta de crédito, débito u otros medios en Mercado Pago.",
         benefit: "Hasta 3 cuotas sin interés.",
       };
     case "woo-mercado-pago-credits":
