@@ -5,6 +5,7 @@ import { ProductGallery } from "@/components/ProductGallery";
 import { ProductInfoModal } from "@/components/ProductInfoModal";
 import { ProductPrice } from "@/components/ProductPrice";
 import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
+import { getDefaultProductVariant, getProductOptions, normalizeOption, productNeedsOptions, variantMatchesOptions } from "@/lib/product-options";
 import { productIsInStock, variantIsInStock } from "@/lib/product-stock";
 import { getSizeStage } from "@/lib/catalog-age";
 import type { Product, ProductSelection } from "@/models/product";
@@ -15,30 +16,6 @@ interface ProductDetailClientProps {
 }
 
 type ProductVariant = NonNullable<Product["variants"]>[number];
-
-function normalizeOption(value?: string) {
-  return (value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[\u2010-\u2015\u2212]/g, "-")
-    .replace(/\s*-\s*/g, "-")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function optionsMatch(selected?: string, actual?: string) {
-  return !selected || !actual || normalizeOption(selected) === normalizeOption(actual);
-}
-
-function variantMatchesSelection(variant: ProductVariant, selection: ProductSelection) {
-  if (selection.variationId && selection.variationId === variant.id) return true;
-  return (
-    optionsMatch(selection.size, variant.size) &&
-    optionsMatch(selection.color, variant.color) &&
-    optionsMatch(selection.model, variant.model)
-  );
-}
 
 function scoreVariantForSelection(variant: ProductVariant, selection: ProductSelection) {
   if (selection.size && variant.size && getSizeStage(selection.size) !== getSizeStage(variant.size)) return -1;
@@ -78,34 +55,40 @@ function findBestVariantForSelection(variants: ProductVariant[] | undefined, sel
 }
 
 function getInitialSelection(product: Product): ProductSelection {
-  const firstVariant = product.variants?.find(variantIsInStock) ?? product.variants?.[0];
+  const firstVariant = getDefaultProductVariant(product);
 
   return {
     size: firstVariant?.size ?? product.sizes?.[0],
     color: firstVariant?.color ?? product.colors?.[0],
     model: firstVariant?.model ?? product.models?.[0],
     variationId: firstVariant?.id,
-    variationAttributes: firstVariant?.variationAttributes,
   };
 }
 
 export function ProductDetailClient({ product, categoryName }: ProductDetailClientProps) {
-  const [selection, setSelection] = useState<ProductSelection>(() => getInitialSelection(product));
+  const options = useMemo(() => getProductOptions(product), [product]);
+  const optionFields = (["size", "color", "model"] as const).filter((field) => options[field].length > 0);
+  const chooseCombination = productNeedsOptions(product) && optionFields.length > 1;
+  const [selection, setSelection] = useState<ProductSelection>(() => chooseCombination ? {} : getInitialSelection(product));
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
-  const selectedVariant = useMemo(() => {
-    return product.variants?.find((variant) => variantMatchesSelection(variant, selection));
-  }, [product.variants, selection]);
+  const selectionIncomplete = optionFields.some((field) => !selection[field]);
+  const matchingVariants = selectionIncomplete
+    ? []
+    : product.variants?.filter((variant) => variantMatchesOptions(variant, selection)) ?? [];
+  const selectedVariant = matchingVariants.find((variant) => variant.id === selection.variationId)
+    ?? matchingVariants.find(variantIsInStock)
+    ?? matchingVariants[0];
 
   const visualVariant = useMemo(() => {
-    return selectedVariant ?? findBestVariantForSelection(product.variants, selection);
-  }, [product.variants, selectedVariant, selection]);
+    return selectedVariant ?? (selection.color || selection.model
+      ? findBestVariantForSelection(product.variants, selection)
+      : getDefaultProductVariant(product));
+  }, [product, selectedVariant, selection]);
 
-
-  const selectedPrice = selectedVariant?.price ?? visualVariant?.price ?? product.price;
-  const selectedPrices = selectedVariant?.prices ?? visualVariant?.prices ?? product.prices;
-  const selectedInStock = selectedVariant ? variantIsInStock(selectedVariant) : visualVariant ? variantIsInStock(visualVariant) : productIsInStock(product);
-  const selectedStock = selectedInStock ? selectedVariant?.stock ?? visualVariant?.stock ?? product.stock : 0;
+  const selectedPrice = selectedVariant?.price ?? product.price;
+  const selectedPrices = selectedVariant?.prices ?? product.prices;
+  const selectedInStock = selectedVariant ? variantIsInStock(selectedVariant) : productIsInStock(product);
   const galleryImages = useMemo(() => {
     const selectedImage = visualVariant?.image;
     const variantImages = product.variants?.flatMap((variant) => (variant.image ? [variant.image] : [])) ?? [];
@@ -127,12 +110,20 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
           <div className="mt-4 flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
             <ProductPrice price={selectedPrice} prices={selectedPrices} onShowPaymentMethods={() => setPaymentModalOpen(true)} />
             <span className="shrink-0 rounded-full bg-primary-container px-3 py-1 text-xs font-bold text-on-primary-container">
-              {selectedStock > 0 ? "Stock disponible" : "Sin stock"}
+              {selectedInStock ? "Stock disponible" : "Sin stock"}
             </span>
           </div>
         </header>
 
-        <ProductPurchasePanel product={product} selection={selection} onSelectionChange={setSelection} selectedVariant={selectedVariant} />
+        <ProductPurchasePanel
+          product={product}
+          options={options}
+          selection={selection}
+          chooseCombination={chooseCombination}
+          selectionIncomplete={selectionIncomplete}
+          onSelectionChange={setSelection}
+          selectedVariant={selectedVariant}
+        />
 
 
         <section aria-labelledby="product-details-title" className="overflow-hidden rounded-[1.5rem] bg-white/72 shadow-soft">

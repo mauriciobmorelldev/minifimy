@@ -6,14 +6,17 @@ import { getSizeStage } from "@/lib/catalog-age";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductInfoModal, WhatsAppIcon } from "@/components/ProductInfoModal";
 import { ProductPrice } from "@/components/ProductPrice";
-import { productNeedsOptions } from "@/lib/product-options";
+import { getDefaultProductVariant, getProductOptions, optionsEqual, productNeedsOptions, variantMatchesOptions, type ProductOption } from "@/lib/product-options";
 import { productIsInStock, variantIsInStock } from "@/lib/product-stock";
 import type { Product, ProductSelection, ProductVariant } from "@/models/product";
 
 interface ProductPurchasePanelProps {
   product: Product;
-  selection?: ProductSelection;
-  onSelectionChange?: (selection: ProductSelection) => void;
+  options: ReturnType<typeof getProductOptions>;
+  selection: ProductSelection;
+  chooseCombination: boolean;
+  selectionIncomplete: boolean;
+  onSelectionChange: (selection: ProductSelection) => void;
   selectedVariant?: ProductVariant;
 }
 
@@ -42,113 +45,67 @@ function colorValue(color: string) {
   return Object.entries(palette).find(([name]) => normalized.includes(name))?.[1] ?? "#d8c7aa";
 }
 
-function normalizeOption(value?: string) {
-  return (value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[\u2010-\u2015\u2212]/g, "-")
-    .replace(/\s*-\s*/g, "-")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+const unavailableOptionClass = "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-600 line-through";
 
-function optionEquals(first?: string, second?: string) {
-  return normalizeOption(first) === normalizeOption(second);
-}
-
-function variantMatchesSelection(variant: ProductVariant, selection: ProductSelection) {
-  if (selection.variationId && selection.variationId === variant.id) return true;
-  const sizeMatches = !selection.size || !variant.size || optionEquals(selection.size, variant.size);
-  const colorMatches = !selection.color || !variant.color || optionEquals(selection.color, variant.color);
-  const modelMatches = !selection.model || !variant.model || optionEquals(selection.model, variant.model);
-  return sizeMatches && colorMatches && modelMatches;
-}
-
-function findCompatibleVariant(
-  variants: ProductVariant[] | undefined,
-  selection: ProductSelection,
-  changedField: "size" | "color" | "model",
-) {
-  if (!variants?.length) return undefined;
-
-  const availableVariants = variants.filter(variantIsInStock);
-  const exactAvailableVariant = availableVariants.find((variant) => variantMatchesSelection(variant, selection));
-  if (exactAvailableVariant) return exactAvailableVariant;
-
-  const changedValue = selection[changedField];
-  if (changedValue) {
-    const compatibleAvailableVariant = availableVariants.find((variant) => optionEquals(variant[changedField], changedValue));
-    if (compatibleAvailableVariant) return compatibleAvailableVariant;
-  }
-
-  const exactVariant = variants.find((variant) => variantMatchesSelection(variant, selection));
-  if (exactVariant) return exactVariant;
-
-  return changedValue
-    ? variants.find((variant) => optionEquals(variant[changedField], changedValue))
-    : undefined;
-}
-
-export function ProductPurchasePanel({ product, selection: controlledSelection, onSelectionChange, selectedVariant }: ProductPurchasePanelProps) {
+export function ProductPurchasePanel({ product, options, selection, chooseCombination, selectionIncomplete, onSelectionChange, selectedVariant }: ProductPurchasePanelProps) {
   const [quantity, setQuantity] = useState(1);
   const [openModal, setOpenModal] = useState<"size" | "shipping" | null>(null);
-  const selectedSize = controlledSelection?.size ?? product.sizes?.[0] ?? "";
-  const allSizes = Array.from(new Set([...(product.sizes ?? []), ...(product.variants?.flatMap((variant) => variant.size ? [variant.size] : []) ?? [])]));
+  const [stage, setStage] = useState(() => getSizeStage(getDefaultProductVariant(product)?.size ?? options.size[0] ?? "") ?? "");
+  const { size: selectedSize, color: selectedColor, model: selectedModel } = selection;
+  const allSizes = options.size;
   const stageOptions = [
     { value: "bebes", label: "Bebés" },
     { value: "ninos", label: "Niños/Niñas" },
     { value: "", label: "Otros talles" },
   ].filter((stage) => allSizes.some((size) => (getSizeStage(size) ?? "") === stage.value));
   const hasStages = allSizes.some((size) => getSizeStage(size));
-  const selectedStage = getSizeStage(selectedSize) ?? "";
+  const selectedStage = selectedSize ? getSizeStage(selectedSize) ?? "" : stage;
   const visibleSizes = hasStages ? allSizes.filter((size) => (getSizeStage(size) ?? "") === selectedStage) : allSizes;
-  const selectedColor = controlledSelection?.color ?? product.colors?.[0] ?? "";
-  const selectedModel = controlledSelection?.model ?? product.models?.[0] ?? "";
-  const selection: ProductSelection = {
-    size: selectedSize || undefined,
-    color: selectedColor || undefined,
-    model: selectedModel || undefined,
-    variationId: selectedVariant?.id,
-    variationAttributes: controlledSelection?.variationAttributes ?? selectedVariant?.variationAttributes,
-  };
+  const hasVariantData = Boolean(product.variants?.length);
+  const availableVariants = product.variants?.filter((variant) =>
+    variantIsInStock(variant) &&
+    (!hasStages || !variant.size || (getSizeStage(variant.size) ?? "") === selectedStage)
+  );
 
-  const updateSelection = (nextSelection: ProductSelection, changedField: "size" | "color" | "model") => {
-    const mergedSelection = { ...selection, ...nextSelection, variationId: undefined };
-    // Changing color/model may choose another size, but must stay in this stage.
-    const stageVariants = hasStages ? product.variants?.filter((variant) =>
-      !variant.size || getSizeStage(variant.size) === getSizeStage(mergedSelection.size ?? "")
-    ) : product.variants;
-    const compatibleVariant = findCompatibleVariant(stageVariants, mergedSelection, changedField);
+  const optionIsAvailable = (field: ProductOption, value: string) =>
+    !hasVariantData || Boolean(availableVariants?.some((variant) => variantMatchesOptions(variant, { ...selection, [field]: value })));
 
-    onSelectionChange?.({
-      ...mergedSelection,
-      size: compatibleVariant?.size ?? mergedSelection.size,
-      color: compatibleVariant?.color ?? mergedSelection.color,
-      model: compatibleVariant?.model ?? mergedSelection.model,
-      variationId: compatibleVariant?.id,
-      variationAttributes: compatibleVariant?.variationAttributes,
+  const updateSelection = (field: ProductOption, value: string) => {
+    onSelectionChange({
+      size: selectedSize,
+      color: selectedColor,
+      model: selectedModel,
+      [field]: chooseCombination && optionsEqual(selection[field], value) ? undefined : value,
     });
   };
 
-  const changeStage = (stage: string) => {
-    const sizes = allSizes.filter((size) => (getSizeStage(size) ?? "") === stage);
-    const sameLabel = sizes.find((size) => getSizeLabel(size) === getSizeLabel(selectedSize));
-    const availableSize = sizes.find((size) => product.variants?.some((variant) => optionEquals(variant.size, size) && variantIsInStock(variant)));
-    const size = sameLabel ?? availableSize ?? sizes[0];
-    if (size) updateSelection({ size }, "size");
+  const changeStage = (nextStage: string) => {
+    setStage(nextStage);
+    if (chooseCombination) {
+      onSelectionChange({});
+      return;
+    }
+
+    const sizes = allSizes.filter((size) => (getSizeStage(size) ?? "") === nextStage);
+    const availableSizes = sizes.filter((size) => product.variants?.some((variant) =>
+      optionsEqual(variant.size, size) && variantIsInStock(variant)
+    ));
+    const sameLabel = availableSizes.find((size) => selectedSize && getSizeLabel(size) === getSizeLabel(selectedSize));
+    const size = sameLabel ?? availableSizes[0] ?? sizes[0];
+    if (size) updateSelection("size", size);
   };
 
   const selectedInStock = selectedVariant ? variantIsInStock(selectedVariant) : productIsInStock(product);
   const selectedPrice = selectedVariant?.price ?? product.price;
   const selectedPrices = selectedVariant?.prices ?? product.prices;
-  const hasVariantData = Boolean(product.variants?.length);
   const missingRequiredOptions = productNeedsOptions(product) && !selectedVariant;
   const disabledReason = !selectedInStock
     ? "Esta opción está sin stock por ahora."
     : missingRequiredOptions
       ? hasVariantData
-        ? "Esta combinación no está disponible. Probá otro talle o color."
+        ? selectionIncomplete
+          ? null
+          : "Esta combinación no está disponible. Probá con otras opciones."
         : "No pudimos cargar las variantes desde Fimy. Revisá que el producto tenga variaciones activas y publicadas."
       : null;
 
@@ -175,24 +132,28 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
             Elegí tu talle
           </span>
           <div className="flex flex-wrap items-center gap-2">
-            {groupSizesByLabel(visibleSizes).map(({ label, values }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => {
-                  const size = values.includes(selectedSize) ? selectedSize : values.find((value) => product.variants?.some((variant) => optionEquals(variant.size, value) && variantIsInStock(variant))) ?? values[0];
-                  updateSelection({ size }, "size");
-                }}
-                aria-pressed={values.includes(selectedSize)}
-                className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${
-                  values.includes(selectedSize)
-                    ? "border-primary bg-primary text-on-primary"
-                    : "border-outline-variant/30 bg-white text-primary hover:border-primary"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+            {groupSizesByLabel(visibleSizes).map(({ label, values }) => {
+              const pressed = values.some((value) => optionsEqual(value, selectedSize));
+              const availableSize = values.find((value) => optionIsAvailable("size", value));
+              const unavailable = !availableSize;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => updateSelection("size", pressed && selectedSize ? selectedSize : availableSize ?? values[0])}
+                  aria-pressed={pressed}
+                  disabled={unavailable}
+                  title={unavailable ? "Sin stock" : undefined}
+                  className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${
+                    unavailable ? unavailableOptionClass
+                      : pressed ? "border-primary bg-primary text-on-primary"
+                        : "border-outline-variant/30 bg-white text-primary hover:border-primary"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
           <button
             type="button"
@@ -204,53 +165,72 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
         </div>
       )}
 
-      {product.colors && product.colors.length > 0 && (
+      {options.color.length > 0 && (
         <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
           <span className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
             Elegí tu color
           </span>
           <div className="flex flex-wrap items-center gap-2">
-            {product.colors.map((color) => (
-              <button
-                key={color}
-                type="button"
-                onClick={() => updateSelection({ color }, "color")}
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition-all ${
-                  selectedColor === color
-                    ? "border-primary bg-primary text-on-primary"
-                    : "border-transparent bg-[#fbf4ea] text-primary hover:border-primary"
-                }`}
-              >
-                <span className="h-4 w-4 rounded-full ring-1 ring-on-surface/10" style={{ backgroundColor: colorValue(color) }} />
-                {color}
-              </button>
-            ))}
+            {options.color.map((color) => {
+              const pressed = optionsEqual(selectedColor, color);
+              const unavailable = !optionIsAvailable("color", color);
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => updateSelection("color", color)}
+                  aria-pressed={pressed}
+                  disabled={unavailable}
+                  title={unavailable ? "Sin stock" : undefined}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition-all ${
+                    unavailable ? unavailableOptionClass
+                      : pressed ? "border-primary bg-primary text-on-primary"
+                        : "border-transparent bg-[#fbf4ea] text-primary hover:border-primary"
+                  }`}
+                >
+                  <span className="h-4 w-4 rounded-full ring-1 ring-on-surface/10" style={{ backgroundColor: unavailable ? "#d1d5db" : colorValue(color) }} />
+                  {color}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {product.models && product.models.length > 0 && (
+      {options.model.length > 0 && (
         <div className="space-y-3 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
           <span className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant">
             Elegí modelo
           </span>
           <div className="flex flex-wrap items-center gap-2">
-            {product.models.map((model) => (
-              <button
-                key={model}
-                type="button"
-                onClick={() => updateSelection({ model }, "model")}
-                className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${
-                  selectedModel === model
-                    ? "border-primary bg-primary text-on-primary"
-                    : "border-outline-variant/30 bg-white text-primary hover:border-primary"
-                }`}
-              >
-                {model}
-              </button>
-            ))}
+            {options.model.map((model) => {
+              const pressed = optionsEqual(selectedModel, model);
+              const unavailable = !optionIsAvailable("model", model);
+              return (
+                <button
+                  key={model}
+                  type="button"
+                  onClick={() => updateSelection("model", model)}
+                  aria-pressed={pressed}
+                  disabled={unavailable}
+                  title={unavailable ? "Sin stock" : undefined}
+                  className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${
+                    unavailable ? unavailableOptionClass
+                      : pressed ? "border-primary bg-primary text-on-primary"
+                        : "border-outline-variant/30 bg-white text-primary hover:border-primary"
+                  }`}
+                >
+                  {model}
+                </button>
+              );
+            })}
           </div>
         </div>
+      )}
+      {chooseCombination && hasVariantData && (
+        <p className="text-sm text-on-surface-variant">
+          Las opciones en gris están sin stock para esta combinación. Tocá una opción seleccionada para desmarcarla.
+        </p>
       )}
       <div className="flex items-center justify-between gap-4 rounded-[1.5rem] bg-white/72 p-4 shadow-soft">
         <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Cantidad</span>
@@ -291,12 +271,14 @@ export function ProductPurchasePanel({ product, selection: controlledSelection, 
       <AddToCartButton
         product={{ ...product, price: selectedPrice, prices: selectedPrices, stock: selectedInStock ? selectedVariant?.stock ?? product.stock : 0, stockStatus: selectedInStock ? product.stockStatus : "outofstock", images: selectedVariant?.image ? [selectedVariant.image, ...product.images.filter((image) => image !== selectedVariant.image)] : product.images }}
         quantity={quantity}
-        selection={selection}
+        selection={{ ...selection, variationId: selectedVariant?.id, variationAttributes: selectedVariant?.variationAttributes }}
         disabled={missingRequiredOptions || !selectedInStock}
         className="w-full gap-3 rounded-full bg-primary py-4 font-headline text-base text-on-primary shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-55 md:py-5 md:text-lg"
       >
         <span className="material-symbols-outlined">shopping_cart</span>
-        {!selectedInStock ? "Sin stock" : missingRequiredOptions ? "Elegí una opción disponible" : "Agregar al carrito"}
+        {!selectedInStock ? "Sin stock"
+          : missingRequiredOptions && hasVariantData && selectionIncomplete ? "Completá las opciones"
+            : missingRequiredOptions ? "Elegí una opción disponible" : "Agregar al carrito"}
       </AddToCartButton>
 
       <div className="rounded-[1.5rem] bg-surface-container-low p-5 shadow-soft">

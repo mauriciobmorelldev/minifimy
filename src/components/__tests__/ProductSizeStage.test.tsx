@@ -26,46 +26,77 @@ function selection(): ProductSelection {
   return JSON.parse(screen.getByTestId("cart-selection").getAttribute("data-selection")!);
 }
 
-it("switches the same visible size between stages and sends the correct variation to cart", () => {
+it("keeps stages separate and sends only a complete, available variation to cart", () => {
   render(<ProductDetailClient product={product} categoryName="Pantalones" />);
   const stage = screen.getByRole("combobox", { name: "Elegí la etapa" });
   expect(stage).toHaveValue("bebes");
   expect(screen.getAllByRole("button", { name: "4" })).toHaveLength(1);
   expect(screen.getByRole("button", { name: "6" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "8" })).not.toBeInTheDocument();
-  expect(selection().variationId).toBe("b4");
+  expect(selection().variationId).toBeUndefined();
+  expect(screen.getByTestId("cart-selection")).toBeDisabled();
+
+  fireEvent.click(screen.getByRole("button", { name: "Azul" }));
+  expect(screen.getByRole("button", { name: "6" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "4" })).toHaveAttribute("aria-pressed", "false");
 
   fireEvent.change(stage, { target: { value: "ninos" } });
   expect(screen.queryByRole("button", { name: "6" })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "8" })).toBeInTheDocument();
-  expect(selection()).toMatchObject({ size: "4 · Niños/Niñas", color: "Rosa", variationId: "n4", variationAttributes: [{ attribute: "Talle", value: "4 · Niños/Niñas" }] });
-  expect(screen.getByTestId("cart-selection")).toBeEnabled();
-
-  // Azul exists only for babies: choosing it must not silently change stage.
-  fireEvent.click(screen.getByRole("button", { name: "Azul" }));
+  expect(screen.getByRole("button", { name: "Azul" })).toBeDisabled();
   expect(stage).toHaveValue("ninos");
-  expect(selection()).toMatchObject({ size: "4 · Niños/Niñas", color: "Azul" });
-  expect(selection().variationId).toBeUndefined();
+  expect(selection()).toEqual({});
+
+  fireEvent.click(screen.getByRole("button", { name: "4" }));
+  expect(screen.getByRole("button", { name: "Rosa" })).toHaveAttribute("aria-pressed", "false");
   expect(screen.getByTestId("cart-selection")).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Rosa" }));
+  expect(selection()).toEqual({ size: "4 · Niños/Niñas", color: "Rosa", variationId: "n4", variationAttributes: [{ attribute: "Talle", value: "4 · Niños/Niñas" }] });
+  expect(screen.getByTestId("cart-selection")).toBeEnabled();
 
   fireEvent.change(stage, { target: { value: "bebes" } });
-  expect(selection()).toMatchObject({ size: "4 · Bebés", variationId: "b4" });
-  expect(screen.getByTestId("cart-selection")).toBeEnabled();
+  expect(selection()).toEqual({});
+  expect(screen.getByRole("button", { name: "Azul" })).toBeEnabled();
 });
 
 it("keeps out-of-stock sizes in their stage and prevents purchasing them", () => {
   render(<ProductDetailClient product={product} categoryName="Pantalones" />);
   fireEvent.change(screen.getByRole("combobox"), { target: { value: "ninos" } });
-  fireEvent.click(screen.getByRole("button", { name: "8" }));
-  expect(selection()).toMatchObject({ size: "8 · Niños/Niñas", variationId: "n8" });
+  expect(screen.getByRole("button", { name: "8" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "8" })).toHaveClass("bg-gray-100");
   expect(screen.getByTestId("cart-selection")).toBeDisabled();
 });
 
-it("selects a size from the new stage when the previous size does not exist there", () => {
-  render(<ProductDetailClient product={product} categoryName="Pantalones" />);
-  fireEvent.click(screen.getByRole("button", { name: "6" }));
-  fireEvent.change(screen.getByRole("combobox"), { target: { value: "ninos" } });
-  expect(selection()).toMatchObject({ size: "4 · Niños/Niñas", variationId: "n4" });
+it("filters sizes, colors and models in either direction and reopens options when deselected", () => {
+  const withModels = {
+    ...product,
+    models: ["Liso", "Flores", "Rayas"],
+    variants: [
+      { ...product.variants![0], model: "Liso" },
+      { ...product.variants![1], model: "Flores" },
+      { ...product.variants![0], id: "sold-out", model: "Rayas", stockStatus: "outofstock" },
+    ],
+  };
+  render(<ProductDetailClient product={withModels} categoryName="Pantalones" />);
+  const option = (name: string) => screen.getByRole("button", { name });
+
+  fireEvent.click(option("4"));
+  expect(option("Azul")).toHaveAttribute("aria-pressed", "false");
+  expect(option("Liso")).toHaveAttribute("aria-pressed", "false");
+  expect(option("Rosa")).toBeDisabled();
+  expect(option("Flores")).toBeDisabled();
+  expect(option("Rayas")).toBeDisabled();
+
+  fireEvent.click(option("4"));
+  fireEvent.click(option("Rosa"));
+  expect(option("4")).toBeDisabled();
+  expect(option("6")).toHaveAttribute("aria-pressed", "false");
+  expect(option("Liso")).toBeDisabled();
+  fireEvent.click(option("Flores"));
+  expect(screen.getByTestId("cart-selection")).toBeDisabled();
+  fireEvent.click(option("6"));
+  expect(selection()).toMatchObject({ size: "6 · Bebés", color: "Rosa", model: "Flores", variationId: "b6" });
+  expect(screen.getByTestId("cart-selection")).toBeEnabled();
 });
 
 it("preserves legacy products and exposes unclassified sizes separately in mixed products", () => {
