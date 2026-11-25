@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { cookies, headers } from "next/headers";
 import { Be_Vietnam_Pro, Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@/components/Analytics";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { CampaignWaitingScreen } from "@/components/CampaignWaitingScreen";
 import { SiteLockedScreen } from "@/components/SiteLockedScreen";
 import { WhatsAppFimy } from "@/components/WhatsAppFimy";
 import { CartProvider } from "@/context/cart-context";
@@ -10,6 +12,7 @@ import { FeedbackProvider } from "@/context/feedback-context";
 import { buildStoreMenu } from "@/lib/category-menu";
 import { getStoreCategories } from "@/lib/woocommerce";
 import { getSiteSettings } from "@/lib/wordpress";
+import { getPreviewRemainingMs, getStorePreviewConfig, hasStorePreviewAccess, previewCookie, waitingHeader } from "@/lib/store-preview-access";
 import "./globals.css";
 
 const organizationSchema = {
@@ -82,10 +85,23 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [siteSettings, storeCategories] = await Promise.all([getSiteSettings(), getStoreCategories()]);
-  const mainMenu = buildStoreMenu(storeCategories);
+  const previewConfig = getStorePreviewConfig();
+  if (previewConfig) {
+    const token = (await cookies()).get(previewCookie)?.value;
+    const remainingMs = getPreviewRemainingMs(previewConfig.opensAt);
+    if (remainingMs > 0 && !hasStorePreviewAccess(token, previewConfig)) {
+      const invalidPassword = (await headers()).get(waitingHeader) === "error";
+      return (
+        <html lang="es" className={`${beVietnam.variable} ${plusJakarta.variable}`}>
+          <body className="bg-[#241415] font-body text-[#fff2ec] antialiased">
+            <CampaignWaitingScreen opensAt={previewConfig.opensAt} remainingMs={remainingMs} invalidPassword={invalidPassword} />
+          </body>
+        </html>
+      );
+    }
+  }
 
-  if (siteLocked) {
+  if (siteLocked && !previewConfig) {
     return (
       <html lang="es" className={`${beVietnam.variable} ${plusJakarta.variable}`}>
         <body className="min-h-screen bg-background font-body text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
@@ -95,6 +111,9 @@ export default async function RootLayout({
       </html>
     );
   }
+
+  const [siteSettings, storeCategories] = await Promise.all([getSiteSettings(), getStoreCategories()]);
+  const mainMenu = buildStoreMenu(storeCategories);
 
   return (
     <html lang="es" className={`${beVietnam.variable} ${plusJakarta.variable}`}>
