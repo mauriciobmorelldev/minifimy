@@ -6,11 +6,16 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import type { CartItem, Product, ProductSelection } from "@/models/product";
+import { CartAddedShippingNotice } from "@/components/CartAddedShippingNotice";
+import { getListSubtotal } from "@/lib/checkout-options";
+import { getBlackFridayTransferSubtotal } from "@/lib/black-friday";
 import { getMetaProductData, trackMetaEvent } from "@/lib/meta-events";
+import { productIsInStock } from "@/lib/product-stock";
 
 interface CartContextValue {
   items: CartItem[];
@@ -47,6 +52,24 @@ const NONCE_STORAGE_KEY = "minifimy-wc-store-nonce";
 const CART_TOKEN_STORAGE_KEY = "minifimy-wc-cart-token";
 const CART_PRICE_STORAGE_KEY = "minifimy-cart-prices";
 const CART_METADATA_STORAGE_KEY = "minifimy-cart-metadata";
+const LOCAL_PREVIEW_CART_KEY = "minifimy-black-friday-preview-cart";
+
+function readPreviewItems(): CartItem[] {
+  try {
+    const items: unknown = JSON.parse(window.localStorage.getItem(LOCAL_PREVIEW_CART_KEY) ?? "[]");
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+}
+
+function previewItemId(product: Product, selection?: ProductSelection) {
+  return JSON.stringify([product.id, selection?.variationId, selection?.size, selection?.color, selection?.model]);
+}
+
+function previewStock(item: Pick<CartItem, "product" | "selection">) {
+  return item.product.variants?.find(({ id }) => id === item.selection?.variationId)?.stock ?? item.product.stock;
+}
 
 function getStoredHeader(key: string) {
   if (typeof window === "undefined") return null;
@@ -224,15 +247,34 @@ function buildAddItemPayload(product: Product, quantity: number, selection?: Pro
   };
 }
 
-export function CartProvider({ children }: { children: ReactNode }) {
+export function CartProvider({ children, localPreview = false, showShippingOnAdd = false }: { children: ReactNode; localPreview?: boolean; showShippingOnAdd?: boolean }) {
   const [cart, setCart] = useState<StoreApiCart>({ items: [] });
   const [loading, setLoading] = useState(false);
+  const [previewItems, setPreviewItems] = useState<CartItem[]>([]);
+  const [shippingNotice, setShippingNotice] = useState<number | null>(null);
+  const closeShippingNotice = useCallback(() => setShippingNotice(null), []);
+  const previewRef = useRef<CartItem[]>([]);
+
+  const applyPreview = useCallback((nextItems: CartItem[]) => {
+    previewRef.current = nextItems;
+    setPreviewItems(nextItems);
+    try {
+      window.localStorage.setItem(LOCAL_PREVIEW_CART_KEY, JSON.stringify(nextItems));
+    } catch {
+      // The preview cart still works in memory when storage is unavailable.
+    }
+  }, []);
 
   const applyCart = useCallback((nextCart: StoreApiCart) => {
     setCart(nextCart ?? { items: [] });
   }, []);
 
   const refreshCart = useCallback(async () => {
+    if (localPreview) {
+      const saved = readPreviewItems();
+      applyPreview(saved);
+      return saved;
+    }
     setLoading(true);
     try {
       const nextCart = await storeFetch("/api/woo/cart");
@@ -241,21 +283,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [applyCart]);
+  }, [applyCart, applyPreview, localPreview]);
 
   useEffect(() => {
     // La carga inicial no debe romper la tienda si Woo no está disponible
     // en el entorno local. Las acciones de compra sí siguen propagando errores.
-    void refreshCart().catch(() => undefined);
+    const frame = window.requestAnimationFrame(() => {
+      void refreshCart().catch(() => undefined);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [refreshCart]);
 
-  const items = useMemo(() => (cart.items ?? []).map(mapStoreItem), [cart.items]);
+  const items = useMemo(() => localPreview ? previewItems : (cart.items ?? []).map(mapStoreItem), [cart.items, localPreview, previewItems]);
   const total = useMemo(() => {
+    if (localPreview) return getListSubtotal(previewItems);
     const minorUnit = cart.totals?.currency_minor_unit ?? 2;
     return getMoneyValue(cart.totals?.total_price, minorUnit);
-  }, [cart.totals]);
+  }, [cart.totals, localPreview, previewItems]);
 
   const addToCart = async (product: Product, quantity = 1, selection?: ProductSelection) => {
+    if (localPreview) {
+      const id = previewItemId(product, selection);
+      const current = previewRef.current.find((item) => item.id === id);
+      const next = { id, product, selection, quantity: (current?.quantity ?? 0) + quantity };
+      if (!productIsInStock(product) || next.quantity > previewStock(next)) throw new Error("Cantidad sin stock.");
+      applyPreview(current
+        ? previewRef.current.map((item) => item.id === id ? next : item)
+        : [...previewRef.current, next]);
+      if (showShippingOnAdd) setShippingNotice((current) => (current ?? 0) + 1);
+      return;
+    }
     setLoading(true);
     try {
       rememberCartPrices(product, selection);
@@ -265,12 +322,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(buildAddItemPayload(product, quantity, selection)),
       }));
       trackMetaEvent("AddToCart", getMetaProductData(product, quantity, selection));
+      if (showShippingOnAdd) setShippingNotice((current) => (current ?? 0) + 1);
     } finally {
       setLoading(false);
     }
   };
 
   const updateQuantity = async (itemId: string, quantity: number) => {
+    if (localPreview) {
+      applyPreview(previewRef.current.map((item) => item.id === itemId
+        ? { ...item, quantity: Math.max(1, Math.min(quantity, previewStock(item))) }
+        : item));
+      return;
+    }
     const currentItem = items.find((item) => item.id === itemId);
     const nextQuantity = Math.max(1, quantity);
     setLoading(true);
@@ -292,6 +356,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const removeFromCart = async (itemId: string) => {
+    if (localPreview) {
+      applyPreview(previewRef.current.filter((item) => item.id !== itemId));
+      return;
+    }
     const currentItem = items.find((item) => item.id === itemId);
     setLoading(true);
     try {
@@ -306,6 +374,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const clearCart = async () => {
+    if (localPreview) {
+      applyPreview([]);
+      return;
+    }
     const currentItems = [...items];
     setLoading(true);
     try {
@@ -327,6 +399,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       value={{ items, total, loading, addToCart, removeFromCart, updateQuantity, clearCart, refreshCart }}
     >
       {children}
+      {shippingNotice !== null && <CartAddedShippingNotice key={shippingNotice} subtotal={getBlackFridayTransferSubtotal(items)} onClose={closeShippingNotice} />}
     </CartContext.Provider>
   );
 }

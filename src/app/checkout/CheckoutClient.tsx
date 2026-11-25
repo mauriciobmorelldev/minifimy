@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { getWooStoreRequestHeaders, useCart } from "@/context/cart-context";
+import { useBlackFridayCampaign } from "@/context/black-friday-context";
+import { BLACK_FRIDAY_DISCOUNT, BLACK_FRIDAY_INSTALLMENTS, formatBlackFridayInstallment } from "@/lib/black-friday";
 import { getMetaCartData, trackMetaEvent } from "@/lib/meta-events";
 import { getSizeLabel, getSizeStageLabel } from "@/lib/catalog-taxonomy";
 import {
@@ -77,7 +79,8 @@ async function getCheckoutErrorMessage(response: Response) {
   }
 }
 
-export default function CheckoutClient() {
+export default function CheckoutClient({ previewOnly = false }: { previewOnly?: boolean }) {
+  const campaign = useBlackFridayCampaign();
   const { items, refreshCart, updateQuantity } = useCart();
   const checkoutTracked = useRef(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -93,6 +96,7 @@ export default function CheckoutClient() {
   } = useForm<CheckoutFormValues>();
 
   useEffect(() => {
+    if (previewOnly) return;
     let active = true;
 
     fetch("/api/checkout")
@@ -116,24 +120,24 @@ export default function CheckoutClient() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [previewOnly]);
 
   const listSubtotal = useMemo(() => getListSubtotal(items), [items]);
 
   useEffect(() => {
-    if (checkoutTracked.current || items.length === 0) return;
+    if (previewOnly || checkoutTracked.current || items.length === 0) return;
     checkoutTracked.current = true;
     trackMetaEvent("InitiateCheckout", getMetaCartData(items, listSubtotal));
-  }, [items, listSubtotal]);
+  }, [items, listSubtotal, previewOnly]);
 
   const selectedPaymentMethod = useMemo(
     () => paymentMethods.find((method) => method.id === paymentMethodId),
     [paymentMethodId, paymentMethods]
   );
-  const selectedPaymentCopy = selectedPaymentMethod ? getPaymentMethodCopy(selectedPaymentMethod) : null;
+  const selectedPaymentCopy = selectedPaymentMethod ? getPaymentMethodCopy(selectedPaymentMethod, campaign) : null;
   const paymentSubtotal = useMemo(
-    () => items.reduce((sum, item) => sum + getCheckoutUnitPrice(item, paymentMethodId) * item.quantity, 0),
-    [items, paymentMethodId]
+    () => items.reduce((sum, item) => sum + getCheckoutUnitPrice(item, paymentMethodId, campaign) * item.quantity, 0),
+    [items, paymentMethodId, campaign]
   );
   const paymentDiscount = Math.max(0, listSubtotal - paymentSubtotal);
   const grandTotal = paymentSubtotal;
@@ -154,6 +158,7 @@ export default function CheckoutClient() {
   };
 
   const onSubmit = async (data: CheckoutFormValues) => {
+    if (previewOnly) return;
     setStatus("Estamos preparando tu pedido...");
 
     const latestItems = await refreshCart().catch(() => items);
@@ -251,6 +256,7 @@ export default function CheckoutClient() {
           <h1 className="mt-5 font-headline text-[2.15rem] font-extrabold leading-tight text-on-surface md:text-6xl">
             Completá tus datos para finalizar tu compra.
           </h1>
+          {previewOnly && <p className="mt-3 text-sm">Checkout de prueba. Los pagos están deshabilitados en esta vista local.</p>}
         </header>
 
         {items.length === 0 ? (
@@ -414,7 +420,7 @@ export default function CheckoutClient() {
                     <legend className="mb-3 text-sm font-bold text-on-surface">Método de pago</legend>
                     <div className="space-y-2">
                       {paymentMethods.map((method) => {
-                        const copy = getPaymentMethodCopy(method);
+                        const copy = getPaymentMethodCopy(method, campaign);
                         return (
                           <label key={method.id} className="flex cursor-pointer items-start gap-3 rounded-[1.1rem] bg-white/60 p-3 text-sm">
                             <input
@@ -450,11 +456,11 @@ export default function CheckoutClient() {
 
               <button
                 type="submit"
-                disabled={isSubmitting || !paymentMethodId || !shippingMethodId}
+                disabled={previewOnly || isSubmitting || !paymentMethodId || !shippingMethodId}
                 className="mt-7 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 font-headline text-base font-bold text-on-primary shadow-soft transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isSubmitting ? "Finalizando compra..." : "Finalizar compra"}
-                <span className="material-symbols-outlined">arrow_forward</span>
+                <span aria-hidden="true" className="material-symbols-outlined">arrow_forward</span>
               </button>
               {status && <p className="mt-4 rounded-[1.3rem] bg-[#f7efe3] p-4 text-sm leading-6 text-primary">{status}</p>}
             </form>
@@ -489,7 +495,7 @@ export default function CheckoutClient() {
                         <p className="mt-1 text-xs text-on-surface-variant">{selectionLabel(item)}</p>
                       )}
                       <p className="mt-2 text-sm font-extrabold text-secondary">
-                        AR$ {(getCheckoutUnitPrice(item, paymentMethodId) * item.quantity).toLocaleString("es-AR")}
+                        AR$ {(getCheckoutUnitPrice(item, paymentMethodId, campaign) * item.quantity).toLocaleString("es-AR")}
                       </p>
                     </div>
                   </div>
@@ -503,7 +509,7 @@ export default function CheckoutClient() {
                 </div>
                 {paymentDiscount > 0 && (
                   <div className="flex justify-between gap-4 font-bold text-primary">
-                    <span>30% descuento por transferencia</span>
+                    <span>{campaign ? BLACK_FRIDAY_DISCOUNT : 30}% descuento por transferencia</span>
                     <span className="shrink-0">− AR$ {paymentDiscount.toLocaleString("es-AR")}</span>
                   </div>
                 )}
@@ -516,7 +522,11 @@ export default function CheckoutClient() {
                   <span className="text-primary">AR$ {grandTotal.toLocaleString("es-AR")}</span>
                 </div>
                 {selectedPaymentCopy?.benefit && (
-                  <p className="text-right text-xs font-bold text-secondary">{selectedPaymentCopy.benefit}</p>
+                  <p className="text-right text-xs font-bold text-secondary">
+                    {campaign
+                      ? `Hasta ${BLACK_FRIDAY_INSTALLMENTS} cuotas sin interés de ${formatBlackFridayInstallment(grandTotal)} con tarjetas elegibles.`
+                      : selectedPaymentCopy.benefit}
+                  </p>
                 )}
               </div>
 

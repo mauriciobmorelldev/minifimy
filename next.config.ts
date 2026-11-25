@@ -48,7 +48,13 @@ const securityHeaders = [
   },
 ];
 
+const lanPreviewHost = process.env.MINIFIMY_LAN_PREVIEW_HOST;
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_MINIFIMY_BLACK_FRIDAY_PREVIEW: process.env.MINIFIMY_BLACK_FRIDAY_PREVIEW === "true" ? "true" : "false",
+  },
+  allowedDevOrigins: lanPreviewHost ? [lanPreviewHost] : undefined,
   images: {
     // Prefer faster cold encoding on the shared Node host.
     formats: ["image/webp"],

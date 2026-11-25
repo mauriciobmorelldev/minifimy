@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { SecureCheckoutLink } from "@/components/SecureCheckoutLink";
 import { useCart } from "@/context/cart-context";
+import { useBlackFridayCampaign } from "@/context/black-friday-context";
+import { BLACK_FRIDAY_DISCOUNT, BLACK_FRIDAY_INSTALLMENTS } from "@/lib/black-friday";
 import { getSizeLabel, getSizeStageLabel } from "@/lib/catalog-taxonomy";
 import { getCartItemOptions, getListSubtotal, getListUnitPrice } from "@/lib/checkout-options";
 
@@ -15,6 +18,7 @@ function selectionLabel(item: ReturnType<typeof useCart>["items"][number]) {
 }
 
 export default function CartClient() {
+  const campaign = useBlackFridayCampaign();
   const { items, removeFromCart, updateQuantity, clearCart } = useCart();
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const listSubtotal = getListSubtotal(items);
@@ -147,8 +151,8 @@ export default function CartClient() {
                     <p className="mt-2 text-xs leading-5">El costo de envío se coordina según destino y modalidad elegida.</p>
                   </div>
                   <div className="space-y-2 rounded-[1.4rem] bg-[#f7efe3] p-4 text-xs font-semibold leading-5 text-primary">
-                    <p>30% OFF pagando por transferencia</p>
-                    <p>3 cuotas sin interés con Mercado Pago</p>
+                    <p>{campaign ? BLACK_FRIDAY_DISCOUNT : 30}% OFF pagando por transferencia</p>
+                    <p>Hasta {campaign ? BLACK_FRIDAY_INSTALLMENTS : 3} cuotas sin interés con Mercado Pago</p>
                   </div>
                   <div className="border-t border-outline-variant/30 pt-5">
                     <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
@@ -158,10 +162,7 @@ export default function CartClient() {
                   </div>
                 </div>
 
-                <Link href="/checkout" className="mt-7 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 font-headline text-base font-bold text-on-primary shadow-soft transition hover:scale-[1.02] active:scale-95">
-                  Finalizar compra
-                  <span className="material-symbols-outlined">arrow_forward</span>
-                </Link>
+                <SecureCheckoutLink className="mt-7 w-full text-base" />
               </div>
             </aside>
           </div>

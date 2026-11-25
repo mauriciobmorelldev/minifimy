@@ -5,6 +5,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CatalogExperience } from "@/components/CatalogExperience";
 import { MetaEvent } from "@/components/MetaEvent";
+import { isBlackFridayActive } from "@/lib/black-friday-server";
+import { getBlackFridayCatalogOffer } from "@/lib/black-friday-products";
 import { getStoreCategories, getStoreProductCollection, getStoreProductFilters } from "@/lib/woocommerce";
 
 export const metadata: Metadata = {
@@ -16,6 +18,13 @@ export const metadata: Metadata = {
 interface CatalogPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
+
+const campaignAudienceNames = { bebes: "Bebés", ninos: "Niños", ninas: "Niñas" };
+const campaignCategorySearches = new Map([
+  ["body", "Bodys"],
+  ["vestido", "Vestidos"],
+  ["conjunto", "Conjuntos"],
+]);
 
 function getParam(params: Record<string, string | string[] | undefined>, key: string) {
   const value = params[key];
@@ -48,20 +57,22 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const categories = await getStoreCategories();
   const ageGroup = resolveCatalogAge(categories, [], getParam(params, "etapa"));
   const audience = parseProductAudience(getParam(params, "publico"));
+  const search = getParam(params, "q");
+  const scope = { ageGroup, audience, search };
+  const campaignActive = isBlackFridayActive();
   const page = getPage(getParam(params, "page"));
-  const [collection, filterOptions] = await Promise.all([
+  const [collection, filterOptions, campaignOffer] = await Promise.all([
     getStoreProductCollection({
       page,
-      ageGroup,
-      audience,
+      ...scope,
       perPage: 12,
-      search: getParam(params, "q"),
       size: facetValues(params.talle),
       color: facetValues(params.color),
       ...getPriceRange(getParam(params, "precio")),
       ...getSort(getParam(params, "orden")),
     }),
     getStoreProductFilters({ ageGroup, audience }),
+    campaignActive ? getBlackFridayCatalogOffer(scope, categories) : undefined,
   ]);
 
   return (
@@ -85,6 +96,10 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         totalPages={collection.totalPages}
         currentPage={collection.page}
         perPage={collection.perPage}
+        campaignBanner={campaignActive ? {
+          title: (search && campaignCategorySearches.get(search.toLowerCase())) || (audience && campaignAudienceNames[audience]) || "Catálogo",
+          offer: campaignOffer,
+        } : undefined}
       />
     </Suspense>
   );

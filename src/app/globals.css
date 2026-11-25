@@ -58,6 +58,92 @@
   --color-on-error-container: 110 20 0;
 }
 
+[data-black-friday-theme] {
+  --campaign-ink: #181412;
+  --campaign-wine-rgb: 121 6 39;
+  --campaign-wine: rgb(var(--campaign-wine-rgb));
+  --campaign-paper: #fff2ec;
+  --color-on-surface: 24 20 18;
+  --color-secondary: var(--campaign-wine-rgb);
+  --color-secondary-dim: 100 6 33;
+}
+
+[data-black-friday-theme] [data-store-benefits] {
+  display: none;
+}
+
+[data-black-friday-theme] [data-store-header-row] {
+  background-color: var(--campaign-ink);
+}
+
+[data-black-friday-theme] [data-store-header-logo] {
+  filter: brightness(0) invert(1);
+}
+
+[data-black-friday-theme] [data-store-navigation-row] {
+  background-color: #211d1b;
+  border-color: #fff2ec35;
+}
+
+[data-black-friday-theme] :is([data-store-header-account], [data-store-navigation-item]) {
+  color: var(--campaign-paper);
+  border-color: #fff2ec35;
+  outline-color: var(--campaign-paper);
+}
+
+[data-black-friday-theme] [data-store-header-account-detail] {
+  color: #fff2ecdc;
+}
+
+[data-black-friday-theme] [data-store-navigation-item][aria-current="page"] {
+  box-shadow: inset 0 -2px var(--campaign-paper);
+}
+
+[data-black-friday-theme] :is([data-store-header-account], [data-store-navigation-item]):hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+[data-black-friday-theme]:not(:has(main[data-black-friday])) [data-store-header-spacer] {
+  height: 0;
+  margin-top: -16px;
+}
+
+@media (min-width: 1024px) {
+  [data-black-friday-theme]:not(:has(main[data-black-friday])) [data-store-header-spacer] {
+    height: 56px;
+    margin-top: 0;
+  }
+}
+
+[data-black-friday-theme] [data-product-price] {
+  color: var(--campaign-wine);
+}
+
+[data-black-friday-theme] :is([data-campaign-drawer], [data-campaign-cta], [data-campaign-product], [data-campaign-catalog]) {
+  --color-primary: var(--campaign-wine-rgb);
+  --color-primary-dim: var(--color-secondary-dim);
+  --color-on-primary: 255 242 236;
+}
+
+[data-black-friday-theme] :is([data-campaign-product], [data-campaign-catalog]) {
+  --color-primary-container: 247 226 229;
+  --color-on-primary-container: 93 15 40;
+  --color-primary-fixed: 247 226 229;
+  --color-primary-fixed-dim: 237 193 204;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cart-added-notice {
+    animation: cart-added-notice-in 180ms ease-out both;
+  }
+}
+
+@keyframes cart-added-notice-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @layer base {
   html {
     height: 100%;

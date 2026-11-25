@@ -5,6 +5,8 @@ import { ProductGallery } from "@/components/ProductGallery";
 import { ProductInfoModal } from "@/components/ProductInfoModal";
 import { ProductPrice } from "@/components/ProductPrice";
 import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
+import { useBlackFridayCampaign } from "@/context/black-friday-context";
+import { BLACK_FRIDAY_DISCOUNT, BLACK_FRIDAY_INSTALLMENTS, formatBlackFridayInstallment, getBlackFridayOptionPricing, getBlackFridayPrice } from "@/lib/black-friday";
 import { getDefaultProductVariant, getProductOptions, normalizeOption, productNeedsOptions, variantMatchesOptions } from "@/lib/product-options";
 import { productIsInStock, variantIsInStock } from "@/lib/product-stock";
 import { getSizeStage } from "@/lib/catalog-age";
@@ -66,6 +68,7 @@ function getInitialSelection(product: Product): ProductSelection {
 }
 
 export function ProductDetailClient({ product, categoryName }: ProductDetailClientProps) {
+  const campaignActive = useBlackFridayCampaign();
   const options = useMemo(() => getProductOptions(product), [product]);
   const optionFields = (["size", "color", "model"] as const).filter((field) => options[field].length > 0);
   const chooseCombination = productNeedsOptions(product) && optionFields.length > 1;
@@ -86,8 +89,10 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
       : getDefaultProductVariant(product));
   }, [product, selectedVariant, selection]);
 
-  const selectedPrice = selectedVariant?.price ?? product.price;
-  const selectedPrices = selectedVariant?.prices ?? product.prices;
+  const { price: selectedPrice, prices: selectedPrices } = campaignActive
+    ? getBlackFridayOptionPricing(product, selectedVariant)
+    : { price: selectedVariant?.price ?? product.price, prices: selectedVariant?.prices ?? product.prices };
+  const campaignPrice = campaignActive ? getBlackFridayPrice(selectedPrice, selectedPrices) : undefined;
   const selectedInStock = selectedVariant ? variantIsInStock(selectedVariant) : productIsInStock(product);
   const galleryImages = useMemo(() => {
     const selectedImage = visualVariant?.image;
@@ -184,7 +189,11 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
             <span className="material-symbols-outlined text-primary" aria-hidden="true">credit_card</span>
             <div>
               <h3 className="font-bold text-on-surface">Tarjetas de crédito</h3>
-              <p className="mt-1 text-sm leading-6 text-on-surface-variant">Hasta 3 cuotas sin interés a través de Mercado Pago.</p>
+              <p className="mt-1 text-sm leading-6 text-on-surface-variant">
+                {campaignPrice
+                  ? `${BLACK_FRIDAY_INSTALLMENTS} cuotas sin interés de ${formatBlackFridayInstallment(campaignPrice.original)}.`
+                  : "Hasta 3 cuotas sin interés a través de Mercado Pago."}
+              </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -198,7 +207,7 @@ export function ProductDetailClient({ product, categoryName }: ProductDetailClie
             <span className="material-symbols-outlined text-primary" aria-hidden="true">account_balance</span>
             <div>
               <h3 className="font-bold text-on-surface">Transferencia bancaria</h3>
-              <p className="mt-1 text-sm leading-6 text-on-surface-variant">30% de descuento abonando por transferencia.</p>
+              <p className="mt-1 text-sm leading-6 text-on-surface-variant">{campaignPrice ? BLACK_FRIDAY_DISCOUNT : 30}% de descuento abonando por transferencia.</p>
             </div>
           </div>
         </div>

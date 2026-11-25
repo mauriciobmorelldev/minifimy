@@ -1032,10 +1032,13 @@ export async function getStoreProductCollection(options: StoreProductQuery = {})
 
   if (!canUseWooCommerce()) {
     const categoryIds = options.category?.split(",") ?? [];
+    const categorySlugs = fallbackCategories.filter(({ id }) => categoryIds.includes(id)).map(({ slug }) => slug);
     let products = fallbackProducts.filter((product) =>
       (!options.ageGroup || sizesMatchAge(product.sizes, options.ageGroup)) &&
       productMatchesAudience(product.audiences, options.audience) &&
-      (!categoryIds.length || categoryIds.some((id) => product.categoryId === id || product.categoryIds?.includes(id))) &&
+      (!categoryIds.length ||
+        categorySlugs.includes(product.category) ||
+        categoryIds.some((id) => product.categoryId === id || product.categoryIds?.includes(id))) &&
       (!sizes.length || product.sizes?.some((size) => sizes.includes(normalizeSize(size)))) &&
       (!colors.length || product.colors?.some((color) => colors.includes(normalizeColor(color)))) &&
       (!options.search || normalizeFilterName(`${product.name} ${product.description}`).includes(normalizeFilterName(options.search))) &&

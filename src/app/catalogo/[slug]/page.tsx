@@ -5,6 +5,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CatalogExperience } from "@/components/CatalogExperience";
 import { MetaEvent } from "@/components/MetaEvent";
+import { isBlackFridayActive } from "@/lib/black-friday-server";
+import { getBlackFridayCatalogOffer } from "@/lib/black-friday-products";
 import { getStoreCategories, getStoreProductCollection, getStoreProductFilters } from "@/lib/woocommerce";
 
 interface CategoryPageProps {
@@ -75,21 +77,21 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
   const ageGroup = resolveCatalogAge(categories, [slug], getParam(query, "etapa"));
   const audience = parseProductAudience(getParam(query, "publico"));
+  const scope = { category: category.id, ageGroup, audience, search: getParam(query, "q") };
+  const campaignActive = isBlackFridayActive();
   const page = getPage(getParam(query, "page"));
-  const [collection, filterOptions] = await Promise.all([
+  const [collection, filterOptions, campaignOffer] = await Promise.all([
     getStoreProductCollection({
       page,
-      ageGroup,
-      audience,
+      ...scope,
       perPage: 12,
-      category: category.id,
-      search: getParam(query, "q"),
       size: facetValues(query.talle),
       color: facetValues(query.color),
       ...getPriceRange(getParam(query, "precio")),
       ...getSort(getParam(query, "orden")),
     }),
     getStoreProductFilters({ category: category.id, ageGroup, audience }),
+    campaignActive ? getBlackFridayCatalogOffer(scope, categories) : undefined,
   ]);
 
   return (
@@ -113,6 +115,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         totalPages={collection.totalPages}
         currentPage={collection.page}
         perPage={collection.perPage}
+        campaignBanner={campaignActive ? { title: category.name, offer: campaignOffer } : undefined}
       />
     </>
   );

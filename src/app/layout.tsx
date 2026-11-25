@@ -4,12 +4,15 @@ import { Be_Vietnam_Pro, Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@/components/Analytics";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { CampaignWaitingScreen } from "@/components/CampaignWaitingScreen";
 import { SiteLockedScreen } from "@/components/SiteLockedScreen";
+import { CampaignWaitingScreen } from "@/components/CampaignWaitingScreen";
 import { WhatsAppFimy } from "@/components/WhatsAppFimy";
 import { CartProvider } from "@/context/cart-context";
+import { BlackFridayProvider } from "@/context/black-friday-context";
 import { FeedbackProvider } from "@/context/feedback-context";
 import { buildStoreMenu } from "@/lib/category-menu";
+import { blackFridayPreview } from "@/lib/black-friday";
+import { isBlackFridayActive } from "@/lib/black-friday-server";
 import { getStoreCategories } from "@/lib/woocommerce";
 import { getSiteSettings } from "@/lib/wordpress";
 import { getPreviewRemainingMs, getStorePreviewConfig, hasStorePreviewAccess, previewCookie, waitingHeader } from "@/lib/store-preview-access";
@@ -79,6 +82,7 @@ const siteLocked =
   process.env.NEXT_PUBLIC_SITE_LOCKED === "true" ||
   (process.env.NODE_ENV === "production" &&
     process.env.NEXT_PUBLIC_SITE_LOCKED !== "false");
+const localPreviewCart = blackFridayPreview && !process.env.WOOCOMMERCE_URL && !process.env.WORDPRESS_URL;
 
 export default async function RootLayout({
   children,
@@ -114,19 +118,24 @@ export default async function RootLayout({
 
   const [siteSettings, storeCategories] = await Promise.all([getSiteSettings(), getStoreCategories()]);
   const mainMenu = buildStoreMenu(storeCategories);
+  const campaignPreview = isBlackFridayActive();
 
   return (
     <html lang="es" className={`${beVietnam.variable} ${plusJakarta.variable}`}>
-      <body className="min-h-screen bg-background font-body text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
+      <body
+        data-black-friday-theme={campaignPreview ? "true" : undefined}
+        className="min-h-screen bg-background font-body text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container"
+      >
+        <BlackFridayProvider active={campaignPreview}>
         <FeedbackProvider>
-          <CartProvider>
+          <CartProvider localPreview={localPreviewCart} showShippingOnAdd={campaignPreview}>
             <a
               href="#main-content"
               className="sr-only focus:not-sr-only focus:absolute focus:left-6 focus:top-6 focus:z-50 focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm"
             >
               Saltar al contenido
             </a>
-            <Header navLinks={mainMenu} />
+            <Header navLinks={mainMenu} campaignPreview={campaignPreview} localPreviewCart={localPreviewCart} />
             <div id="main-content">{children}</div>
             <Footer
               exploreLinks={siteSettings.footerExploreMenu.filter((item) => !isHiddenCatalogMenuItem(item.href))}
@@ -135,6 +144,7 @@ export default async function RootLayout({
             <WhatsAppFimy phone={siteSettings.whatsappPhone} message={siteSettings.whatsappMessage} messages={siteSettings.whatsappMessages} />
           </CartProvider>
         </FeedbackProvider>
+        </BlackFridayProvider>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
         <Analytics />
       </body>

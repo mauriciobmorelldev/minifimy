@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { blackFridayPreview } from "@/lib/black-friday";
 import CheckoutClient from "./CheckoutClient";
 
 export const metadata: Metadata = {
@@ -8,5 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default function CheckoutPage() {
-  return <CheckoutClient />;
+  const previewOnly = blackFridayPreview && !process.env.WOOCOMMERCE_URL && !process.env.WORDPRESS_URL;
+  return <CheckoutClient previewOnly={previewOnly} />;
 }

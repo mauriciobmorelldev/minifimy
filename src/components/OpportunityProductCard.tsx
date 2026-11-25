@@ -1,7 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { groupSizesByLabel } from "@/lib/catalog-taxonomy";
-import { getDisplayPrice } from "@/components/ProductPrice";
+import { getDisplayPrice, ProductPrice } from "@/components/ProductPrice";
+import { useBlackFridayCampaign } from "@/context/black-friday-context";
+import { BLACK_FRIDAY_DISCOUNT, getBlackFridayPrice } from "@/lib/black-friday";
 import type { Product } from "@/models/product";
 
 interface OpportunityProductCardProps {
@@ -24,6 +28,8 @@ function getSizeLabel(product: Product) {
 export function OpportunityProductCard({ product }: OpportunityProductCardProps) {
   const image = product.images[0] ?? "/brand/illustrations/jirafa.svg";
   const { listPrice, finalPrice, hasDiscount, discountPercent } = getDisplayPrice(product.price, product.prices);
+  const campaignActive = useBlackFridayCampaign();
+  const campaignPrice = campaignActive ? getBlackFridayPrice(product.price, product.prices) : undefined;
   const sizeLabel = getSizeLabel(product);
 
   return (
@@ -44,8 +50,8 @@ export function OpportunityProductCard({ product }: OpportunityProductCardProps)
           />
         </Link>
 
-        <span className="absolute left-6 top-6 rounded-full bg-[#d95f55] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.13em] text-white shadow-soft">
-          {hasDiscount ? `-${discountPercent}%` : "Oportunidad"}
+        <span className={`absolute left-6 top-6 rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.13em] text-white shadow-soft ${campaignPrice ? "bg-[#790627]" : "bg-[#d95f55]"}`}>
+          {campaignPrice ? `${BLACK_FRIDAY_DISCOUNT}% OFF` : hasDiscount ? `-${discountPercent}%` : "Oportunidad"}
         </span>
       </div>
 
@@ -63,18 +69,24 @@ export function OpportunityProductCard({ product }: OpportunityProductCardProps)
         )}
 
         <div className="mt-4 rounded-[1.25rem] bg-[#fff0ec] px-4 py-3 ring-1 ring-[#edcfc7]">
-          {hasDiscount && (
-            <p className="font-headline text-sm font-bold text-on-surface-variant line-through decoration-[#c94f47]/65">
-              {formatPrice(listPrice)}
-            </p>
-          )}
-          <p className="mt-0.5 font-headline text-[1.65rem] font-extrabold leading-none text-[#c94f47]">
-            {formatPrice(finalPrice)}
-          </p>
-          {hasDiscount && (
-            <p className="mt-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c94f47]/85">
-              Precio promocional
-            </p>
+          {campaignPrice ? (
+            <ProductPrice price={product.price} prices={product.prices} compact />
+          ) : (
+            <>
+              {hasDiscount && (
+                <p className="font-headline text-sm font-bold text-on-surface-variant line-through decoration-[#c94f47]/65">
+                  {formatPrice(listPrice)}
+                </p>
+              )}
+              <p data-product-price className="mt-0.5 font-headline text-[1.65rem] font-extrabold leading-none text-[#c94f47]">
+                {formatPrice(finalPrice)}
+              </p>
+              {hasDiscount && (
+                <p className="mt-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c94f47]/85">
+                  Precio promocional
+                </p>
+              )}
+            </>
           )}
         </div>
 

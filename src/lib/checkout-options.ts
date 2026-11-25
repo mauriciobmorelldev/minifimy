@@ -1,4 +1,5 @@
 import type { CartItem } from "@/models/product";
+import { BLACK_FRIDAY_DISCOUNT, BLACK_FRIDAY_INSTALLMENTS, getBlackFridayPrice } from "@/lib/black-friday";
 
 export interface CheckoutPaymentMethod {
   id: string;
@@ -56,13 +57,13 @@ export function sortPaymentMethods(methods: CheckoutPaymentMethod[]) {
   });
 }
 
-export function getPaymentMethodCopy(method: CheckoutPaymentMethod) {
+export function getPaymentMethodCopy(method: CheckoutPaymentMethod, campaign = false) {
   switch (method.id) {
     case "woo-mercado-pago-basic":
       return {
         title: "Mercado Pago",
         description: "Pagá con tarjeta de crédito, débito u otros medios en Mercado Pago.",
-        benefit: "Hasta 3 cuotas sin interés.",
+        benefit: `Hasta ${campaign ? BLACK_FRIDAY_INSTALLMENTS : 3} cuotas sin interés con tarjetas elegibles.`,
       };
     case "woo-mercado-pago-credits":
       return {
@@ -73,8 +74,8 @@ export function getPaymentMethodCopy(method: CheckoutPaymentMethod) {
     case "cod":
     case "cheque":
       return {
-        title: "Transferencia bancaria — 30% OFF",
-        description: "El descuento se aplica automáticamente al total.",
+        title: `Transferencia bancaria — ${campaign ? BLACK_FRIDAY_DISCOUNT : 30}% OFF`,
+        description: "El descuento se aplica automáticamente al precio de los productos.",
       };
     default:
       return {
@@ -108,8 +109,12 @@ export function getListSubtotal(items: CartItem[]) {
   return items.reduce((sum, item) => sum + getListUnitPrice(item) * item.quantity, 0);
 }
 
-export function getCheckoutUnitPrice(item: CartItem, paymentMethodId: string) {
+export function getCheckoutUnitPrice(item: CartItem, paymentMethodId: string, campaign = false) {
   const prices = item.product.prices;
+  if (campaign) {
+    const campaignPrice = getBlackFridayPrice(item.product.price, prices);
+    return isTransferPaymentMethod(paymentMethodId) && campaignPrice ? campaignPrice.final : getListUnitPrice(item);
+  }
   if (isTransferPaymentMethod(paymentMethodId, prices?.discountGatewayIds) && prices?.discount) {
     return prices.discount;
   }

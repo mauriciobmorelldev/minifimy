@@ -3,6 +3,7 @@
 import { resolveCatalogAge } from "@/lib/catalog-age";
 import { groupSizesByLabel } from "@/lib/catalog-taxonomy";
 import { parseProductAudience } from "@/lib/catalog-audience";
+import { BLACK_FRIDAY_INSTALLMENTS, formatBlackFridayInstallment } from "@/lib/black-friday";
 import Image from "next/image";
 import { useEffect, useState, useTransition } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
@@ -12,6 +13,8 @@ import { ProductSearchSuggestions } from "@/components/ProductSearchSuggestions"
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { useProductSuggestions } from "@/hooks/use-product-suggestions";
 import type { Category, Product, ProductFilterOptions } from "@/models/product";
+import styles from "./CampaignCatalog.module.css";
+import campaignStyles from "./BlackFridayHero.module.css";
 
 interface CatalogExperienceProps {
   products: Product[];
@@ -21,6 +24,7 @@ interface CatalogExperienceProps {
   totalPages: number;
   currentPage: number;
   perPage: number;
+  campaignBanner?: { title: string; offer?: { cardPrice: number; image?: string } };
 }
 
 function formatPrice(value: number) {
@@ -47,7 +51,7 @@ function serializePriceRange(min: number, max: number, limitMin: number, limitMa
   return min <= limitMin && max >= limitMax ? "all" : `${Math.round(min)}-${Math.round(max)}`;
 }
 
-export function CatalogExperience({ products, categories, filterOptions, totalProducts, totalPages, currentPage }: CatalogExperienceProps) {
+export function CatalogExperience({ products, categories, filterOptions, totalProducts, totalPages, currentPage, campaignBanner }: CatalogExperienceProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -136,26 +140,52 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
     setFilter({ q: "", talle: [], color: [], precio: "all", orden: "featured" });
   };
 
+  const campaignPhoto = campaignBanner
+    ? routeCategory === "all" && !searchParams.get("q")
+      ? "/brand/black-friday/catalogo-nino.jpg"
+      : campaignBanner.offer?.image
+    : undefined;
+
   return (
-    <main className="mobile-soft-page relative overflow-hidden bg-[#fff8ef] pb-16 pt-24 md:pb-20">
+    <main data-campaign-catalog={campaignBanner ? true : undefined} className="mobile-soft-page relative overflow-hidden bg-[#fff8ef] pb-16 pt-24 md:pb-20">
       <div className="pointer-events-none absolute inset-0 opacity-[0.055]">
         <Image src="/brand/patterns/pattern-01.png" alt="" fill sizes="100vw" className="object-cover" />
       </div>
 
       <section className="relative mx-auto max-w-7xl px-4 md:px-6">
         <ScrollReveal>
-          <div className="catalog-hero relative overflow-hidden rounded-[1.8rem] bg-[#efe4d0] px-4 py-6 shadow-soft md:rounded-[2.4rem] md:px-10 md:py-12">
-            <div className="relative z-10 grid gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+          <div className={campaignBanner ? `${styles.banner} ${campaignStyles.campaignSurface}` : "catalog-hero relative overflow-hidden rounded-[1.8rem] bg-[#efe4d0] px-4 py-6 shadow-soft md:rounded-[2.4rem] md:px-10 md:py-12"}>
+            {campaignPhoto && (
+              <div className={styles.photo}>
+                <Image src={campaignPhoto} alt="" fill sizes="(min-width: 768px) 760px, 360px" />
+              </div>
+            )}
+            <div className={campaignBanner ? styles.content : "relative z-10 grid gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-center"}>
               <div>
-                <span className="inline-flex rounded-full bg-white/72 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary shadow-soft">
-                  Fimy te ayuda a encontrar
-                </span>
-                <h1 className="mt-5 max-w-3xl font-headline text-[2.15rem] font-extrabold leading-[1.02] tracking-tight text-on-surface md:mt-6 md:text-6xl">
-                  Encontrá esa prenda que se siente elegida con amor.
-                </h1>
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-on-surface-variant md:mt-5 md:text-lg md:leading-8">
-                  Buscá por momento, talle o tipo de regalo. El catálogo se acomoda para que comprar sea más simple, más cálido y menos abrumador.
-                </p>
+                {campaignBanner ? (
+                  <div className={styles.headline}>
+                    <h1 className={campaignStyles.campaignTitle}>{campaignBanner.title}</h1>
+                    <span className={`${campaignStyles.campaignRibbon} ${styles.ribbon}`}>Black Friday</span>
+                    {campaignBanner.offer && (
+                      <p className={styles.installments}>
+                        Desde <strong>{formatBlackFridayInstallment(campaignBanner.offer.cardPrice)}</strong> por cuota
+                        <span>En {BLACK_FRIDAY_INSTALLMENTS} cuotas sin interés con tarjeta</span>
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <span className="inline-flex rounded-full bg-white/72 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary shadow-soft">
+                      Fimy te ayuda a encontrar
+                    </span>
+                    <h1 className="mt-5 max-w-3xl font-headline text-[2.15rem] font-extrabold leading-[1.02] tracking-tight text-on-surface md:mt-6 md:text-6xl">
+                      Encontrá esa prenda que se siente elegida con amor.
+                    </h1>
+                    <p className="mt-4 max-w-2xl text-sm leading-7 text-on-surface-variant md:mt-5 md:text-lg md:leading-8">
+                      Buscá por momento, talle o tipo de regalo. El catálogo se acomoda para que comprar sea más simple, más cálido y menos abrumador.
+                    </p>
+                  </>
+                )}
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto] md:mt-7">
                   <form
@@ -204,7 +234,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                 </div>
               </div>
 
-              <div className="relative hidden min-h-[330px] lg:block">
+              {!campaignBanner && <div className="relative hidden min-h-[330px] lg:block">
                 <div className="absolute right-0 top-4 h-72 w-72 rounded-full bg-white/30 blur-sm" />
                 <div className="absolute right-24 top-2 rotate-[-7deg] rounded-[2rem] bg-white p-3 shadow-lift">
                   <Image
@@ -229,7 +259,7 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
                   height={180}
                   className="absolute bottom-0 left-14 h-44 w-auto opacity-80"
                 />
-              </div>
+              </div>}
             </div>
           </div>
         </ScrollReveal>
@@ -419,10 +449,15 @@ export function CatalogExperience({ products, categories, filterOptions, totalPr
 
             {paginatedProducts.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-7 xl:grid-cols-3">
+                <div className={`grid sm:grid-cols-2 md:gap-7 xl:grid-cols-3 ${campaignBanner ? "grid-cols-2 gap-3 sm:gap-4" : "grid-cols-1 gap-4"}`}>
                   {paginatedProducts.map((product, index) => (
                     <div key={product.id}>
-                      <ProductCard product={product} eager={index < 3} sizes="(min-width: 1280px) 264px, (min-width: 1024px) calc((100vw - 440px) / 2), (min-width: 768px) calc((100vw - 132px) / 2), (min-width: 640px) calc((100vw - 96px) / 2), calc(100vw - 56px)" />
+                      <ProductCard
+                        product={product}
+                        eager={index < 3}
+                        mobileGrid={Boolean(campaignBanner)}
+                        sizes={`(min-width: 1280px) 264px, (min-width: 1024px) calc((100vw - 440px) / 2), (min-width: 768px) calc((100vw - 132px) / 2), (min-width: 640px) calc((100vw - 96px) / 2), ${campaignBanner ? "calc((100vw - 60px) / 2)" : "calc(100vw - 56px)"}`}
+                      />
                     </div>
                   ))}
                 </div>

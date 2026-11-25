@@ -18,9 +18,11 @@ type NavLink = {
 
 interface HeaderProps {
   navLinks: NavLink[];
+  campaignPreview?: boolean;
+  localPreviewCart?: boolean;
 }
 
-export function Header({ navLinks }: HeaderProps) {
+export function Header({ navLinks, campaignPreview, localPreviewCart }: HeaderProps) {
   const { items } = useCart();
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
   const [desktopCategoriesOpen, setDesktopCategoriesOpen] = useState(false);
@@ -152,13 +154,13 @@ export function Header({ navLinks }: HeaderProps) {
         aria-label="Principal"
       >
         <div className="hidden lg:block">
-          <div className="flex min-h-8 items-center justify-center bg-secondary-container px-6 text-center font-headline text-[11px] font-extrabold uppercase tracking-[0.14em] text-on-secondary-container">
+          <div data-store-benefits className="flex min-h-8 items-center justify-center bg-secondary-container px-6 text-center font-headline text-[11px] font-extrabold uppercase tracking-[0.14em] text-on-secondary-container">
             3 cuotas sin interés
             <span className="mx-3 h-1 w-1 rounded-full bg-secondary" aria-hidden="true" />
             Envíos a todo el país
           </div>
 
-          <div className="bg-[#d8e0c3] shadow-sm">
+          <div data-store-header-row className="bg-[#d8e0c3] shadow-sm">
             <div className="mx-auto grid min-h-20 max-w-7xl grid-cols-[minmax(18rem,1fr)_auto_minmax(18rem,1fr)] items-center gap-8 px-8">
               <form ref={desktopSearchRef} onSubmit={submitSearch} className="relative max-w-[24rem]"
                 onFocusCapture={() => setDesktopSearchOpen(true)}
@@ -187,16 +189,16 @@ export function Header({ navLinks }: HeaderProps) {
               </form>
 
               <Link href="/" className="flex items-center justify-center">
-                <Image src="/brand/logo.svg" alt="" width={168} height={48} className="h-11 w-auto" priority />
+                <Image data-store-header-logo src="/brand/logo.svg" alt="" width={168} height={48} className="h-11 w-auto" priority />
                 <span className="sr-only">MiniFimy</span>
               </Link>
 
               <div className="flex items-center justify-end gap-5 text-primary">
-                <Link href="/cuenta" className="flex items-center gap-2 text-sm font-bold transition hover:text-secondary">
+                <Link data-store-header-account href="/cuenta" className="flex items-center gap-2 text-sm font-bold transition hover:text-secondary">
                   <span className="material-symbols-outlined text-2xl" aria-hidden="true">person</span>
                   <span className="leading-tight">
                     <span className="block">Mi cuenta</span>
-                    <span className="block text-[11px] font-medium text-on-surface-variant">Ingresar o registrarse</span>
+                    <span data-store-header-account-detail className="block text-[11px] font-medium text-on-surface-variant">Ingresar o registrarse</span>
                   </span>
                 </Link>
                 <button type="button" onClick={() => setMiniCartOpen(true)} className="relative flex h-11 w-11 items-center justify-center rounded-full bg-[#fffaf1] shadow-soft transition hover:-translate-y-0.5" aria-label="Abrir carrito">
@@ -210,6 +212,7 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
 
           <div
+            data-store-navigation-row
             ref={desktopMenuRef}
             className="relative border-b border-primary/10 bg-[#fffaf1] shadow-sm"
             onMouseLeave={() => setDesktopCategoriesOpen(false)}
@@ -231,6 +234,7 @@ export function Header({ navLinks }: HeaderProps) {
                 onClick={() => setDesktopCategoriesOpen((open) => !open)}
                 aria-expanded={desktopCategoriesOpen}
                 aria-controls="desktop-category-menu"
+                data-store-navigation-item
                 className="mr-4 inline-flex min-h-14 items-center gap-2 border-r border-primary/10 pr-6 font-headline text-xs font-extrabold uppercase tracking-[0.08em] text-primary transition hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
               >
                 <span className="material-symbols-outlined text-xl" aria-hidden="true">menu</span>
@@ -248,7 +252,7 @@ export function Header({ navLinks }: HeaderProps) {
                 ].map((link) => {
                   const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
                   return (
-                    <Link key={link.href} href={link.href} className={`inline-flex min-h-14 items-center px-4 font-headline text-xs font-bold uppercase tracking-[0.045em] transition hover:text-secondary ${active ? "text-secondary" : "text-on-surface-variant"}`}>
+                    <Link key={link.href} href={link.href} data-store-navigation-item aria-current={active ? "page" : undefined} className={`inline-flex min-h-14 items-center px-4 font-headline text-xs font-bold uppercase tracking-[0.045em] transition hover:text-secondary ${active ? "text-secondary" : "text-on-surface-variant"}`}>
                       {link.label}
                     </Link>
                   );
@@ -280,13 +284,13 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
         </div>
 
-        <div className="flex min-h-7 items-center justify-center bg-secondary-container px-4 text-center font-headline text-[9px] font-extrabold uppercase tracking-[0.11em] text-on-secondary-container lg:hidden">
+        <div data-store-benefits className="flex min-h-7 items-center justify-center bg-secondary-container px-4 text-center font-headline text-[9px] font-extrabold uppercase tracking-[0.11em] text-on-secondary-container lg:hidden">
           3 cuotas sin interés
           <span className="mx-2 h-1 w-1 rounded-full bg-secondary" aria-hidden="true" />
           Envíos a todo el país
         </div>
 
-        <div className="relative flex min-h-16 w-full items-center justify-between bg-[#d8e0c3] px-4 py-2.5 shadow-sm lg:hidden">
+        <div data-store-header-row className="relative flex min-h-16 w-full items-center justify-between bg-[#d8e0c3] px-4 py-2.5 shadow-sm lg:hidden">
           <div className="flex items-center gap-3 lg:hidden">
             <button
               type="button"
@@ -307,6 +311,7 @@ export function Header({ navLinks }: HeaderProps) {
             className="absolute left-1/2 flex -translate-x-1/2 items-center gap-3 lg:static lg:translate-x-0"
           >
             <Image
+              data-store-header-logo
               src="/brand/logo.svg"
               alt="MiniFimy"
               width={140}
@@ -537,8 +542,8 @@ export function Header({ navLinks }: HeaderProps) {
           </div>
         </div>
       </nav>
-      <div className="h-3 lg:h-[5.5rem]" aria-hidden="true" />
-      <MiniCartDrawer open={miniCartOpen} onClose={() => setMiniCartOpen(false)} />
+      <div data-store-header-spacer className="h-3 lg:h-[5.5rem]" aria-hidden="true" />
+      <MiniCartDrawer open={miniCartOpen} onClose={() => setMiniCartOpen(false)} campaignPreview={campaignPreview} localPreviewCart={localPreviewCart} />
     </>
   );
 }

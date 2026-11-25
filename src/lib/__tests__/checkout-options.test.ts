@@ -36,6 +36,13 @@ describe("checkout pricing", () => {
     expect(getCheckoutUnitPrice(cartItem, "woo-mercado-pago-basic")).toBe(34_300);
     expect(getCheckoutUnitPrice(cartItem, "cod")).toBe(24_010);
   });
+
+  it("uses half the list price for manual payments during Black Friday", () => {
+    expect(getCheckoutUnitPrice(cartItem, "cod", true)).toBe(17_150);
+    expect(getCheckoutUnitPrice(cartItem, "bacs", true)).toBe(17_150);
+    expect(getCheckoutUnitPrice(cartItem, "woo-mercado-pago-basic", true)).toBe(34_300);
+    expect(getCheckoutUnitPrice(cartItem, "woo-mercado-pago-credits", true)).toBe(34_300);
+  });
 });
 
 describe("coordinated shipping", () => {
@@ -68,6 +75,8 @@ describe("payment presentation", () => {
       description: "Pagá en cuotas sin tarjeta usando tu línea de crédito disponible en Mercado Pago.",
     });
     expect(getPaymentMethodCopy(methods[1]).title).toBe("Transferencia bancaria — 30% OFF");
+    expect(getPaymentMethodCopy(methods[1], true).title).toBe("Transferencia bancaria — 50% OFF");
+    expect(getPaymentMethodCopy(methods[2], true).benefit).toMatch(/6 cuotas sin interés/);
   });
 });
 

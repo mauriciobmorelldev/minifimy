@@ -6,6 +6,8 @@ import { getSizeStage } from "@/lib/catalog-age";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductInfoModal, WhatsAppIcon } from "@/components/ProductInfoModal";
 import { ProductPrice } from "@/components/ProductPrice";
+import { useBlackFridayCampaign } from "@/context/black-friday-context";
+import { getBlackFridayOptionPricing } from "@/lib/black-friday";
 import { getDefaultProductVariant, getProductOptions, optionsEqual, productNeedsOptions, variantMatchesOptions, type ProductOption } from "@/lib/product-options";
 import { productIsInStock, variantIsInStock } from "@/lib/product-stock";
 import type { Product, ProductSelection, ProductVariant } from "@/models/product";
@@ -48,6 +50,7 @@ function colorValue(color: string) {
 const unavailableOptionClass = "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-600 line-through";
 
 export function ProductPurchasePanel({ product, options, selection, chooseCombination, selectionIncomplete, onSelectionChange, selectedVariant }: ProductPurchasePanelProps) {
+  const campaignActive = useBlackFridayCampaign();
   const [quantity, setQuantity] = useState(1);
   const [openModal, setOpenModal] = useState<"size" | "shipping" | null>(null);
   const [stage, setStage] = useState(() => getSizeStage(getDefaultProductVariant(product)?.size ?? options.size[0] ?? "") ?? "");
@@ -96,8 +99,9 @@ export function ProductPurchasePanel({ product, options, selection, chooseCombin
   };
 
   const selectedInStock = selectedVariant ? variantIsInStock(selectedVariant) : productIsInStock(product);
-  const selectedPrice = selectedVariant?.price ?? product.price;
-  const selectedPrices = selectedVariant?.prices ?? product.prices;
+  const { price: selectedPrice, prices: selectedPrices } = campaignActive
+    ? getBlackFridayOptionPricing(product, selectedVariant)
+    : { price: selectedVariant?.price ?? product.price, prices: selectedVariant?.prices ?? product.prices };
   const missingRequiredOptions = productNeedsOptions(product) && !selectedVariant;
   const disabledReason = !selectedInStock
     ? "Esta opción está sin stock por ahora."
@@ -269,6 +273,7 @@ export function ProductPurchasePanel({ product, options, selection, chooseCombin
       )}
 
       <AddToCartButton
+        data-campaign-cta=""
         product={{ ...product, price: selectedPrice, prices: selectedPrices, stock: selectedInStock ? selectedVariant?.stock ?? product.stock : 0, stockStatus: selectedInStock ? product.stockStatus : "outofstock", images: selectedVariant?.image ? [selectedVariant.image, ...product.images.filter((image) => image !== selectedVariant.image)] : product.images }}
         quantity={quantity}
         selection={{ ...selection, variationId: selectedVariant?.id, variationAttributes: selectedVariant?.variationAttributes }}

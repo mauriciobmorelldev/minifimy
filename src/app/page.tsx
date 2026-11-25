@@ -2,12 +2,16 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { BlackFridayHero } from "@/components/BlackFridayHero";
+import { BlackFridayProducts } from "@/components/BlackFridayProducts";
 import { HomeAgeFilter } from "@/components/HomeAgeFilter";
 import { HomeHeroCarousel } from "@/components/HomeHeroCarousel";
 import { HomeOpportunities } from "@/components/HomeOpportunities";
 import { NewArrivalsCarousel } from "@/components/NewArrivalsCarousel";
 import { ProductPrice } from "@/components/ProductPrice";
 import { ScrollReveal } from "@/components/ScrollReveal";
+import { isBlackFridayActive } from "@/lib/black-friday-server";
+import { getBlackFridaySaleProducts } from "@/lib/black-friday-products";
 import { getFeaturedStoreProducts, getNewestStoreProducts, getStoreProductFilters, getStoreProductsByCategory, getWordPressNewsletterUrl } from "@/lib/woocommerce";
 import { productNeedsOptions } from "@/lib/product-options";
 import { productIsInStock } from "@/lib/product-stock";
@@ -34,14 +38,18 @@ export const metadata: Metadata = {
     "MiniFimy acompaña primeras veces con ropa de bebé suave, regalos con significado y prendas elegidas con amor.",
 };
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: PageProps<"/">) {
+  const preview = process.env.NODE_ENV === "development" ? await searchParams : {};
+  const campaignActive = isBlackFridayActive();
+  const campaign = preview.black === "oliva" || (campaignActive && preview.black !== "off");
   const newsletterUrl = getWordPressNewsletterUrl();
-  const [home, featured, newestProducts, filterOptions, opportunityProducts] = await Promise.all([
+  const [home, featured, newestProducts, filterOptions, opportunityProducts, saleProducts] = await Promise.all([
     getHomeContent(),
-    getFeaturedStoreProducts(),
-    getNewestStoreProducts(15),
-    getStoreProductFilters(),
-    getStoreProductsByCategory("ultimas-oportunidades"),
+    campaign ? [] : getFeaturedStoreProducts(),
+    campaign ? [] : getNewestStoreProducts(15),
+    campaign ? undefined : getStoreProductFilters(),
+    campaign ? [] : getStoreProductsByCategory("ultimas-oportunidades"),
+    campaign && campaignActive ? getBlackFridaySaleProducts() : { flashSale: [], combosSale: [], categoryOffers: [] },
   ]);
   const inStockOpportunityProducts = opportunityProducts.filter(productIsInStock).slice(0, 8);
   const taggedHero = pickProductsByTags(featured, ["home-fimy"], [])[0];
@@ -53,19 +61,25 @@ export default async function HomePage() {
   const featuredSectionProducts = pickProductsByTags(featured, ["home-destacados"], featuredProductsBySlug.length > 0 ? featuredProductsBySlug : featured);
   const sectionHeroProduct = featuredSectionProducts[0] ?? heroProduct;
   const sectionSupportProducts = featuredSectionProducts.filter((product) => product.id !== sectionHeroProduct?.id);
-
-
   return (
-    <main className="minifimy-story overflow-hidden bg-background pt-20">
-      <HomeHeroCarousel />
+    <main
+      data-black-friday={campaign ? "true" : undefined}
+      className={`minifimy-story overflow-hidden bg-background ${campaign ? "pt-[3.25rem] lg:pt-12" : "pt-20"}`}
+    >
+      {campaign ? (
+        <>
+          <BlackFridayHero />
+          <BlackFridayProducts {...saleProducts} />
+        </>
+      ) : <HomeHeroCarousel />}
 
-      <HomeAgeFilter sizes={filterOptions.sizes} />
+      {!campaign && filterOptions && <HomeAgeFilter sizes={filterOptions.sizes} />}
 
-      <HomeOpportunities products={inStockOpportunityProducts} />
+      {!campaign && <HomeOpportunities products={inStockOpportunityProducts} />}
 
-      <NewArrivalsCarousel products={newestProducts} />
+      {!campaign && <NewArrivalsCarousel products={newestProducts} />}
 
-      <section className="relative mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10">
+      {!campaign && <section className="relative mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10">
         <ScrollReveal className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div className="max-w-xl space-y-3">
             <span className="chip">{home.featuredSectionKicker}</span>
@@ -150,7 +164,7 @@ export default async function HomePage() {
             </div>
           </div>
         )}
-      </section>
+      </section>}
 
       <section className="pattern-surface px-5 py-20 sm:px-8 lg:px-10">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">

@@ -1,4 +1,8 @@
+"use client";
+
 import type { ProductPriceSet } from "@/models/product";
+import { useBlackFridayCampaign } from "@/context/black-friday-context";
+import { BLACK_FRIDAY_DISCOUNT, BLACK_FRIDAY_INSTALLMENTS, formatBlackFridayInstallment, formatBlackFridayPrice, getBlackFridayPrice } from "@/lib/black-friday";
 
 interface ProductPriceProps {
   price: number;
@@ -30,6 +34,36 @@ export function getDisplayPrice(price: number, prices?: ProductPriceSet) {
 
 export function ProductPrice({ price, prices, compact = false, className = "", onShowPaymentMethods }: ProductPriceProps) {
   const { listPrice, finalPrice, transferPrice, hasDiscount, discountPercent, installmentAmount } = getDisplayPrice(price, prices);
+  const campaignActive = useBlackFridayCampaign();
+  const campaignPrice = campaignActive ? getBlackFridayPrice(price, prices) : undefined;
+
+  if (campaignPrice) {
+    return (
+      <section className={`space-y-1 leading-tight ${className}`} aria-label="Precio Black Friday">
+        <p className="text-sm font-semibold text-on-surface-variant">
+          Precio {formatBlackFridayPrice(campaignPrice.original)}
+        </p>
+        <p data-product-price className="font-headline text-2xl font-extrabold text-secondary">
+          {formatBlackFridayPrice(campaignPrice.final)}
+        </p>
+        {compact ? <p className="text-xs font-semibold text-on-surface-variant">Por transferencia</p> : (
+          <div className="grid gap-2 pt-2 [&>p]:rounded-xl [&>p]:border [&>p]:border-secondary/20 [&>p]:px-3 [&>p]:py-2 [&>p]:text-sm [&>p]:font-semibold [&>p]:leading-tight">
+            <p className="bg-secondary text-white">
+              {BLACK_FRIDAY_DISCOUNT}% de descuento por transferencia
+            </p>
+            <p className="bg-[#f7e5e5] text-on-surface">
+              {BLACK_FRIDAY_INSTALLMENTS} cuotas sin interés de <strong className="whitespace-nowrap text-secondary">{formatBlackFridayInstallment(campaignPrice.original)}</strong>
+            </p>
+          </div>
+        )}
+        {onShowPaymentMethods && (
+          <button type="button" onClick={onShowPaymentMethods} className="text-sm font-semibold text-secondary underline underline-offset-4">
+            Ver medios de pago
+          </button>
+        )}
+      </section>
+    );
+  }
 
   if (compact) {
     return (
@@ -37,7 +71,7 @@ export function ProductPrice({ price, prices, compact = false, className = "", o
         <div className="font-headline text-sm font-bold text-primary/75">
           {hasDiscount ? `Lista ${formatPrice(listPrice)}` : "Precio de lista"}
         </div>
-        <div className={`font-headline font-extrabold text-secondary ${hasDiscount ? "mt-1 text-[1.55rem]" : "text-xl"}`}>
+        <div data-product-price className={`font-headline font-extrabold text-secondary ${hasDiscount ? "mt-1 text-[1.55rem]" : "text-xl"}`}>
           {hasDiscount ? formatPrice(finalPrice) : formatPrice(listPrice)}
         </div>
         {hasDiscount && (
@@ -52,11 +86,11 @@ export function ProductPrice({ price, prices, compact = false, className = "", o
 
   return (
     <section className={`space-y-2 ${className}`} aria-label="Precios y formas de pago">
-      <p className="font-headline text-lg font-bold leading-none text-primary/80 md:text-xl">
+      <p data-product-price={!hasDiscount || undefined} className="font-headline text-lg font-bold leading-none text-primary/80 md:text-xl">
         Precio de lista: {formatPrice(listPrice)}
       </p>
       {hasDiscount && (
-        <p className="font-headline text-[1.8rem] font-extrabold leading-none text-secondary md:text-[2.15rem]">
+        <p data-product-price className="font-headline text-[1.8rem] font-extrabold leading-none text-secondary md:text-[2.15rem]">
           Precio por transferencia: {formatPrice(transferPrice!)}
         </p>
       )}

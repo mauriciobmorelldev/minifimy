@@ -3,6 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getDisplayPrice } from "@/components/ProductPrice";
+import { useBlackFridayCampaign } from "@/context/black-friday-context";
+import { BLACK_FRIDAY_INSTALLMENTS, formatBlackFridayInstallment, formatBlackFridayPrice, getBlackFridayPrice } from "@/lib/black-friday";
 import { PRODUCT_SUGGESTION_MIN_LENGTH, type ProductSuggestion } from "@/hooks/use-product-suggestions";
 
 interface ProductSearchSuggestionsProps {
@@ -27,6 +29,7 @@ export function ProductSearchSuggestions({
   onSelect,
   className = "",
 }: ProductSearchSuggestionsProps) {
+  const campaign = useBlackFridayCampaign();
   if (suggestions.length === 0) return null;
 
   const isSearching = query.trim().length >= PRODUCT_SUGGESTION_MIN_LENGTH;
@@ -42,6 +45,7 @@ export function ProductSearchSuggestions({
       <ul className="grid max-h-[min(58vh,31rem)] gap-2 overflow-y-auto overscroll-contain p-2">
         {suggestions.map((product) => {
           const { listPrice, finalPrice, hasDiscount, installmentAmount } = getDisplayPrice(product.price, product.prices);
+          const campaignPrice = campaign ? getBlackFridayPrice(product.price, product.prices) : undefined;
 
           return (
             <li key={product.id}>
@@ -71,12 +75,12 @@ export function ProductSearchSuggestions({
                     {product.name}
                   </span>
                   <span className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    {hasDiscount && <span className="text-[10px] font-semibold text-primary/60">Lista {formatPrice(listPrice)}</span>}
-                    <strong className="font-headline text-base text-secondary">{formatPrice(finalPrice)}</strong>
-                    {hasDiscount && <span className="text-[9px] font-bold text-secondary/80">transferencia</span>}
+                    {(campaignPrice || hasDiscount) && <span className="text-[10px] font-semibold text-primary/60">Precio {campaignPrice ? formatBlackFridayPrice(campaignPrice.original) : formatPrice(listPrice)}</span>}
+                    <strong className="font-headline text-base text-secondary">{campaignPrice ? formatBlackFridayPrice(campaignPrice.final) : formatPrice(finalPrice)}</strong>
+                    {(campaignPrice || hasDiscount) && <span className="text-[9px] font-bold text-secondary/80">transferencia</span>}
                   </span>
                   <span className="mt-0.5 block text-[10px] font-semibold text-primary/75">
-                    3 cuotas sin interés · {formatPrice(installmentAmount)}
+                    {campaignPrice ? `${BLACK_FRIDAY_INSTALLMENTS} cuotas sin interés · ${formatBlackFridayInstallment(campaignPrice.original)}` : `3 cuotas sin interés · ${formatPrice(installmentAmount)}`}
                   </span>
                 </span>
               </Link>
