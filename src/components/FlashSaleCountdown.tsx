@@ -3,15 +3,12 @@
 import { useEffect, useState } from "react";
 import styles from "./BlackFridayHero.module.css";
 
-const HOUR = 60 * 60 * 1000;
-
 function pad(value: number) {
   return String(value).padStart(2, "0");
 }
 
-export function FlashSaleCountdown({ startsAt }: { startsAt: number }) {
+export function FlashSaleCountdown({ endsAt }: { endsAt: number }) {
   const [now, setNow] = useState<number | null>(null);
-  const endsAt = startsAt + 72 * HOUR;
 
   useEffect(() => {
     function update() {
@@ -28,7 +25,11 @@ export function FlashSaleCountdown({ startsAt }: { startsAt: number }) {
     };
   }, [endsAt]);
 
-  const remainingSeconds = Math.max(0, Math.ceil((endsAt - Math.max(now ?? startsAt, startsAt)) / 1000));
+  if (now === null) {
+    return <span className={styles.flashCountdown} aria-hidden="true">--:--:--</span>;
+  }
+
+  const remainingSeconds = Math.max(0, Math.ceil((endsAt - now) / 1000));
   const hours = Math.floor(remainingSeconds / 3600);
   const minutes = Math.floor(remainingSeconds / 60) % 60;
   const seconds = remainingSeconds % 60;

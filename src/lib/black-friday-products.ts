@@ -4,6 +4,12 @@ import { getStoreCategories, getStoreProductCollection, type StoreProductQuery }
 import type { Category, Product } from "@/models/product";
 
 const comboSlugs = new Set(["combo", "combos"]);
+const featuredFlashSaleSlugs = new Set([
+  "babucha-bati-frisada",
+  "buzo-a-rayas-friza",
+  "blusa-pauli",
+  "pantalon-julian",
+]);
 const offerCategories = [
   { slug: "bodys", label: "Bodys", search: "body", name: /\b(?:bodys?|bodies)\b/i },
   { slug: "vestidos", label: "Vestidos", search: "vestido", name: /\bvestidos?\b/i },
@@ -109,8 +115,11 @@ export async function getBlackFridaySaleProducts() {
     };
   });
 
+  const flashSale = ranked.filter(({ product }) => isNotAccessory(product));
   return {
-    flashSale: ranked.filter(({ product }) => isNotAccessory(product)).slice(0, 4).map(({ product }) => product),
+    flashSale: flashSale
+      .filter(({ product }, index) => index < 4 || featuredFlashSaleSlugs.has(product.slug))
+      .map(({ product }) => product),
     combosSale: ranked.filter(({ product }) =>
       comboSlugs.has(product.category) ||
       product.categorySlugs?.some((slug) => comboSlugs.has(slug)) ||

@@ -83,6 +83,27 @@ describe("Black Friday", () => {
     });
   });
 
+  it("adds selected Flash Sale products beyond the four cheapest without duplicates", async () => {
+    jest.mocked(getStoreCategories).mockResolvedValue([]);
+    const products = [
+      product("blusa-pauli", 10),
+      product("ropa-1", 20),
+      product("ropa-2", 30),
+      product("ropa-3", 40),
+      product("ropa-4", 50),
+      product("pantalon-julian", 60),
+      product("buzo-a-rayas-friza", 70, { stock: 0 }),
+    ];
+    jest.mocked(getStoreProductCollection).mockResolvedValue({
+      products, total: products.length, totalPages: 1, page: 1, perPage: 100,
+    });
+
+    const { flashSale } = await getBlackFridaySaleProducts();
+    expect(flashSale.map(({ slug }) => slug)).toEqual([
+      "blusa-pauli", "ropa-1", "ropa-2", "ropa-3", "pantalon-julian",
+    ]);
+  });
+
   it("includes only purchasable products marked as combos", async () => {
     jest.mocked(getStoreCategories).mockResolvedValue([
       { id: "combo-category", slug: "combos", name: "Combos", description: "" },

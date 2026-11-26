@@ -4,14 +4,11 @@ import type { ReactNode } from "react";
 import { ProductCard } from "@/components/ProductCard";
 import { CampaignArrow } from "@/components/CampaignArrow";
 import { FlashSaleCountdown } from "@/components/FlashSaleCountdown";
-import { blackFridayPreview, formatBlackFridayPrice, getBlackFridayPrice } from "@/lib/black-friday";
+import { formatBlackFridayPrice, getBlackFridayPrice } from "@/lib/black-friday";
+import { campaignEndsAt } from "@/lib/black-friday-server";
 import type { CategoryOffer } from "@/lib/black-friday-products";
 import type { Product } from "@/models/product";
 import styles from "./BlackFridayHero.module.css";
-
-const flashSaleStartsAt = Date.parse(
-  blackFridayPreview ? "2026-11-22T15:57:00-03:00" : "2026-11-26T00:00:00-03:00",
-);
 
 function SaleShelf({ id, title, emphasis, products, emptyMessage, countdown }: {
   id: string;
@@ -70,7 +67,7 @@ export function BlackFridayProducts({ flashSale, combosSale, categoryOffers }: {
         title="Flash"
         emphasis="Sale"
         products={flashSale}
-        countdown={<FlashSaleCountdown startsAt={flashSaleStartsAt} />}
+        countdown={<FlashSaleCountdown endsAt={campaignEndsAt} />}
       />
       {categoryOffers.length > 0 && (
         <nav className={`${styles.collections} ${styles.categoryOffers}`} aria-label="Precios por categoría">

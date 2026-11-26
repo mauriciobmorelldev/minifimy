@@ -1,7 +1,7 @@
 import { blackFridayPreview } from "@/lib/black-friday";
 
 const livePreviewStartsAt = Date.parse("2026-11-25T18:00:00-03:00");
-const campaignEndsAt = Date.parse("2026-11-30T00:00:00-03:00");
+export const campaignEndsAt = Date.parse("2026-11-30T00:00:00-03:00");
 
 export function isBlackFridayActive() {
   const now = Date.now();

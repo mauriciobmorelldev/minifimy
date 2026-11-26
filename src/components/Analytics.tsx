@@ -22,6 +22,18 @@ export function Analytics() {
 
   return (
     <>
+      <Script id="google-tag-manager" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
+          window.gtag('js', new Date());
+          window.dataLayer.push({'gtm.start': Date.now(), event: 'gtm.js'});
+          var gtmScript = document.createElement('script');
+          gtmScript.async = true;
+          gtmScript.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-N3VHH4BP';
+          document.head.appendChild(gtmScript);
+        `}
+      </Script>
       {gaId && (
         <>
           <Script
@@ -30,10 +42,7 @@ export function Analytics() {
           />
           <Script id="ga-init" strategy="afterInteractive">
             {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${gaId}');
+              window.gtag('config', ${JSON.stringify(gaId)});
             `}
           </Script>
         </>
