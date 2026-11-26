@@ -751,22 +751,24 @@ function getStoreMoneyValue(value?: string, minorUnit = 2) {
   return Number.isFinite(amount) && amount > 0 ? amount : 0;
 }
 
-function getCatalogPriceSummaries(productIds: string[]) {
+function getCatalogPriceSummaries(productIds: string[], feedPhase?: "regular" | "black-friday" | "after-black-friday") {
   const ids = Array.from(new Set(productIds.filter(Boolean))).sort((first, second) => Number(first) - Number(second));
   if (ids.length === 0) return Promise.resolve([]);
 
-  const requestKey = ids.join(",");
+  const include = ids.join(",");
+  const requestKey = feedPhase ? `${feedPhase}:${include}` : include;
   const existingRequest = catalogPriceSummaryRequests.get(requestKey);
   if (existingRequest) return existingRequest;
 
   const params = new URLSearchParams({
-    include: requestKey,
+    include,
     per_page: String(Math.min(ids.length, 100)),
     minifimy_price_contract: CATALOG_PRICE_CONTRACT_VERSION,
   });
+  if (feedPhase) params.set("minifimy_feed_phase", feedPhase);
   const request = fetchWordPressJson<WooStoreProductSummary[]>(
     `wp-json/wc/store/v1/products?${params.toString()}`,
-    CACHE_SECONDS.products,
+    feedPhase ? 300 : CACHE_SECONDS.products,
     [CACHE_TAGS.products],
   ).then((products) => products ?? []);
   catalogPriceSummaryRequests.set(requestKey, request);
@@ -1643,7 +1645,7 @@ export async function getStoreProductSitemapSlugs(): Promise<string[]> {
   return Array.from(new Set(slugs));
 }
 
-export async function getStoreProductsForMetaFeed() {
+export async function getStoreProductsForMetaFeed(phase: "regular" | "black-friday" | "after-black-friday") {
   const products = [];
   const pageSize = 100;
   for (let page = 1; ; page++) {
@@ -1653,6 +1655,7 @@ export async function getStoreProductsForMetaFeed() {
       order: "asc",
       per_page: pageSize,
       page,
+      minifimy_feed_phase: phase,
       _fields: "id,name,slug,description,short_description,price,regular_price,minifimy_prices,stock_quantity,stock_status,catalog_visibility,brands,images,type",
     }, 300, [CACHE_TAGS.products]);
     if (!response) throw new Error("WooCommerce no devolvió el catálogo de Meta.");
@@ -1663,7 +1666,7 @@ export async function getStoreProductsForMetaFeed() {
     const publicProducts = batch.filter((product) =>
       product.catalog_visibility !== "hidden" && ["simple", "variable"].includes(product.type ?? ""),
     );
-    const summaries = await getCatalogPriceSummaries(publicProducts.map(({ id }) => String(id)));
+    const summaries = await getCatalogPriceSummaries(publicProducts.map(({ id }) => String(id)), phase);
     const summariesById = new Map(summaries.map((summary) => [summary.id, summary]));
     if (!summaries.length && publicProducts.some((product) => getMiniFimyPrices(product).base <= 1)) {
       throw new Error("WooCommerce no devolvió los precios del catálogo de Meta.");
@@ -1680,6 +1683,7 @@ export async function getStoreProductsForMetaFeed() {
         slug: product.slug,
         image: product.images?.map(({ src }) => getSafeImage(src)).find(Boolean),
         price: listPrice > 1 ? listPrice : listing.price,
+        discountPrice: listing.prices?.discount,
         inStock,
         stock: inStock ? product.stock_quantity ?? undefined : 0,
         brand: cleanText(product.brands?.[0]?.name) || "MiniFimy",

@@ -1,7 +1,14 @@
 import { getStoreProductsForMetaFeed } from "@/lib/woocommerce";
+import { getBlackFridayPrice } from "@/lib/black-friday";
+import { campaignEndsAt, isBlackFridayActive } from "@/lib/black-friday-server";
+import { getStorePreviewConfig } from "@/lib/store-preview-access";
 
 const site = "https://minifimy.com";
-const columns = ["id", "title", "description", "availability", "inventory", "condition", "price", "link", "image_link", "brand"];
+const columns = ["id", "title", "description", "availability", "inventory", "condition", "price", "link", "image_link", "brand", "sale_price", "sale_price_effective_date"];
+
+function metaDate(timestamp: number) {
+  return `${new Date(timestamp).toISOString().slice(0, 16)}+0000`;
+}
 
 function csvRow(values: Array<string | number | undefined>) {
   return values.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(",");
@@ -9,18 +16,25 @@ function csvRow(values: Array<string | number | undefined>) {
 
 export async function GET() {
   try {
-    const products = await getStoreProductsForMetaFeed();
+    const campaign = isBlackFridayActive();
+    const phase = campaign ? "black-friday" : Date.now() >= campaignEndsAt ? "after-black-friday" : "regular";
+    const products = await getStoreProductsForMetaFeed(phase);
+    const opening = getStorePreviewConfig()?.opensAt ?? Date.parse("2026-11-26T00:00:00-03:00");
+    const saleDates = campaign ? `${metaDate(opening)}/${metaDate(campaignEndsAt)}` : undefined;
     const rows = new Map<string, string>();
     for (const product of products) {
       if (!product.title || !product.slug || !product.image || !Number.isFinite(product.price) || product.price <= 1) continue;
       if (!/^\d+$/.test(product.id) || !URL.canParse(product.image, site)) continue;
       const image = new URL(product.image, site);
       if (image.protocol !== "https:" && image.protocol !== "http:") continue;
+      const discount = campaign ? getBlackFridayPrice(product.price)?.final : product.discountPrice;
+      const validDiscount = discount !== undefined && discount > 0 && discount < product.price;
+      const description = `${validDiscount ? "Precio de oferta abonando por transferencia. " : ""}${product.description || product.title}`;
 
       rows.set(product.id, csvRow([
         product.id,
         product.title.slice(0, 200),
-        (product.description || product.title).slice(0, 9999),
+        description.slice(0, 9999),
         product.inStock ? "in stock" : "out of stock",
         product.stock,
         "new",
@@ -28,6 +42,8 @@ export async function GET() {
         `${site}/producto/${encodeURIComponent(product.slug)}`,
         image.href,
         product.brand.slice(0, 100),
+        validDiscount ? `${discount.toFixed(2)} ARS` : undefined,
+        validDiscount ? saleDates : undefined,
       ]));
     }
     if (!rows.size) throw new Error("El catálogo no contiene productos exportables.");
