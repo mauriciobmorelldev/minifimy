@@ -1660,17 +1660,26 @@ export async function getStoreProductsForMetaFeed() {
     const batch = (await response.json()) as WooProduct[];
     if (!Array.isArray(batch)) throw new Error("WooCommerce devolvió un catálogo inválido.");
 
-    for (const product of batch) {
-      if (product.catalog_visibility === "hidden" || !["simple", "variable"].includes(product.type ?? "")) continue;
-      const prices = getMiniFimyPrices(product);
-      const inStock = product.stock_status === "instock" && (product.stock_quantity == null || product.stock_quantity > 0);
+    const publicProducts = batch.filter((product) =>
+      product.catalog_visibility !== "hidden" && ["simple", "variable"].includes(product.type ?? ""),
+    );
+    const summaries = await getCatalogPriceSummaries(publicProducts.map(({ id }) => String(id)));
+    const summariesById = new Map(summaries.map((summary) => [summary.id, summary]));
+    if (!summaries.length && publicProducts.some((product) => getMiniFimyPrices(product).base <= 1)) {
+      throw new Error("WooCommerce no devolvió los precios del catálogo de Meta.");
+    }
+
+    for (const product of publicProducts) {
+      const listing = mergeCatalogPriceSummary(mapWooProduct(product), summariesById.get(product.id));
+      const listPrice = listing.prices?.list ?? 0;
+      const inStock = listing.stockStatus === "instock" && (product.stock_quantity == null || product.stock_quantity > 0);
       products.push({
         id: String(product.id),
         title: cleanText(product.name),
         description: cleanText(product.short_description) || cleanText(product.description),
         slug: product.slug,
         image: product.images?.map(({ src }) => getSafeImage(src)).find(Boolean),
-        price: prices.list ?? prices.base,
+        price: listPrice > 1 ? listPrice : listing.price,
         inStock,
         stock: inStock ? product.stock_quantity ?? undefined : 0,
         brand: cleanText(product.brands?.[0]?.name) || "MiniFimy",

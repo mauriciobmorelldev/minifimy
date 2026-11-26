@@ -12,7 +12,7 @@ export async function GET() {
     const products = await getStoreProductsForMetaFeed();
     const rows = new Map<string, string>();
     for (const product of products) {
-      if (!product.title || !product.slug || !product.image || !Number.isFinite(product.price) || product.price <= 0) continue;
+      if (!product.title || !product.slug || !product.image || !Number.isFinite(product.price) || product.price <= 1) continue;
       if (!/^\d+$/.test(product.id) || !URL.canParse(product.image, site)) continue;
       const image = new URL(product.image, site);
       if (image.protocol !== "https:" && image.protocol !== "http:") continue;

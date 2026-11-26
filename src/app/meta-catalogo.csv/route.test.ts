@@ -22,7 +22,7 @@ it("exports UTF-8, ARS, actual stock and the storefront product URL", async () =
     product,
     { ...product, id: "429", inStock: false, stock: 0 },
     { ...product, id: "430", stock: undefined },
-    { ...product, id: "431", price: 0 },
+    { ...product, id: "431", price: 1 },
   ]);
   const response = await GET();
   expect(response.headers.get("Content-Type")).toBe("text/csv; charset=utf-8");
