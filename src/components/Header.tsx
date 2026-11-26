@@ -16,6 +16,8 @@ type NavLink = {
   children?: NavLink[];
 };
 
+const combosLink: NavLink = { href: "/catalogo/combos", label: "Combos" };
+
 interface HeaderProps {
   navLinks: NavLink[];
   campaignPreview?: boolean;
@@ -245,6 +247,7 @@ export function Header({ navLinks, campaignPreview, localPreviewCart }: HeaderPr
               <div className="flex min-w-0 flex-1 items-center justify-center gap-1">
                 {[
                   { href: "/", label: "Inicio" },
+                  combosLink,
                   { href: "/catalogo/nueva-temporada", label: "Nueva temporada" },
                   { href: "/catalogo/ultimas-oportunidades", label: "Oportunidades" },
                   { href: "/envios-y-cambios", label: "Envíos y cambios" },
@@ -493,7 +496,7 @@ export function Header({ navLinks, campaignPreview, localPreviewCart }: HeaderPr
                 <p className="mt-1 text-xs leading-5 text-on-surface-variant">Categorías y accesos de la tienda.</p>
               </div>
               <div className="flex flex-col gap-2 font-headline text-base font-semibold text-primary">
-                {navLinks.map((link) => {
+                {[combosLink, ...navLinks].map((link) => {
                   const hasChildren = Boolean(link.children?.length);
                   const isCategoryOpen = hasChildren && mobileCategoryOpen === link.href;
                   const isActive = isStoreMenuGroupActive(link, pathname, mobileAgeContext, mobileAudienceContext);
@@ -529,6 +532,7 @@ export function Header({ navLinks, campaignPreview, localPreviewCart }: HeaderPr
                       <Link
                         href={link.href}
                         onClick={closeMobileMenu}
+                        aria-current={pathname === link.href ? "page" : undefined}
                         className={`flex items-center justify-between rounded-[1.15rem] px-4 py-3 shadow-soft transition-colors ${pathname === link.href ? "bg-primary text-on-primary" : "bg-white text-primary"}`}
                       >
                         {link.label}
