@@ -83,7 +83,7 @@ describe("Black Friday", () => {
     });
   });
 
-  it("adds selected Flash Sale products beyond the four cheapest without duplicates", async () => {
+  it("combines six low-priced products with the selected Flash Sale products without duplicates", async () => {
     jest.mocked(getStoreCategories).mockResolvedValue([]);
     const products = [
       product("blusa-pauli", 10),
@@ -93,6 +93,9 @@ describe("Black Friday", () => {
       product("ropa-4", 50),
       product("pantalon-julian", 60),
       product("buzo-a-rayas-friza", 70, { stock: 0 }),
+      product("ropa-5", 80),
+      product("ropa-6", 90),
+      product("ropa-7", 100),
     ];
     jest.mocked(getStoreProductCollection).mockResolvedValue({
       products, total: products.length, totalPages: 1, page: 1, perPage: 100,
@@ -100,7 +103,7 @@ describe("Black Friday", () => {
 
     const { flashSale } = await getBlackFridaySaleProducts();
     expect(flashSale.map(({ slug }) => slug)).toEqual([
-      "blusa-pauli", "ropa-1", "ropa-2", "ropa-3", "pantalon-julian",
+      "blusa-pauli", "ropa-1", "ropa-2", "ropa-3", "ropa-4", "pantalon-julian", "ropa-5", "ropa-6",
     ]);
   });
 

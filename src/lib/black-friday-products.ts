@@ -116,9 +116,12 @@ export async function getBlackFridaySaleProducts() {
   });
 
   const flashSale = ranked.filter(({ product }) => isNotAccessory(product));
+  const cheapestFlashSale = new Set(flashSale
+    .filter(({ product }) => !featuredFlashSaleSlugs.has(product.slug))
+    .slice(0, 6));
   return {
     flashSale: flashSale
-      .filter(({ product }, index) => index < 4 || featuredFlashSaleSlugs.has(product.slug))
+      .filter((entry) => cheapestFlashSale.has(entry) || featuredFlashSaleSlugs.has(entry.product.slug))
       .map(({ product }) => product),
     combosSale: ranked.filter(({ product }) =>
       comboSlugs.has(product.category) ||
