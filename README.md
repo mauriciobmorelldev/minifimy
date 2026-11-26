@@ -25,7 +25,6 @@ Crea `.env.local` para desarrollo y las mismas variables en el proveedor de depl
 
 ```bash
 NEXT_PUBLIC_SITE_URL=https://minifimy.com
-NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
 NEXT_PUBLIC_META_PIXEL_ID=1130501562085721
 META_PIXEL_ID=1130501562085721
 META_CONVERSIONS_API_TOKEN=token_generado_en_meta

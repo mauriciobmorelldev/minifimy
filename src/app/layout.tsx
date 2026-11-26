@@ -27,6 +27,17 @@ const organizationSchema = {
   sameAs: ["https://www.instagram.com/minifimybebe"],
 };
 
+const googleTagHead = (
+  <head>
+    <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-N3VHH4BP" />
+    <script id="google-tag-init" dangerouslySetInnerHTML={{ __html: `
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){window.dataLayer.push(arguments);}
+      gtag('js', new Date());
+    ` }} />
+  </head>
+);
+
 const beVietnam = Be_Vietnam_Pro({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -97,6 +108,7 @@ export default async function RootLayout({
       const invalidPassword = (await headers()).get(waitingHeader) === "error";
       return (
         <html lang="es" className={`${beVietnam.variable} ${plusJakarta.variable}`}>
+          {googleTagHead}
           <body className="bg-[#241415] font-body text-[#fff2ec] antialiased">
             <CampaignWaitingScreen opensAt={previewConfig.opensAt} remainingMs={remainingMs} invalidPassword={invalidPassword} />
           </body>
@@ -108,6 +120,7 @@ export default async function RootLayout({
   if (siteLocked && !previewConfig) {
     return (
       <html lang="es" className={`${beVietnam.variable} ${plusJakarta.variable}`}>
+        {googleTagHead}
         <body className="min-h-screen bg-background font-body text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
           <SiteLockedScreen />
           <Analytics />
@@ -122,6 +135,7 @@ export default async function RootLayout({
 
   return (
     <html lang="es" className={`${beVietnam.variable} ${plusJakarta.variable}`}>
+      {googleTagHead}
       <body
         data-black-friday-theme={campaignPreview ? "true" : undefined}
         className="min-h-screen bg-background font-body text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container"

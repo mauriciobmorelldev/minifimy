@@ -10,7 +10,6 @@ import { trackMetaEvent } from "@/lib/meta-events";
 let lastTrackedPathname: string | null = null;
 
 export function Analytics() {
-  const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "1130501562085721";
   const pathname = usePathname();
   const [pixelReady, setPixelReady] = useState(false);
@@ -22,31 +21,6 @@ export function Analytics() {
 
   return (
     <>
-      <Script id="google-tag-manager" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
-          window.gtag('js', new Date());
-          window.dataLayer.push({'gtm.start': Date.now(), event: 'gtm.js'});
-          var gtmScript = document.createElement('script');
-          gtmScript.async = true;
-          gtmScript.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-N3VHH4BP';
-          document.head.appendChild(gtmScript);
-        `}
-      </Script>
-      {gaId && (
-        <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-            strategy="afterInteractive"
-          />
-          <Script id="ga-init" strategy="afterInteractive">
-            {`
-              window.gtag('config', ${JSON.stringify(gaId)});
-            `}
-          </Script>
-        </>
-      )}
       <Script id="meta-pixel" strategy="afterInteractive" onReady={() => setPixelReady(true)}>
         {`
           !function(f,b,e,v,n,t,s)
