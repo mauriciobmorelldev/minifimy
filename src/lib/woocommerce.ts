@@ -370,6 +370,8 @@ type WooProduct = {
   minifimy_prices?: WooMiniFimyPrices;
   stock_quantity?: number | null;
   stock_status?: string;
+  catalog_visibility?: string;
+  brands?: { name?: string }[];
   images?: WooImage[];
   categories?: WooCategory[];
   tags?: { name?: string; slug?: string }[];
@@ -1639,4 +1641,43 @@ export async function getStoreProductSitemapSlugs(): Promise<string[]> {
   }
 
   return Array.from(new Set(slugs));
+}
+
+export async function getStoreProductsForMetaFeed() {
+  const products = [];
+  const pageSize = 100;
+  for (let page = 1; ; page++) {
+    const response = await fetchWooResponse("products", {
+      status: "publish",
+      orderby: "id",
+      order: "asc",
+      per_page: pageSize,
+      page,
+      _fields: "id,name,slug,description,short_description,price,regular_price,minifimy_prices,stock_quantity,stock_status,catalog_visibility,brands,images,type",
+    }, 300, [CACHE_TAGS.products]);
+    if (!response) throw new Error("WooCommerce no devolvió el catálogo de Meta.");
+
+    const batch = (await response.json()) as WooProduct[];
+    if (!Array.isArray(batch)) throw new Error("WooCommerce devolvió un catálogo inválido.");
+
+    for (const product of batch) {
+      if (product.catalog_visibility === "hidden" || !["simple", "variable"].includes(product.type ?? "")) continue;
+      const prices = getMiniFimyPrices(product);
+      const inStock = product.stock_status === "instock" && (product.stock_quantity == null || product.stock_quantity > 0);
+      products.push({
+        id: String(product.id),
+        title: cleanText(product.name),
+        description: cleanText(product.short_description) || cleanText(product.description),
+        slug: product.slug,
+        image: product.images?.map(({ src }) => getSafeImage(src)).find(Boolean),
+        price: prices.list ?? prices.base,
+        inStock,
+        stock: inStock ? product.stock_quantity ?? undefined : 0,
+        brand: cleanText(product.brands?.[0]?.name) || "MiniFimy",
+      });
+    }
+
+    const pages = Number(response.headers.get("x-wp-totalpages"));
+    if (pages > 0 ? page >= pages : batch.length < pageSize) return products;
+  }
 }
