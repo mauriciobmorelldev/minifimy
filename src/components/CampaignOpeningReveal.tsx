@@ -1,37 +1,23 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import styles from "./CampaignOpeningReveal.module.css";
 
 export function CampaignOpeningReveal({ opensAt }: { opensAt: number }) {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const frame = window.requestAnimationFrame(() => {
+  const storageKey = JSON.stringify(`minifimy-opening-reveal:${opensAt}`);
+  const playBeforePaint = `
+    (() => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       try {
-        const key = `minifimy-opening-reveal:${opensAt}`;
-        if (window.sessionStorage.getItem(key)) return;
-        window.sessionStorage.setItem(key, "shown");
+        if (sessionStorage.getItem(${storageKey})) return;
+        sessionStorage.setItem(${storageKey}, 'shown');
       } catch {
         // The reveal can still play when browser storage is disabled.
       }
-      setVisible(true);
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [opensAt]);
-
-  if (!visible) return null;
+      document.currentScript.parentElement.hidden = false;
+    })();
+  `;
 
   return (
-    <div
-      aria-hidden="true"
-      className={styles.reveal}
-      onAnimationEnd={(event) => {
-        if (event.target === event.currentTarget) setVisible(false);
-      }}
-    >
+    <div aria-hidden="true" className={styles.reveal} hidden suppressHydrationWarning>
+      <script id="minifimy-opening-reveal" dangerouslySetInnerHTML={{ __html: playBeforePaint }} />
       <div className={styles.left} />
       <div className={styles.right} />
       <span className={styles.message}>Ya abrimos</span>

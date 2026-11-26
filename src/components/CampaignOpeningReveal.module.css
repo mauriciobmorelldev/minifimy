@@ -10,6 +10,10 @@
   animation: reveal-finish var(--reveal-duration) linear both;
 }
 
+.reveal[hidden] {
+  display: none;
+}
+
 .left,
 .right {
   position: absolute;
@@ -66,8 +70,8 @@
 }
 
 @keyframes reveal-finish {
-  0%, 82% { opacity: 1; }
-  100% { opacity: 0; }
+  0%, 82% { opacity: 1; visibility: visible; }
+  100% { opacity: 0; visibility: hidden; }
 }
 
 @media (prefers-reduced-motion: reduce) {
