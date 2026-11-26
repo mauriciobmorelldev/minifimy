@@ -1,0 +1,75 @@
+.reveal {
+  --reveal-duration: 880ms;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  animation: reveal-finish var(--reveal-duration) linear both;
+}
+
+.left,
+.right {
+  position: absolute;
+  inset-block: 0;
+  width: calc(50% + 1px);
+  animation-duration: var(--reveal-duration);
+  animation-timing-function: cubic-bezier(0.7, 0, 0.25, 1);
+  animation-fill-mode: both;
+}
+
+.left {
+  left: 0;
+  border-right: 1px solid #b84866;
+  background: #171312;
+  animation-name: reveal-left;
+}
+
+.right {
+  right: 0;
+  background: #790627;
+  animation-name: reveal-right;
+}
+
+.message {
+  position: relative;
+  padding: 0.16em 0.4em 0.21em;
+  background: #fff2ec;
+  color: #241415;
+  clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%);
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(2rem, 9vw, 5.5rem);
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.07em;
+  line-height: 1;
+  text-transform: uppercase;
+  animation: reveal-message var(--reveal-duration) ease-out both;
+}
+
+@keyframes reveal-left {
+  0%, 34% { transform: translateX(0); }
+  100% { transform: translateX(-101%); }
+}
+
+@keyframes reveal-right {
+  0%, 34% { transform: translateX(0); }
+  100% { transform: translateX(101%); }
+}
+
+@keyframes reveal-message {
+  0% { opacity: 0; transform: translateY(6px); }
+  20%, 44% { opacity: 1; transform: translateY(0); }
+  75%, 100% { opacity: 0; transform: translateY(-6px); }
+}
+
+@keyframes reveal-finish {
+  0%, 82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { display: none; }
+}

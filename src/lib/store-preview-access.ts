@@ -16,6 +16,11 @@ export function getPreviewRemainingMs(opensAt: number) {
   return Math.max(0, opensAt - Date.now());
 }
 
+export function isOpeningRevealWindow(opensAt: number) {
+  const elapsedMs = Date.now() - opensAt;
+  return elapsedMs >= 0 && elapsedMs < 10 * 60 * 1000;
+}
+
 export function matchesPreviewPassword(input: string, password: string) {
   const digest = (value: string) => createHash("sha256").update(value).digest();
   return timingSafeEqual(digest(input), digest(password));

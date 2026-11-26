@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { BlackFridayHero } from "@/components/BlackFridayHero";
 import { BlackFridayProducts } from "@/components/BlackFridayProducts";
+import { CampaignOpeningReveal } from "@/components/CampaignOpeningReveal";
 import { HomeAgeFilter } from "@/components/HomeAgeFilter";
 import { HomeHeroCarousel } from "@/components/HomeHeroCarousel";
 import { HomeOpportunities } from "@/components/HomeOpportunities";
@@ -15,6 +16,7 @@ import { getBlackFridaySaleProducts } from "@/lib/black-friday-products";
 import { getFeaturedStoreProducts, getNewestStoreProducts, getStoreProductFilters, getStoreProductsByCategory, getWordPressNewsletterUrl } from "@/lib/woocommerce";
 import { productNeedsOptions } from "@/lib/product-options";
 import { productIsInStock } from "@/lib/product-stock";
+import { getStorePreviewConfig, isOpeningRevealWindow } from "@/lib/store-preview-access";
 import { getHomeContent } from "@/lib/wordpress";
 
 function pickProductsBySlugs(products: Awaited<ReturnType<typeof getFeaturedStoreProducts>>, slugs: string[], fallback: typeof products) {
@@ -61,6 +63,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   const featuredSectionProducts = pickProductsByTags(featured, ["home-destacados"], featuredProductsBySlug.length > 0 ? featuredProductsBySlug : featured);
   const sectionHeroProduct = featuredSectionProducts[0] ?? heroProduct;
   const sectionSupportProducts = featuredSectionProducts.filter((product) => product.id !== sectionHeroProduct?.id);
+  const opening = campaign ? getStorePreviewConfig()?.opensAt : undefined;
   return (
     <main
       data-black-friday={campaign ? "true" : undefined}
@@ -68,6 +71,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
     >
       {campaign ? (
         <>
+          {opening !== undefined && isOpeningRevealWindow(opening) && <CampaignOpeningReveal opensAt={opening} />}
           <BlackFridayHero />
           <BlackFridayProducts {...saleProducts} />
         </>
